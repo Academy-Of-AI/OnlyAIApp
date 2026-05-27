@@ -24,7 +24,10 @@ export default async function HackathonDetailPage({
     .order("joined_at", { ascending: true });
 
   const joinUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://vibelaunchpad.com"}/join/${hackathon.invite_code}`;
-  const deployed = participants?.filter((p) => (p.projects as { status: string } | null)?.status === "deployed").length ?? 0;
+  const deployed = participants?.filter((p) => {
+    const proj = Array.isArray(p.projects) ? p.projects[0] : p.projects;
+    return (proj as { status: string } | null)?.status === "deployed";
+  }).length ?? 0;
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-10 space-y-8">
