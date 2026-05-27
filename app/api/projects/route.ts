@@ -71,20 +71,25 @@ export async function POST(request: Request) {
     }
   }
 
-  // Load Vercel + Supabase connections (GitHub is server-side PAT — no user token needed)
+  // Load GitHub + Vercel + Supabase (optional) connections
   const { data: connections } = await supabase
     .from("oauth_connections")
     .select("provider, access_token, metadata")
     .eq("user_id", user.id)
-    .in("provider", ["vercel", "supabase"]);
+    .in("provider", ["github", "vercel", "supabase"]);
 
+  const githubConn = connections?.find((c) => c.provider === "github");
   const vercelConn = connections?.find((c) => c.provider === "vercel");
   const supabaseConn = connections?.find((c) => c.provider === "supabase");
 
+  if (!githubConn) {
+    return NextResponse.json({ error: "GitHub not connected" }, { status: 400 });
+  }
   if (!vercelConn) {
     return NextResponse.json({ error: "Vercel not connected" }, { status: 400 });
   }
 
+  const githubToken = await decrypt(githubConn.access_token as string);
   const vercelToken = await decrypt(vercelConn.access_token as string);
 
   let supabaseToken: string | undefined;
@@ -95,14 +100,6 @@ export async function POST(request: Request) {
     const meta = supabaseConn.metadata as { org_id?: string } | null;
     supabaseOrgId = meta?.org_id;
   }
-
-  // Get user's GitHub username to add them as repo collaborator
-  const { data: profileFull } = await supabase
-    .from("profiles")
-    .select("github_username")
-    .eq("id", user.id)
-    .single();
-  const githubUsername = profileFull?.github_username ?? undefined;
 
   // Insert project record as provisioning
   const { data: project, error: insertError } = await supabase
@@ -133,7 +130,7 @@ export async function POST(request: Request) {
         const result = await provisionProject(
           {
             projectName: name,
-            githubUsername,
+            githubToken,
             vercelToken,
             supabaseToken,
             supabaseOrgId,

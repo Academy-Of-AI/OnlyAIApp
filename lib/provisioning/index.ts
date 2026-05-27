@@ -1,4 +1,4 @@
-import { addCollaborator, createRepoFromTemplate, deleteRepo, getGithubUser } from "@/lib/github";
+import { createRepoFromTemplate, deleteRepo, getGithubUser } from "@/lib/github";
 import {
   createSupabaseProject,
   deleteSupabaseProject,
@@ -15,8 +15,7 @@ export type ProgressEvent = {
 
 export interface ProvisionParams {
   projectName: string;
-  /** GitHub username of the end-user — added as admin collaborator on the created repo */
-  githubUsername?: string;
+  githubToken: string;
   vercelToken: string;
   supabaseToken?: string;    // optional — if not provided, skip Supabase auto-provision
   supabaseOrgId?: string;
@@ -41,7 +40,7 @@ export async function provisionProject(
 ): Promise<ProvisionResult> {
   const {
     projectName,
-    githubUsername,
+    githubToken,
     vercelToken,
     supabaseToken,
     supabaseOrgId,
@@ -50,10 +49,6 @@ export async function provisionProject(
     templateOwner = process.env.GITHUB_TEMPLATE_OWNER ?? "xp-luffy",
     templateRepo = process.env.GITHUB_TEMPLATE_REPO ?? "vibe-stack-supabase",
   } = params;
-
-  // Server-side GitHub PAT — never exposed to users
-  const githubToken = process.env.GITHUB_APP_TOKEN ?? "";
-  if (!githubToken) throw new Error("GITHUB_APP_TOKEN is not configured");
 
   // Rollback state
   let githubRepoOwner: string | null = null;
@@ -74,7 +69,7 @@ export async function provisionProject(
   }
 
   try {
-    // Step 1: GitHub — create repo using server-side PAT (under xp-luffy account)
+    // Step 1: GitHub
     onProgress({ step: "github_start", message: "Creating GitHub repository…" });
     const { login } = await getGithubUser(githubToken);
     const { repoUrl, repoFullName } = await createRepoFromTemplate({
@@ -89,11 +84,6 @@ export async function provisionProject(
     githubRepoOwner = login;
     githubRepoName = projectName;
     onProgress({ step: "github_done", message: "GitHub repo created ✓", detail: repoUrl });
-
-    // Add the end-user as admin collaborator so they can clone/push
-    if (githubUsername) {
-      await addCollaborator({ token: githubToken, owner: login, repo: projectName, username: githubUsername });
-    }
 
     // Step 2: Supabase (if token provided)
     let resolvedSupabaseUrl = manualSupabaseUrl ?? "";

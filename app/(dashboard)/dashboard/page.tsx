@@ -17,7 +17,9 @@ export default async function DashboardPage({
 }) {
   const params = await searchParams;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const [{ data: projects }, { data: connections }] = await Promise.all([
     supabase
@@ -31,12 +33,13 @@ export default async function DashboardPage({
       .eq("user_id", user!.id),
   ]);
 
-  const hasVercel   = connections?.some((c) => c.provider === "vercel");
+  const hasGitHub = connections?.some((c) => c.provider === "github");
+  const hasVercel = connections?.some((c) => c.provider === "vercel");
   const hasSupabase = connections?.some((c) => c.provider === "supabase");
-  const allConnected = hasVercel && hasSupabase;
 
   function connectedLabel(provider: string) {
-    if (provider === "vercel")   return "Vercel";
+    if (provider === "github") return "GitHub";
+    if (provider === "vercel") return "Vercel";
     if (provider === "supabase") return "Supabase";
     return provider;
   }
@@ -56,58 +59,88 @@ export default async function DashboardPage({
       )}
 
       {/* Connect integrations banner */}
-      {(!hasVercel || !hasSupabase) && (
+      {(!hasGitHub || !hasVercel || !hasSupabase) && (
         <section className="border border-white/10 rounded-xl p-6 space-y-5">
           <div>
             <h2 className="font-semibold text-lg">One-time setup — connect your accounts</h2>
             <p className="text-sm text-neutral-400 mt-1">
-              Two quick connections and you&apos;re ready to provision projects. You only do this once.
+              Vibe Launchpad needs three connections to provision your projects automatically.
+              You only do this once.
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
-            {/* Vercel card */}
-            <div className={`rounded-xl border p-5 flex flex-col gap-3 ${
-              hasVercel ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-white/[0.03]"
-            }`}>
+          <div className="grid sm:grid-cols-3 gap-4">
+            {/* GitHub card */}
+            <div
+              className={`rounded-xl border p-4 space-y-3 ${
+                hasGitHub ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-white/3"
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-base">▲</span>
-                  <span className="font-semibold text-sm">Vercel</span>
+                  <GHIcon />
+                  <span className="font-medium text-sm">GitHub</span>
                 </div>
-                {hasVercel && <span className="text-xs text-green-400 font-semibold">✓ Connected</span>}
+                {hasGitHub && <span className="text-xs text-green-400 font-medium">✓ Connected</span>}
               </div>
-              <p className="text-xs text-neutral-400 leading-relaxed flex-1">
-                Your project is deployed live to{" "}
-                <strong className="text-neutral-200">Vercel&apos;s global network</strong> the moment
-                you click provision — real public URL, CI/CD, and instant previews included.
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Every project gets its own <strong className="text-neutral-200">private GitHub repository</strong> created
+                automatically under your account. Your code is always yours — we just push the starter template in.
+              </p>
+              {!hasGitHub && (
+                <a
+                  href="/api/github/connect"
+                  className="flex items-center justify-center gap-2 bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-neutral-200 transition-colors w-full"
+                >
+                  <GHIcon /> Connect GitHub →
+                </a>
+              )}
+            </div>
+
+            {/* Vercel card */}
+            <div
+              className={`rounded-xl border p-4 space-y-3 ${
+                hasVercel ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-white/3"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">▲</span>
+                  <span className="font-medium text-sm">Vercel</span>
+                </div>
+                {hasVercel && <span className="text-xs text-green-400 font-medium">✓ Connected</span>}
+              </div>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Your project is deployed live to <strong className="text-neutral-200">Vercel&apos;s global network</strong> the
+                moment you click provision. You get a real public URL, CI/CD, and instant previews — for free on Vercel&apos;s Hobby plan.
               </p>
               {!hasVercel && <VercelConnectForm />}
             </div>
 
             {/* Supabase card */}
-            <div className={`rounded-xl border p-5 flex flex-col gap-3 ${
-              hasSupabase ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-white/[0.03]"
-            }`}>
+            <div
+              className={`rounded-xl border p-4 space-y-3 ${
+                hasSupabase ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-white/3"
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-base">⚡</span>
-                  <span className="font-semibold text-sm">Supabase</span>
+                  <span className="text-sm">⚡</span>
+                  <span className="font-medium text-sm">Supabase</span>
                 </div>
-                {hasSupabase && <span className="text-xs text-green-400 font-semibold">✓ Connected</span>}
+                {hasSupabase && <span className="text-xs text-green-400 font-medium">✓ Connected</span>}
               </div>
-              <p className="text-xs text-neutral-400 leading-relaxed flex-1">
-                Every project gets its own{" "}
-                <strong className="text-neutral-200">Supabase database</strong> — auth, tables, and
-                storage — created automatically. No copy-pasting connection strings.
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Every project gets its own <strong className="text-neutral-200">Supabase database</strong> — authentication,
+                tables, and storage — created automatically. No manual setup. No copy-pasting connection strings.
               </p>
               {!hasSupabase && <SupabaseConnectForm />}
             </div>
           </div>
 
-          {allConnected && (
+          {hasGitHub && hasVercel && hasSupabase && (
             <p className="text-xs text-green-400 text-center">
-              ✓ All set — you&apos;re ready to provision projects!
+              ✓ All accounts connected — you&apos;re ready to provision projects!
             </p>
           )}
         </section>
@@ -116,7 +149,7 @@ export default async function DashboardPage({
       {/* Projects header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Your projects</h1>
-        {allConnected && (
+        {hasGitHub && hasVercel && hasSupabase && (
           <Link
             href="/new-project"
             className="bg-green-500 hover:bg-green-400 text-black text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
@@ -131,7 +164,7 @@ export default async function DashboardPage({
         <div className="text-center py-20 text-neutral-500 space-y-2">
           <p className="text-3xl">🚀</p>
           <p>No projects yet.</p>
-          {allConnected && (
+          {hasGitHub && hasVercel && hasSupabase && (
             <Link href="/new-project" className="text-green-400 hover:underline text-sm">
               Provision your first project →
             </Link>
@@ -146,23 +179,33 @@ export default async function DashboardPage({
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="font-semibold truncate">{p.name}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                  STATUS_STYLES[p.status] ?? STATUS_STYLES.pending
-                }`}>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full ${
+                    STATUS_STYLES[p.status] ?? STATUS_STYLES.pending
+                  }`}
+                >
                   {p.status}
                 </span>
               </div>
               <p className="text-xs text-neutral-500">{p.template_id}</p>
               <div className="flex gap-3 text-xs">
                 {p.github_repo_url && (
-                  <a href={p.github_repo_url} target="_blank" rel="noopener noreferrer"
-                    className="text-neutral-400 hover:text-white transition-colors">
+                  <a
+                    href={p.github_repo_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-neutral-400 hover:text-white transition-colors"
+                  >
                     GitHub →
                   </a>
                 )}
                 {p.vercel_preview_url && (
-                  <a href={p.vercel_preview_url} target="_blank" rel="noopener noreferrer"
-                    className="text-green-400 hover:text-green-300 transition-colors">
+                  <a
+                    href={p.vercel_preview_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green-400 hover:text-green-300 transition-colors"
+                  >
                     Live URL →
                   </a>
                 )}
@@ -176,5 +219,13 @@ export default async function DashboardPage({
         </div>
       )}
     </main>
+  );
+}
+
+function GHIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.1.82-.26.82-.58v-2.03c-3.34.72-4.04-1.6-4.04-1.6-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.65 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.21.7.82.58C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z" />
+    </svg>
   );
 }
