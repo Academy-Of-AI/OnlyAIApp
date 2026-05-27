@@ -1,7 +1,21 @@
 import Stripe from "stripe";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-02-24.acacia",
+// Lazy singleton — avoids Stripe throwing at module load time when
+// STRIPE_SECRET_KEY is not available (e.g. during Next.js build analysis).
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: "2025-02-24.acacia",
+    });
+  }
+  return _stripe;
+}
+// Proxy so callers can still write `stripe.xxx` without changes.
+export const stripe = new Proxy({} as Stripe, {
+  get(_, prop: string) {
+    return (getStripe() as unknown as Record<string, unknown>)[prop];
+  },
 });
 
 export const PLANS = {
