@@ -74,3 +74,23 @@ export async function deleteRepo({
     await octokit.repos.delete({ owner, repo });
   } catch { /* ignore */ }
 }
+
+/**
+ * Add a collaborator to a repo with admin permission — best-effort.
+ */
+export async function addCollaborator({
+  token,
+  owner,
+  repo,
+  username,
+}: {
+  token: string;
+  owner: string;
+  repo: string;
+  username: string;
+}): Promise<void> {
+  try {
+    const octokit = githubClient(token);
+    await octokit.repos.addCollaborator({ owner, repo, username, permission: "admin" });
+  } catch { /* ignore — user can still clone via the URL */ }
+}

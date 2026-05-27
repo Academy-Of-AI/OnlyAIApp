@@ -57,24 +57,22 @@ export async function POST(request: Request) {
     });
   }
 
-  // Load tokens
+  // Load Vercel token (GitHub is server-side PAT)
   const { data: connections } = await supabase
     .from("oauth_connections")
     .select("provider, access_token")
     .eq("user_id", user.id)
-    .in("provider", ["github", "vercel"]);
+    .in("provider", ["vercel"]);
 
-  const githubConn = connections?.find((c) => c.provider === "github");
   const vercelConn = connections?.find((c) => c.provider === "vercel");
 
-  if (!githubConn || !vercelConn) {
+  if (!vercelConn) {
     return NextResponse.json(
-      { error: "Connect GitHub and Vercel before joining", needsConnect: true },
+      { error: "Connect Vercel before joining", needsConnect: true },
       { status: 400 },
     );
   }
 
-  const githubToken = await decrypt(githubConn.access_token);
   const vercelToken = await decrypt(vercelConn.access_token);
 
   // Auto-generate project name
@@ -107,7 +105,10 @@ export async function POST(request: Request) {
 
   // Provision
   try {
-    const result = await provisionProject({ projectName, githubToken, vercelToken }, () => {});
+    const result = await provisionProject(
+      { projectName, githubUsername: profile?.github_username ?? undefined, vercelToken },
+      () => {},
+    );
 
     await supabase.from("projects").update({
       status: "deployed",
