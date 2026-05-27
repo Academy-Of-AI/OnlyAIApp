@@ -1,0 +1,173 @@
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+
+const STATUS_STYLES: Record<string, string> = {
+  deployed:     "bg-green-500/20 text-green-400",
+  provisioning: "bg-yellow-500/20 text-yellow-400",
+  pending:      "bg-neutral-500/20 text-neutral-400",
+  failed:       "bg-red-500/20 text-red-400",
+};
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ connected?: string; error?: string }>;
+}) {
+  const params = await searchParams;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const [{ data: projects }, { data: connections }] = await Promise.all([
+    supabase
+      .from("projects")
+      .select("*")
+      .eq("user_id", user!.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("oauth_connections")
+      .select("provider")
+      .eq("user_id", user!.id),
+  ]);
+
+  const hasGitHub = connections?.some((c) => c.provider === "github");
+  const hasVercel = connections?.some((c) => c.provider === "vercel");
+
+  return (
+    <main className="max-w-4xl mx-auto px-6 py-10 space-y-10">
+      {/* Alerts */}
+      {params.connected && (
+        <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm px-4 py-3 rounded-lg">
+          ✓ {params.connected === "github" ? "GitHub" : "Vercel"} connected successfully.
+        </div>
+      )}
+      {params.error && (
+        <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
+          Connection failed. Please try again.
+        </div>
+      )}
+
+      {/* Connect integrations banner */}
+      {(!hasGitHub || !hasVercel) && (
+        <section className="border border-white/10 rounded-xl p-6 space-y-4">
+          <h2 className="font-semibold">Connect your accounts to start provisioning</h2>
+          <div className="flex flex-wrap gap-3">
+            {!hasGitHub && (
+              <a
+                href="/api/github/connect"
+                className="flex items-center gap-2 bg-white text-black text-sm font-medium px-4 py-2 rounded-lg hover:bg-neutral-200 transition-colors"
+              >
+                <GHIcon /> Connect GitHub
+              </a>
+            )}
+            {!hasVercel && <VercelConnectForm />}
+            {hasGitHub && (
+              <span className="flex items-center gap-2 text-green-400 text-sm">
+                <GHIcon /> GitHub connected ✓
+              </span>
+            )}
+            {hasVercel && (
+              <span className="flex items-center gap-2 text-green-400 text-sm">
+                ▲ Vercel connected ✓
+              </span>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Projects header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold">Your projects</h1>
+        {hasGitHub && hasVercel && (
+          <Link
+            href="/new-project"
+            className="bg-green-500 hover:bg-green-400 text-black text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+          >
+            + New project
+          </Link>
+        )}
+      </div>
+
+      {/* Project list */}
+      {!projects?.length ? (
+        <div className="text-center py-20 text-neutral-500 space-y-2">
+          <p className="text-3xl">🚀</p>
+          <p>No projects yet.</p>
+          {hasGitHub && hasVercel && (
+            <Link href="/new-project" className="text-green-400 hover:underline text-sm">
+              Provision your first project →
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-4">
+          {projects.map((p) => (
+            <div key={p.id} className="border border-white/10 rounded-xl p-5 space-y-3 hover:border-white/20 transition-colors">
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-semibold truncate">{p.name}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[p.status] ?? STATUS_STYLES.pending}`}>
+                  {p.status}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500">{p.template_id}</p>
+              <div className="flex gap-3 text-xs">
+                {p.github_repo_url && (
+                  <a href={p.github_repo_url} target="_blank" rel="noopener noreferrer"
+                    className="text-neutral-400 hover:text-white transition-colors">
+                    GitHub →
+                  </a>
+                )}
+                {p.vercel_preview_url && (
+                  <a href={p.vercel_preview_url} target="_blank" rel="noopener noreferrer"
+                    className="text-green-400 hover:text-green-300 transition-colors">
+                    Live URL →
+                  </a>
+                )}
+              </div>
+              {p.error && <p className="text-xs text-red-400 truncate">{p.error}</p>}
+              <p className="text-xs text-neutral-600">
+                {new Date(p.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </main>
+  );
+}
+
+function GHIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.1.82-.26.82-.58v-2.03c-3.34.72-4.04-1.6-4.04-1.6-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.65 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.21.7.82.58C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z" />
+    </svg>
+  );
+}
+
+function VercelConnectForm() {
+  return (
+    <form
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const token = (e.currentTarget.elements.namedItem("token") as HTMLInputElement).value;
+        const res = await fetch("/api/vercel/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        if (res.ok) window.location.href = "/dashboard?connected=vercel";
+        else alert("Invalid token. Get it from vercel.com/account/tokens");
+      }}
+      className="flex gap-2"
+    >
+      <input
+        name="token"
+        type="password"
+        placeholder="Paste Vercel token…"
+        className="bg-white/5 border border-white/10 text-white placeholder-neutral-500 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-green-500 w-56"
+      />
+      <button type="submit" className="bg-black border border-white/20 text-white text-sm px-4 py-2 rounded-lg hover:bg-white/10 transition-colors">
+        ▲ Connect Vercel
+      </button>
+    </form>
+  );
+}

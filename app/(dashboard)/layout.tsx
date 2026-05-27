@@ -1,0 +1,45 @@
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/sign-in");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("plan, github_username")
+    .eq("id", user.id)
+    .single();
+
+  async function signOut() {
+    "use server";
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+    redirect("/");
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-950 text-white flex flex-col">
+      {/* Top nav */}
+      <header className="border-b border-white/10 px-6 py-3 flex items-center justify-between">
+        <Link href="/dashboard" className="font-bold text-sm">⚡ Vibe Launchpad</Link>
+        <div className="flex items-center gap-4 text-sm">
+          <span className="text-neutral-400">
+            {profile?.github_username ?? user.email}
+          </span>
+          <span className="bg-white/10 text-white/60 text-xs px-2 py-0.5 rounded-full uppercase tracking-wide">
+            {profile?.plan ?? "free"}
+          </span>
+          <form action={signOut}>
+            <button type="submit" className="text-neutral-500 hover:text-white transition-colors text-xs">
+              Sign out
+            </button>
+          </form>
+        </div>
+      </header>
+      <div className="flex-1">{children}</div>
+    </div>
+  );
+}
