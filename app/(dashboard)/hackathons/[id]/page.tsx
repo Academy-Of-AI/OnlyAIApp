@@ -95,8 +95,10 @@ export default async function HackathonDetailPage({
               </thead>
               <tbody>
                 {participants.map((p, i) => {
-                  const profile = p.profiles as { email: string; github_username: string } | null;
-                  const project = p.projects as { name: string; status: string; github_repo_url: string; vercel_preview_url: string } | null;
+                  const profileRaw = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+                  const projectRaw = Array.isArray(p.projects) ? p.projects[0] : p.projects;
+                  const profile = profileRaw as unknown as { email: string; github_username: string } | null;
+                  const project = projectRaw as unknown as { name: string; status: string; github_repo_url: string; vercel_preview_url: string } | null;
                   return (
                     <tr key={i} className="border-b border-white/5 last:border-0 hover:bg-white/2">
                       <td className="px-4 py-3 text-neutral-300">
