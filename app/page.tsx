@@ -55,14 +55,6 @@ export default function LandingPage() {
           >
             Launch my first app →
           </Link>
-          <a
-            href="https://github.com/xp-luffy/vibe-stack-supabase"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="border border-white/20 hover:border-white/40 text-white/70 hover:text-white px-6 py-3 rounded-lg transition-colors text-sm"
-          >
-            View template on GitHub
-          </a>
         </div>
       </section>
 
