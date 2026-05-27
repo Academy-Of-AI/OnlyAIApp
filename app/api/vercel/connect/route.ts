@@ -1,4 +1,5 @@
 import { encrypt } from "@/lib/crypto";
+import { track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -37,5 +38,6 @@ export async function POST(request: Request) {
     metadata: { username: vercelUser.user?.username },
   });
 
+  await track("vercel_connected", user.id, { vercel_username: vercelUser.user?.username });
   return NextResponse.json({ ok: true, username: vercelUser.user?.username });
 }

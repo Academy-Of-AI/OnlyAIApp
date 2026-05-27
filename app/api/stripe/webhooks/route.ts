@@ -1,3 +1,4 @@
+import { track } from "@/lib/analytics";
 import { constructWebhookEvent } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
@@ -44,6 +45,12 @@ export async function POST(request: Request) {
           cancel_at_period_end: sub.cancel_at_period_end,
           updated_at: new Date().toISOString(),
         });
+        if (sub.status === "active") {
+          await track("plan_upgraded", userId, {
+            price_id: sub.items.data[0]?.price.id,
+            subscription_id: sub.id,
+          });
+        }
         break;
       }
 

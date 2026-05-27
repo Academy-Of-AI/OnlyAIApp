@@ -1,5 +1,5 @@
+import { CheckoutButton } from "@/components/checkout-button";
 import { createClient } from "@/lib/supabase/server";
-import { PLANS } from "@/lib/stripe";
 import { redirect } from "next/navigation";
 
 const tiers = [
@@ -108,7 +108,7 @@ export default async function UpgradePage({
                 Current plan
               </div>
             ) : tier.priceId ? (
-              <CheckoutButton priceId={tier.priceId} label={tier.cta} />
+              <CheckoutButton priceId={tier.priceId} label={tier.cta} />  // client component
             ) : null}
           </div>
         ))}
@@ -121,31 +121,4 @@ export default async function UpgradePage({
   );
 }
 
-function CheckoutButton({ priceId, label }: { priceId: string; label: string }) {
-  async function checkout() {
-    "use server";
-    // Handled client-side for redirect
-  }
-  return (
-    <form
-      onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const res = await fetch("/api/stripe/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ priceId }),
-        });
-        const { url } = await res.json();
-        window.location.href = url;
-      }}
-      // Server action fallback: render as client form
-    >
-      <button
-        type="submit"
-        className="w-full bg-green-500 hover:bg-green-400 text-black font-semibold py-2.5 rounded-lg transition-colors text-sm"
-      >
-        {label}
-      </button>
-    </form>
-  );
-}
+// CheckoutButton imported from components/checkout-button.tsx

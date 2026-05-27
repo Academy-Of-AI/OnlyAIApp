@@ -1,3 +1,4 @@
+import { CopyButton } from "@/components/copy-button";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -136,13 +137,4 @@ export default async function HackathonDetailPage({
   );
 }
 
-function CopyButton({ text }: { text: string }) {
-  return (
-    <button
-      onClick={() => navigator.clipboard.writeText(text)}
-      className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition-colors whitespace-nowrap"
-    >
-      Copy
-    </button>
-  );
-}
+// CopyButton imported from components/copy-button.tsx (client component)

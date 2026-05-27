@@ -1,5 +1,6 @@
 import { decrypt, encrypt } from "@/lib/crypto";
 import { getGithubUser } from "@/lib/github";
+import { track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -55,6 +56,8 @@ export async function GET(request: Request) {
     .from("profiles")
     .update({ github_username: login })
     .eq("id", user.id);
+
+  await track("github_connected", user.id, { github_login: login });
 
   return NextResponse.redirect(`${origin}/dashboard?connected=github`);
 }
