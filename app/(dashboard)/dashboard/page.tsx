@@ -1,4 +1,3 @@
-import { CopyButton } from "@/components/copy-button";
 import { VercelConnectForm } from "@/components/vercel-connect-form";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -61,7 +60,7 @@ export default async function DashboardPage({
                 <GHIcon /> Connect GitHub
               </a>
             )}
-            {!hasVercel && <VercelConnectForm />}  {/* client component */}
+            {!hasVercel && <VercelConnectForm />}
             {hasGitHub && (
               <span className="flex items-center gap-2 text-green-400 text-sm">
                 <GHIcon /> GitHub connected ✓
