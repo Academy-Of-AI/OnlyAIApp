@@ -56,3 +56,21 @@ export async function getGithubUser(token: string) {
   const { data } = await octokit.users.getAuthenticated();
   return { login: data.login, avatarUrl: data.avatar_url, id: data.id };
 }
+
+/**
+ * Delete a GitHub repository — best-effort, swallow errors.
+ */
+export async function deleteRepo({
+  token,
+  owner,
+  repo,
+}: {
+  token: string;
+  owner: string;
+  repo: string;
+}): Promise<void> {
+  try {
+    const octokit = githubClient(token);
+    await octokit.repos.delete({ owner, repo });
+  } catch { /* ignore */ }
+}

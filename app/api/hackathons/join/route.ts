@@ -107,7 +107,7 @@ export async function POST(request: Request) {
 
   // Provision
   try {
-    const result = await provisionProject({ projectName, githubToken, vercelToken });
+    const result = await provisionProject({ projectName, githubToken, vercelToken }, () => {});
 
     await supabase.from("projects").update({
       status: "deployed",

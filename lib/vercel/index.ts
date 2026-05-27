@@ -95,3 +95,21 @@ export async function getLatestDeploymentUrl({
   const url = data.deployments?.[0]?.url;
   return url ? `https://${url}` : null;
 }
+
+/**
+ * Delete a Vercel project — best-effort, swallow errors.
+ */
+export async function deleteVercelProject({
+  token,
+  projectId,
+}: {
+  token: string;
+  projectId: string;
+}): Promise<void> {
+  try {
+    await fetch(`${VERCEL_API}/v9/projects/${projectId}`, {
+      method: "DELETE",
+      headers: vercelHeaders(token),
+    });
+  } catch { /* ignore */ }
+}
