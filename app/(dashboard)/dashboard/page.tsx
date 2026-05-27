@@ -49,29 +49,61 @@ export default async function DashboardPage({
 
       {/* Connect integrations banner */}
       {(!hasGitHub || !hasVercel) && (
-        <section className="border border-white/10 rounded-xl p-6 space-y-4">
-          <h2 className="font-semibold">Connect your accounts to start provisioning</h2>
-          <div className="flex flex-wrap gap-3">
-            {!hasGitHub && (
-              <a
-                href="/api/github/connect"
-                className="flex items-center gap-2 bg-white text-black text-sm font-medium px-4 py-2 rounded-lg hover:bg-neutral-200 transition-colors"
-              >
-                <GHIcon /> Connect GitHub
-              </a>
-            )}
-            {!hasVercel && <VercelConnectForm />}
-            {hasGitHub && (
-              <span className="flex items-center gap-2 text-green-400 text-sm">
-                <GHIcon /> GitHub connected ✓
-              </span>
-            )}
-            {hasVercel && (
-              <span className="flex items-center gap-2 text-green-400 text-sm">
-                ▲ Vercel connected ✓
-              </span>
-            )}
+        <section className="border border-white/10 rounded-xl p-6 space-y-5">
+          <div>
+            <h2 className="font-semibold text-lg">One-time setup — connect your accounts</h2>
+            <p className="text-sm text-neutral-400 mt-1">
+              Vibe Launchpad needs two connections to provision your projects automatically.
+              You only do this once.
+            </p>
           </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            {/* GitHub card */}
+            <div className={`rounded-xl border p-4 space-y-3 ${hasGitHub ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-white/3"}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <GHIcon />
+                  <span className="font-medium text-sm">GitHub</span>
+                </div>
+                {hasGitHub && <span className="text-xs text-green-400 font-medium">✓ Connected</span>}
+              </div>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Every project gets its own <strong className="text-neutral-200">private GitHub repository</strong> created
+                automatically under your account. Your code is always yours — we just push the starter template in.
+              </p>
+              {!hasGitHub && (
+                <a
+                  href="/api/github/connect"
+                  className="flex items-center justify-center gap-2 bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-neutral-200 transition-colors w-full"
+                >
+                  <GHIcon /> Connect GitHub →
+                </a>
+              )}
+            </div>
+
+            {/* Vercel card */}
+            <div className={`rounded-xl border p-4 space-y-3 ${hasVercel ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-white/3"}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">▲</span>
+                  <span className="font-medium text-sm">Vercel</span>
+                </div>
+                {hasVercel && <span className="text-xs text-green-400 font-medium">✓ Connected</span>}
+              </div>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Your project is deployed live to <strong className="text-neutral-200">Vercel&apos;s global network</strong> the
+                moment you click provision. You get a real public URL, CI/CD, and instant previews — for free on Vercel&apos;s Hobby plan.
+              </p>
+              {!hasVercel && <VercelConnectForm />}
+            </div>
+          </div>
+
+          {hasGitHub && hasVercel && (
+            <p className="text-xs text-green-400 text-center">
+              ✓ Both accounts connected — you&apos;re ready to provision projects!
+            </p>
+          )}
         </section>
       )}
 

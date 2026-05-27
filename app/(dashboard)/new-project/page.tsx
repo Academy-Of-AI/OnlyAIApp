@@ -64,8 +64,45 @@ export default function NewProjectPage() {
         </Link>
         <h1 className="text-2xl font-bold mt-2">New project</h1>
         <p className="text-neutral-400 text-sm mt-1">
-          Provisions a GitHub repo + Vercel deployment in ~60 seconds.
+          Fill in a name below and we&apos;ll handle the rest — automatically, in about 60 seconds.
         </p>
+      </div>
+
+      {/* What you'll get */}
+      <div className="border border-white/10 rounded-xl p-5 space-y-4">
+        <p className="text-xs uppercase tracking-widest text-neutral-500 font-semibold">What gets created for you</p>
+        <div className="grid gap-3">
+          <div className="flex items-start gap-3">
+            <span className="flex-shrink-0 text-lg">🔒</span>
+            <div>
+              <p className="text-sm font-medium text-white">Private GitHub repository</p>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                A brand-new private repo under your GitHub account, pre-loaded with the
+                Next.js + Supabase template. Only you can see it.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="flex-shrink-0 text-lg">▲</span>
+            <div>
+              <p className="text-sm font-medium text-white">Live Vercel deployment</p>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                Your project is instantly deployed to Vercel&apos;s global CDN. Every push to
+                GitHub automatically triggers a new deployment — CI/CD out of the box.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="flex-shrink-0 text-lg">🌐</span>
+            <div>
+              <p className="text-sm font-medium text-white">Public preview URL</p>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                A real <code className="text-green-400 text-xs bg-white/5 px-1 rounded">*.vercel.app</code> URL
+                ready to share with clients or testers — no extra DNS setup needed.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <form onSubmit={provision} className="space-y-5">
