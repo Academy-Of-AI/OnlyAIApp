@@ -42,10 +42,23 @@ See `supabase/migrations/001_initial.sql`:
 
 ## What to build next
 1. [ ] PostHog analytics — capture `project_provisioned`, `user_signed_up`, etc.
-2. [ ] Stripe subscription — wire `lib/stripe/` for Pro tier ($19/mo)
-3. [ ] Hackathon mode — cohorts, invite codes, organizer dashboard
+2. [x] Stripe subscription — Pro ($19/mo) + Org ($99/mo) tiers in `lib/stripe/`
+3. [x] Hackathon mode — cohorts, invite codes, organizer dashboard at `/hackathons`
 4. [ ] Stripe Connect — inject platform fee % into provisioned projects
 5. [ ] Template library — add `vibe-stack-neon` variant
+
+## Hackathon flow
+- Org plan required to create hackathons (`profiles.plan = 'org'`)
+- Organizer creates hackathon → gets 8-char invite code (e.g. `HACK2026`)
+- Share: `{APP_URL}/join/{code}` — public page, no auth required to view
+- Participant signs in → connects GitHub + Vercel → auto-provisioned instantly
+- Organizer dashboard: `/hackathons/{id}` — live table of participants + project status
+
+## Stripe plan flow
+- Free: 3 projects (enforced in `POST /api/projects`)
+- Pro: unlimited projects + all templates ($19/mo)
+- Org: Pro + hackathon mode ($99/mo)
+- Subscription webhook → `sync_user_plan()` trigger → updates `profiles.plan` automatically
 
 ## gstack workflow
 - Plan: `/office-hours` → `/autoplan`

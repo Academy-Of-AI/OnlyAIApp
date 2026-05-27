@@ -1,0 +1,59 @@
+import Stripe from "stripe";
+
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-06-20",
+  typescript: true,
+});
+
+export const PLANS = {
+  free: { name: "Free", price: 0, projects: 3 },
+  pro:  { name: "Pro",  price: 19, projects: Infinity },
+  org:  { name: "Org",  price: 99, projects: Infinity },
+} as const;
+
+export async function createCheckoutSession({
+  userId,
+  priceId,
+  customerId,
+  successUrl,
+  cancelUrl,
+}: {
+  userId: string;
+  priceId: string;
+  customerId?: string;
+  successUrl: string;
+  cancelUrl: string;
+}) {
+  return stripe.checkout.sessions.create({
+    mode: "subscription",
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: { userId },
+    subscription_data: { metadata: { userId } },
+    ...(customerId
+      ? { customer: customerId }
+      : { customer_creation: "always" }),
+  });
+}
+
+export async function createPortalSession({
+  customerId,
+  returnUrl,
+}: {
+  customerId: string;
+  returnUrl: string;
+}) {
+  return stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: returnUrl,
+  });
+}
+
+export function constructWebhookEvent(payload: string, sig: string) {
+  return stripe.webhooks.constructEvent(
+    payload,
+    sig,
+    process.env.STRIPE_WEBHOOK_SECRET!,
+  );
+}
