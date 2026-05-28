@@ -156,6 +156,7 @@ export async function POST(
           // Always check for known breaking files so we can auto-heal them
           "lib/stripe/index.ts",
           "next.config.ts",
+          "lib/supabase/middleware.ts",
         ];
 
         type FileEntry = { content: string; sha: string };
@@ -263,6 +264,55 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 `;
           console.log("[build] auto-healed next.config.ts — added ignoreBuildErrors + ignoreDuringBuilds");
+        }
+
+        // lib/supabase/middleware.ts — crashes the edge middleware (500 on every
+        // route) when Supabase env vars aren't configured. Replace with a
+        // resilient version that skips auth refresh when Supabase is absent.
+        const mwContent = files["lib/supabase/middleware.ts"]?.content ?? "";
+        if (mwContent.includes("createServerClient") && !mwContent.includes("if (!url || !anonKey)")) {
+          autoPatches["lib/supabase/middleware.ts"] = `import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+
+export async function updateSession(request: NextRequest) {
+  const supabaseResponse = NextResponse.next({ request });
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Skip auth refresh and pass through when Supabase isn't configured —
+  // otherwise createServerClient throws and crashes the edge middleware.
+  if (!url || !anonKey) {
+    return supabaseResponse;
+  }
+
+  try {
+    let response = supabaseResponse;
+    const supabase = createServerClient(url, anonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          );
+        },
+      },
+    });
+
+    await supabase.auth.getUser();
+    return response;
+  } catch {
+    return supabaseResponse;
+  }
+}
+`;
+          console.log("[build] auto-healed lib/supabase/middleware.ts — resilient when Supabase unconfigured");
         }
 
         /* Step 2 — generate ──────────────────────────────────────────── */
