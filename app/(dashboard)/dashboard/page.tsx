@@ -1,3 +1,4 @@
+import { ResendConnectForm } from "@/components/resend-connect-form";
 import { SupabaseConnectForm } from "@/components/supabase-connect-form";
 import { VercelConnectForm } from "@/components/vercel-connect-form";
 import { createClient } from "@/lib/supabase/server";
@@ -33,14 +34,17 @@ export default async function DashboardPage({
       .eq("user_id", user!.id),
   ]);
 
-  const hasGitHub = connections?.some((c) => c.provider === "github");
-  const hasVercel = connections?.some((c) => c.provider === "vercel");
+  const hasGitHub   = connections?.some((c) => c.provider === "github");
+  const hasVercel   = connections?.some((c) => c.provider === "vercel");
   const hasSupabase = connections?.some((c) => c.provider === "supabase");
+  const hasResend   = connections?.some((c) => c.provider === "resend");
+  const allRequired = hasGitHub && hasVercel && hasSupabase;
 
   function connectedLabel(provider: string) {
-    if (provider === "github") return "GitHub";
-    if (provider === "vercel") return "Vercel";
+    if (provider === "github")   return "GitHub";
+    if (provider === "vercel")   return "Vercel";
     if (provider === "supabase") return "Supabase";
+    if (provider === "resend")   return "Resend";
     return provider;
   }
 
@@ -59,17 +63,16 @@ export default async function DashboardPage({
       )}
 
       {/* Connect integrations banner */}
-      {(!hasGitHub || !hasVercel || !hasSupabase) && (
+      {(!hasGitHub || !hasVercel || !hasSupabase || !hasResend) && (
         <section className="border border-white/10 rounded-xl p-6 space-y-5">
           <div>
             <h2 className="font-semibold text-lg">One-time setup — connect your accounts</h2>
             <p className="text-sm text-neutral-400 mt-1">
-              Vibe Launchpad needs three connections to provision your projects automatically.
-              You only do this once.
+              Connect your tools and every project gets GitHub, Vercel, Supabase, and email — all wired up automatically.
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             {/* GitHub card */}
             <div
               className={`rounded-xl border p-4 space-y-3 ${
@@ -136,11 +139,38 @@ export default async function DashboardPage({
               </p>
               {!hasSupabase && <SupabaseConnectForm />}
             </div>
+
+            {/* Resend card — optional */}
+            <div className={`rounded-xl border p-4 space-y-3 ${
+              hasResend ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-white/[0.03]"
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">✉</span>
+                  <span className="font-medium text-sm">Resend</span>
+                  {!hasResend && (
+                    <span className="text-xs text-neutral-600 border border-white/10 px-1.5 py-0.5 rounded-full">optional</span>
+                  )}
+                </div>
+                {hasResend && <span className="text-xs text-green-400 font-medium">✓ Connected</span>}
+              </div>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Every project gets <strong className="text-neutral-200">transactional email</strong> working
+                out of the box — password resets, welcome emails, notifications. Uses your own Resend account so
+                your sender reputation stays yours.
+              </p>
+              {!hasResend && <ResendConnectForm />}
+            </div>
           </div>
 
-          {hasGitHub && hasVercel && hasSupabase && (
+          {allRequired && hasResend && (
             <p className="text-xs text-green-400 text-center">
               ✓ All accounts connected — you&apos;re ready to provision projects!
+            </p>
+          )}
+          {allRequired && !hasResend && (
+            <p className="text-xs text-neutral-500 text-center">
+              ✓ Required connections done — connect Resend above to enable email in your projects.
             </p>
           )}
         </section>
@@ -149,7 +179,7 @@ export default async function DashboardPage({
       {/* Projects header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Your projects</h1>
-        {hasGitHub && hasVercel && hasSupabase && (
+        {allRequired && (
           <Link
             href="/new-project"
             className="bg-green-500 hover:bg-green-400 text-black text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
@@ -164,7 +194,7 @@ export default async function DashboardPage({
         <div className="text-center py-20 text-neutral-500 space-y-2">
           <p className="text-3xl">🚀</p>
           <p>No projects yet.</p>
-          {hasGitHub && hasVercel && hasSupabase && (
+          {allRequired && (
             <Link href="/new-project" className="text-green-400 hover:underline text-sm">
               Provision your first project →
             </Link>

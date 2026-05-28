@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     .from("oauth_connections")
     .select("provider, access_token, metadata")
     .eq("user_id", user.id)
-    .in("provider", ["github", "vercel", "supabase"]);
+    .in("provider", ["github", "vercel", "supabase", "resend"]);
 
   const githubConn = connections?.find((c) => c.provider === "github");
   const vercelConn = connections?.find((c) => c.provider === "vercel");
@@ -92,13 +92,20 @@ export async function POST(request: Request) {
   const githubToken = await decrypt(githubConn.access_token as string);
   const vercelToken = await decrypt(vercelConn.access_token as string);
 
+  const resendConn   = connections?.find((c) => c.provider === "resend");
+
   let supabaseToken: string | undefined;
   let supabaseOrgId: string | undefined;
+  let resendApiKey:  string | undefined;
 
   if (supabaseConn) {
     supabaseToken = await decrypt(supabaseConn.access_token as string);
     const meta = supabaseConn.metadata as { org_id?: string } | null;
     supabaseOrgId = meta?.org_id;
+  }
+
+  if (resendConn) {
+    resendApiKey = await decrypt(resendConn.access_token as string);
   }
 
   // Insert project record as provisioning
@@ -136,6 +143,7 @@ export async function POST(request: Request) {
             supabaseOrgId,
             supabaseUrl,
             supabaseAnonKey,
+            resendApiKey,
           },
           (progressEvent: ProgressEvent) => send(progressEvent),
         );

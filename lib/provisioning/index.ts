@@ -21,6 +21,7 @@ export interface ProvisionParams {
   supabaseOrgId?: string;
   supabaseUrl?: string;      // manual override (legacy)
   supabaseAnonKey?: string;  // manual override (legacy)
+  resendApiKey?: string;     // optional — injected as RESEND_API_KEY if provided
   templateOwner?: string;
   templateRepo?: string;
 }
@@ -46,6 +47,7 @@ export async function provisionProject(
     supabaseOrgId,
     supabaseUrl: manualSupabaseUrl,
     supabaseAnonKey: manualAnonKey,
+    resendApiKey,
     templateOwner = process.env.GITHUB_TEMPLATE_OWNER ?? "xp-luffy",
     templateRepo = process.env.GITHUB_TEMPLATE_REPO ?? "vibe-stack-supabase",
   } = params;
@@ -127,6 +129,7 @@ export async function provisionProject(
     };
     if (resolvedSupabaseUrl) envVars["NEXT_PUBLIC_SUPABASE_URL"] = resolvedSupabaseUrl;
     if (resolvedAnonKey) envVars["NEXT_PUBLIC_SUPABASE_ANON_KEY"] = resolvedAnonKey;
+    if (resendApiKey) envVars["RESEND_API_KEY"] = resendApiKey;
     await addVercelEnvVars({ token: vercelToken, projectId, envVars });
     onProgress({ step: "env_done", message: "Environment variables set ✓" });
 
