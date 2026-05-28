@@ -60,6 +60,12 @@ export default async function ProjectPage({
             ◇ Plan
           </Link>
           <Link
+            href={`/projects/${project.id}/drift`}
+            className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
+          >
+            ⟲ Course-keeper
+          </Link>
+          <Link
             href={`/projects/${project.id}/memory`}
             className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
           >
