@@ -83,15 +83,14 @@ export async function POST(request: Request) {
   const vercelConn = connections?.find((c) => c.provider === "vercel");
   const supabaseConn = connections?.find((c) => c.provider === "supabase");
 
+  // GitHub is the only requirement for the onramp. Vercel/Supabase are optional —
+  // a newbie gets a repo + Claude Code now, and connects deploy/db later.
   if (!githubConn) {
-    return NextResponse.json({ error: "GitHub not connected" }, { status: 400 });
-  }
-  if (!vercelConn) {
-    return NextResponse.json({ error: "Vercel not connected" }, { status: 400 });
+    return NextResponse.json({ error: "Connect GitHub to create a project." }, { status: 400 });
   }
 
   const githubToken = await decrypt(githubConn.access_token as string);
-  const vercelToken = await decrypt(vercelConn.access_token as string);
+  const vercelToken = vercelConn ? await decrypt(vercelConn.access_token as string) : undefined;
 
   const resendConn   = connections?.find((c) => c.provider === "resend");
 
@@ -156,10 +155,10 @@ export async function POST(request: Request) {
         await supabase
           .from("projects")
           .update({
-            status: "deployed",
+            status: result.vercelProjectId ? "deployed" : "ready",
             github_repo_url: result.githubRepoUrl,
-            vercel_project_id: result.vercelProjectId,
-            vercel_preview_url: result.vercelPreviewUrl,
+            vercel_project_id: result.vercelProjectId ?? null,
+            vercel_preview_url: result.vercelPreviewUrl ?? null,
             supabase_project_ref: result.supabaseProjectRef ?? null,
             deployed_at: new Date().toISOString(),
           })

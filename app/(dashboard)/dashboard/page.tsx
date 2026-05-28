@@ -50,6 +50,8 @@ export default async function DashboardPage({
   const hasSupabase = connections?.some((c) => c.provider === "supabase");
   const hasResend   = connections?.some((c) => c.provider === "resend");
   const allRequired = hasGitHub && hasVercel && hasSupabase;
+  // Onramp: GitHub alone is enough to create a project. Vercel/Supabase come later.
+  const canCreate = hasGitHub;
 
   function connectedLabel(provider: string) {
     if (provider === "github")   return "GitHub";
@@ -210,7 +212,7 @@ export default async function DashboardPage({
       {/* Control-plane onboarding checklist */}
       {!!projects?.length && (
         <GettingStarted
-          accountsConnected={!!allRequired}
+          accountsConnected={!!canCreate}
           hasProject={!!projects?.length}
           hasPlan={(planCount ?? 0) > 0}
           hasMemory={(memoryCount ?? 0) > 0}
@@ -231,10 +233,10 @@ export default async function DashboardPage({
               ▦ Mission Control
             </Link>
           )}
-          {allRequired && (
+          {canCreate && (
             <Link
               href="/new-project"
-              className="bg-green-500 hover:bg-green-400 text-black text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
             >
               + New project
             </Link>
@@ -247,9 +249,9 @@ export default async function DashboardPage({
         <div className="text-center py-20 text-neutral-500 space-y-2">
           <p className="text-3xl">🚀</p>
           <p>No projects yet.</p>
-          {allRequired && (
-            <Link href="/new-project" className="text-green-400 hover:underline text-sm">
-              Provision your first project →
+          {canCreate && (
+            <Link href="/new-project" className="text-violet-400 hover:underline text-sm">
+              Create your first project →
             </Link>
           )}
         </div>

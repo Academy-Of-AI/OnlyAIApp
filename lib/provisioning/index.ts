@@ -16,7 +16,7 @@ export type ProgressEvent = {
 export interface ProvisionParams {
   projectName: string;
   githubToken: string;
-  vercelToken: string;
+  vercelToken?: string;      // optional — GitHub-only onramp skips Vercel
   supabaseToken?: string;    // optional — if not provided, skip Supabase auto-provision
   supabaseOrgId?: string;
   supabaseUrl?: string;      // manual override (legacy)
@@ -29,8 +29,8 @@ export interface ProvisionParams {
 export interface ProvisionResult {
   githubRepoUrl: string;
   githubRepoFullName: string;
-  vercelProjectId: string;
-  vercelPreviewUrl: string;
+  vercelProjectId?: string;
+  vercelPreviewUrl?: string;
   supabaseProjectRef?: string;
   supabaseUrl?: string;
 }
@@ -59,7 +59,7 @@ export async function provisionProject(
   let supabaseRef: string | null = null;
 
   async function rollback() {
-    if (vercelProjectId) {
+    if (vercelProjectId && vercelToken) {
       await deleteVercelProject({ token: vercelToken, projectId: vercelProjectId }).catch(() => {});
     }
     if (supabaseRef && supabaseToken) {
@@ -112,42 +112,48 @@ export async function provisionProject(
       onProgress({ step: "supabase_done", message: "Supabase database ready ✓", detail: keys.projectUrl });
     }
 
-    // Step 3: Vercel
-    onProgress({ step: "vercel_start", message: "Creating Vercel project…" });
-    const { projectId } = await createVercelProject({
-      token: vercelToken,
-      name: projectName,
-      githubRepoFullName: repoFullName,
-    });
-    vercelProjectId = projectId;
-    onProgress({ step: "vercel_project_done", message: "Vercel project created ✓" });
+    // Step 3: Vercel (optional — GitHub-only onramp skips this)
+    let resolvedVercelProjectId: string | undefined;
+    let vercelDomain: string | undefined;
 
-    // Step 4: Resolve the real Vercel domain (team accounts use a slug suffix)
-    const vercelDomain = await getVercelProjectDomain({
-      token: vercelToken,
-      projectId,
-      projectName,
-      teamId: undefined, // passed via token scope already
-    });
+    if (vercelToken) {
+      onProgress({ step: "vercel_start", message: "Creating Vercel project…" });
+      const { projectId } = await createVercelProject({
+        token: vercelToken,
+        name: projectName,
+        githubRepoFullName: repoFullName,
+      });
+      vercelProjectId = projectId;
+      resolvedVercelProjectId = projectId;
+      onProgress({ step: "vercel_project_done", message: "Vercel project created ✓" });
 
-    // Step 5: Inject env vars
-    onProgress({ step: "env_start", message: "Injecting environment variables…" });
-    const envVars: Record<string, string> = {
-      NEXT_PUBLIC_APP_URL: vercelDomain,
-    };
-    if (resolvedSupabaseUrl) envVars["NEXT_PUBLIC_SUPABASE_URL"] = resolvedSupabaseUrl;
-    if (resolvedAnonKey) envVars["NEXT_PUBLIC_SUPABASE_ANON_KEY"] = resolvedAnonKey;
-    if (resendApiKey) envVars["RESEND_API_KEY"] = resendApiKey;
-    await addVercelEnvVars({ token: vercelToken, projectId, envVars });
-    onProgress({ step: "env_done", message: "Environment variables set ✓" });
+      // Resolve the real Vercel domain (team accounts use a slug suffix)
+      vercelDomain = await getVercelProjectDomain({
+        token: vercelToken,
+        projectId,
+        projectName,
+        teamId: undefined, // passed via token scope already
+      });
 
-    // Step 6: Done
-    onProgress({ step: "deploy_start", message: "Triggering first deployment…" });
+      // Inject env vars
+      onProgress({ step: "env_start", message: "Injecting environment variables…" });
+      const envVars: Record<string, string> = {
+        NEXT_PUBLIC_APP_URL: vercelDomain,
+      };
+      if (resolvedSupabaseUrl) envVars["NEXT_PUBLIC_SUPABASE_URL"] = resolvedSupabaseUrl;
+      if (resolvedAnonKey) envVars["NEXT_PUBLIC_SUPABASE_ANON_KEY"] = resolvedAnonKey;
+      if (resendApiKey) envVars["RESEND_API_KEY"] = resendApiKey;
+      await addVercelEnvVars({ token: vercelToken, projectId, envVars });
+      onProgress({ step: "env_done", message: "Environment variables set ✓" });
+      onProgress({ step: "deploy_start", message: "Triggering first deployment…" });
+    } else {
+      onProgress({ step: "github_only", message: "Repo ready — connect Vercel later to deploy." });
+    }
 
     return {
       githubRepoUrl: repoUrl,
       githubRepoFullName: repoFullName,
-      vercelProjectId: projectId,
+      vercelProjectId: resolvedVercelProjectId,
       vercelPreviewUrl: vercelDomain,
       supabaseProjectRef: supabaseRef ?? undefined,
       supabaseUrl: resolvedSupabaseUrl || undefined,
