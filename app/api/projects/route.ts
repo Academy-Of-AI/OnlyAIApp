@@ -63,9 +63,9 @@ export async function POST(request: Request) {
       .from("projects")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id);
-    if ((count ?? 0) >= 3) {
+    if ((count ?? 0) >= 1) {
       return NextResponse.json(
-        { error: "Free plan limit reached (3 projects). Upgrade to Pro." },
+        { error: "Free plan includes 1 project. Upgrade to Pro for unlimited projects.", code: "plan_limit" },
         { status: 403 },
       );
     }
