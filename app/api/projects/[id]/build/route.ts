@@ -107,15 +107,23 @@ export async function POST(
         send({ step: "reading", message: "Reading your app's code…" });
         await supabase.from("projects").update({ status: "building" }).eq("id", id);
 
-        // Candidates to fetch (Acme / Next.js dashboard template structure)
+        // Candidates to fetch — covers Next.js SaaS starters (vibe-stack-supabase, acme, etc.)
         const candidates = [
           "app/page.tsx",
           "app/layout.tsx",
+          "app/globals.css",
+          // Acme/dashboard template
           "app/(overview)/page.tsx",
           "app/dashboard/page.tsx",
           "app/ui/home.tsx",
           "app/ui/dashboard/cards.tsx",
-          "app/globals.css",
+          // vibe-stack-supabase structure
+          "app/(dashboard)/page.tsx",
+          "app/(dashboard)/dashboard/page.tsx",
+          "app/(marketing)/page.tsx",
+          "components/hero.tsx",
+          "components/landing.tsx",
+          "components/home.tsx",
         ];
 
         type FileEntry = { content: string; sha: string };
@@ -137,10 +145,12 @@ export async function POST(
 
         // If nothing found, fall back to walking the tree
         if (Object.keys(files).length === 0) {
+          // Get default branch (git/trees requires a SHA or branch name — "HEAD" is invalid)
+          const { data: repoMeta } = await octokit.repos.get({ owner, repo });
           const { data: tree } = await octokit.git.getTree({
             owner,
             repo,
-            tree_sha: "HEAD",
+            tree_sha: repoMeta.default_branch,
             recursive: "true",
           });
           const appFiles = (tree.tree ?? [])
@@ -241,13 +251,26 @@ Rules:
 
         for (const file of changes.files) {
           const existing = files[file.path];
+          let sha = existing?.sha;
+
+          // If the file wasn't in our read set, check whether it exists in the repo.
+          // GitHub requires the current SHA to update an existing file; new files need no SHA.
+          if (!sha) {
+            try {
+              const { data } = await octokit.repos.getContent({ owner, repo, path: file.path });
+              if ("sha" in data) sha = data.sha as string;
+            } catch {
+              // 404 → file doesn't exist yet → create new (sha not needed)
+            }
+          }
+
           await octokit.repos.createOrUpdateFileContents({
             owner,
             repo,
             path: file.path,
             message: changes.commitMessage,
             content: Buffer.from(file.content).toString("base64"),
-            ...(existing ? { sha: existing.sha } : {}),
+            ...(sha ? { sha } : {}),
           });
         }
 
@@ -269,11 +292,10 @@ Rules:
       } catch (err) {
         console.error("[build] pipeline error:", err);
         const message = err instanceof Error ? err.message : "Build failed";
-        // Restore project status
-        await supabase.from("projects").update({ status: "deployed" }).eq("id", id);
-        // Refund the credit so the user isn't charged for a failed build
-        await supabase.rpc("refund_build_credit", { p_user_id: user.id });
-        send({ step: "error", message });
+        // Best-effort cleanup — don't let these throw and swallow the real error
+        try { await supabase.from("projects").update({ status: "deployed" }).eq("id", id); } catch {}
+        try { await supabase.rpc("refund_build_credit", { p_user_id: user.id }); } catch {}
+        try { send({ step: "error", message }); } catch {}
       } finally {
         controller.close();
       }
