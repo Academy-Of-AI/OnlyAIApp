@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -23,10 +24,8 @@ type Tab = (typeof TABS)[number];
 
 export function ProjectTabs({
   project,
-  buildCredits,
 }: {
   project: Project;
-  buildCredits: number;
 }) {
   const [tab, setTab] = useState<Tab>("Build");
 
@@ -49,7 +48,7 @@ export function ProjectTabs({
         ))}
       </div>
 
-      {tab === "Build"     && <BuildTab project={project} buildCredits={buildCredits} />}
+      {tab === "Build"     && <BuildTab project={project} />}
       {tab === "Analytics" && <ComingSoonTab title="Analytics" desc="Once your app has real users, their activity will appear here — signups, active users, activation funnel, and revenue." icon="📊" />}
       {tab === "CRM"       && <ComingSoonTab title="CRM" desc="Every user who signs up to your app will appear here. See who they are, what they've done, and send them emails directly." icon="👥" />}
       {tab === "Settings"  && <SettingsTab project={project} />}
@@ -57,367 +56,100 @@ export function ProjectTabs({
   );
 }
 
-/* ── Types ──────────────────────────────────────────────────────────────── */
-type StepStatus = "pending" | "running" | "done" | "error";
-
-interface BuildStep {
-  label: string;
-  status: StepStatus;
-}
-
-const INITIAL_STEPS: BuildStep[] = [
-  { label: "Reading your app's code",  status: "pending" },
-  { label: "Generating your changes",  status: "pending" },
-  { label: "Pushing to GitHub",        status: "pending" },
-  { label: "Going live on Vercel",     status: "pending" },
-];
-
-/* ── Credit packs ───────────────────────────────────────────────────────── */
-const PACKS = [
-  { key: "starter",    credits: 5,  price: "$5",  badge: "Starter"    },
-  { key: "builder",    credits: 15, price: "$12", badge: "Builder"    },
-  { key: "accelerate", credits: 30, price: "$20", badge: "Best value" },
-] as const;
-
 /* ── Build tab ─────────────────────────────────────────────────────────── */
-function BuildTab({ project, buildCredits: initialCredits }: { project: Project; buildCredits: number }) {
-  const router = useRouter();
-  const [credits, setCredits]     = useState(initialCredits);
-  const [prompt, setPrompt]       = useState(project.build_prompt ?? "");
-  const [phase, setPhase]         = useState<"idle" | "building" | "done" | "error">("idle");
-  const [steps, setSteps]         = useState<BuildStep[]>(INITIAL_STEPS);
-  const [commitMsg, setCommitMsg] = useState("");
-  const [errorMsg, setErrorMsg]   = useState("");
-  const [buyingPack, setBuyingPack] = useState<string | null>(null);
+function BuildTab({ project }: { project: Project }) {
+  const [copied, setCopied] = useState<string | null>(null);
+  const repo = project.github_repo_url;
+  const cloneCmd = repo ? `git clone ${repo}` : "";
+  const runCmd = `cd ${project.name} && claude`;
 
-  async function handleBuyCredits(pack: string) {
-    setBuyingPack(pack);
-    const res = await fetch("/api/credits/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pack }),
-    });
-    setBuyingPack(null);
-    if (res.ok) {
-      const { url } = await res.json();
-      window.location.href = url;
-    }
+  function copy(label: string, text: string) {
+    navigator.clipboard?.writeText(text);
+    setCopied(label);
+    setTimeout(() => setCopied(null), 1500);
   }
 
-  function setStep(index: number, status: StepStatus) {
-    setSteps((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, status } : s)),
-    );
-  }
-
-  function markUpTo(upToIndex: number, status: StepStatus) {
-    setSteps((prev) =>
-      prev.map((s, i) => (i <= upToIndex ? { ...s, status } : s)),
-    );
-  }
-
-  async function handleGenerate() {
-    if (!prompt.trim()) return;
-
-    setPhase("building");
-    setErrorMsg("");
-    setCommitMsg("");
-    setSteps(INITIAL_STEPS.map((s) => ({ ...s, status: "pending" })));
-
-    /* 1. Save the prompt */
-    await fetch(`/api/projects/${project.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ build_prompt: prompt.trim() }),
-    });
-
-    /* 2. Trigger build (SSE) */
-    let res: Response;
-    try {
-      res = await fetch(`/api/projects/${project.id}/build`, { method: "POST" });
-    } catch {
-      setErrorMsg("Network error — please try again.");
-      setPhase("error");
-      return;
-    }
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({ error: "Build failed" }));
-      setErrorMsg(data.error ?? "Build failed");
-      setPhase("error");
-      return;
-    }
-
-    const reader = res.body?.getReader();
-    if (!reader) {
-      setErrorMsg("Stream unavailable — please try again.");
-      setPhase("error");
-      return;
-    }
-
-    const decoder = new TextDecoder();
-    let buffer = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-
-      for (const line of lines) {
-        if (!line.startsWith("data: ")) continue;
-        try {
-          const event = JSON.parse(line.slice(6));
-          switch (event.step) {
-            case "reading":
-              setStep(0, "running");
-              break;
-            case "generating":
-              setStep(0, "done");
-              setStep(1, "running");
-              break;
-            case "pushing":
-              markUpTo(1, "done");
-              setStep(2, "running");
-              break;
-            case "deploying":
-              markUpTo(2, "done");
-              setStep(3, "running");
-              break;
-            case "done":
-              setSteps((prev) => prev.map((s) => ({ ...s, status: "done" })));
-              setCommitMsg(event.commitMessage ?? "");
-              setPhase("done");
-              setCredits((c) => Math.max(0, c - 1));
-              router.refresh();
-              break;
-            case "error":
-              setErrorMsg(event.message ?? "Build failed");
-              setPhase("error");
-              break;
-          }
-        } catch {
-          /* skip malformed SSE line */
-        }
-      }
-    }
-  }
-
-  /* ── Idle / input ────────────────────────────────────────────────────── */
-  if (phase === "idle") {
-    return (
-      <div className="space-y-6 max-w-2xl">
-        {/* Header + credit balance */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold mb-1">Build your app</h2>
-            <p className="text-sm text-neutral-400">
-              Describe what you want to add or change — we&apos;ll build it for you.
-            </p>
-          </div>
-          <div className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${
-            credits > 0
-              ? "bg-green-500/10 border-green-500/30 text-green-400"
-              : "bg-neutral-500/10 border-white/10 text-neutral-500"
-          }`}>
-            <span>✦</span>
-            <span>{credits} build credit{credits !== 1 ? "s" : ""}</span>
-          </div>
-        </div>
-
-        {/* No-credits panel */}
-        {credits === 0 ? (
-          <div className="border border-white/10 rounded-xl p-6 space-y-5">
-            <div>
-              <p className="font-semibold text-sm mb-1">You&apos;re out of build credits</p>
-              <p className="text-sm text-neutral-400">
-                Pick a pack to top up. Credits never expire and work across all your projects.
-              </p>
-            </div>
-            <div className="grid sm:grid-cols-3 gap-3">
-              {PACKS.map((pack) => (
-                <button
-                  key={pack.key}
-                  onClick={() => handleBuyCredits(pack.key)}
-                  disabled={buyingPack !== null}
-                  className="relative border border-white/10 hover:border-green-500/40 rounded-xl p-4 text-left transition-all disabled:opacity-60 group"
-                >
-                  {pack.badge === "Best value" && (
-                    <span className="absolute -top-2 left-3 text-[10px] bg-green-500 text-black font-bold px-2 py-0.5 rounded-full">
-                      Best value
-                    </span>
-                  )}
-                  <p className="text-xl font-bold text-white mb-0.5">{pack.price}</p>
-                  <p className="text-sm text-neutral-400">{pack.credits} builds</p>
-                  <p className="text-xs text-neutral-600 mt-2 group-hover:text-green-400 transition-colors">
-                    {buyingPack === pack.key ? "Redirecting…" : "Buy →"}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="border border-white/10 rounded-xl overflow-hidden focus-within:border-green-500/40 focus-within:ring-1 focus-within:ring-green-500/20 transition-all">
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="w-full bg-transparent text-sm text-white placeholder-neutral-500 p-4 resize-none min-h-[110px] outline-none"
-                placeholder="e.g. Add a pricing page with three tiers — Starter, Pro, and Enterprise…"
-              />
-              <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/10">
-                <span className="text-xs text-neutral-600">Uses 1 build credit</span>
-                <button
-                  onClick={handleGenerate}
-                  disabled={!prompt.trim()}
-                  className="bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed text-black text-xs font-bold px-4 py-1.5 rounded-lg transition-colors"
-                >
-                  ✦ Generate
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
-              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">How it works</p>
-              <p className="text-sm text-neutral-400 leading-relaxed">
-                Describe your idea and we handle everything — reading your existing code,
-                figuring out what needs to change, and deploying it live automatically.
-                No code. No setup. Just describe and ship.
-              </p>
-            </div>
-          </>
-        )}
-
-        {project.vercel_preview_url && (
-          <div className="flex gap-3">
-            <a
-              href={project.vercel_preview_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-green-500 hover:bg-green-400 text-black text-sm font-bold px-4 py-2 rounded-lg transition-colors"
-            >
-              ↗ Open live app
-            </a>
-            {project.github_repo_url && (
-              <a
-                href={project.github_repo_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="border border-white/10 hover:border-white/20 text-sm text-neutral-300 px-4 py-2 rounded-lg transition-colors"
-              >
-                GitHub repo →
-              </a>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  /* ── Building ────────────────────────────────────────────────────────── */
-  if (phase === "building") {
-    return (
-      <div className="space-y-6 max-w-2xl">
-        <div>
-          <h2 className="text-lg font-semibold mb-1">Building your app…</h2>
-          <p className="text-sm text-neutral-400">This usually takes 1–2 minutes. Don&apos;t close the page.</p>
-        </div>
-
-        <div className="border border-white/10 rounded-xl p-6 space-y-4">
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-3 text-sm text-neutral-400 italic">
-            &ldquo;{prompt}&rdquo;
-          </div>
-
-          <div className="space-y-3 pt-1">
-            {steps.map((step, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <StepIcon status={step.status} />
-                <span className={`text-sm ${step.status === "running" ? "text-white" : step.status === "done" ? "text-green-400" : "text-neutral-500"}`}>
-                  {step.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /* ── Done ────────────────────────────────────────────────────────────── */
-  if (phase === "done") {
-    return (
-      <div className="space-y-6 max-w-2xl">
-        <div className="border border-green-500/25 bg-green-500/5 rounded-xl p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center text-green-400">✓</div>
-            <div>
-              <p className="font-semibold text-sm text-green-400">Your changes are deploying!</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Vercel is building your updated app — it&apos;ll be live in about 60 seconds.</p>
-            </div>
-          </div>
-
-          {commitMsg && (
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-3 text-sm text-neutral-400">
-              <span className="text-neutral-600 text-xs mr-2">committed:</span>{commitMsg}
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-1">
-            {project.vercel_preview_url && (
-              <a
-                href={project.vercel_preview_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-green-500 hover:bg-green-400 text-black text-sm font-bold px-4 py-2 rounded-lg transition-colors"
-              >
-                ↗ Open live app
-              </a>
-            )}
-            <button
-              onClick={() => { setPhase("idle"); setPrompt(""); }}
-              className="border border-white/10 hover:border-white/20 text-sm text-neutral-300 px-4 py-2 rounded-lg transition-colors"
-            >
-              Build something else
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /* ── Error ───────────────────────────────────────────────────────────── */
   return (
     <div className="space-y-6 max-w-2xl">
-      <div className="border border-red-500/25 bg-red-500/5 rounded-xl p-6 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-red-500/15 flex items-center justify-center text-red-400 text-sm">✕</div>
-          <div>
-            <p className="font-semibold text-sm text-red-400">Build failed</p>
-            <p className="text-xs text-neutral-500 mt-0.5">{errorMsg}</p>
-          </div>
+      <div>
+        <h2 className="text-lg font-semibold mb-1">Build it with your own Claude Code</h2>
+        <p className="text-sm text-neutral-400">
+          Your project is set up and ready. Open it locally and let your AI agent build it —
+          Launchpad keeps it on course. You drive the real workflow; we hold the rails.
+        </p>
+      </div>
+
+      {!repo ? (
+        <div className="border border-amber-500/25 bg-amber-500/5 rounded-xl p-4 text-sm text-amber-300">
+          No GitHub repo is linked yet. Finish provisioning to get your code.
         </div>
-        <button
-          onClick={() => setPhase("idle")}
-          className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors underline underline-offset-2"
-        >
-          Try again
-        </button>
+      ) : (
+        <ol className="space-y-3">
+          {/* Step 1 — clone */}
+          <li className="border border-white/10 rounded-xl p-4">
+            <p className="text-sm font-medium mb-2"><span className="text-violet-400 mr-2">1</span>Get the code on your machine</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs font-mono bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-violet-300 truncate">{cloneCmd}</code>
+              <button onClick={() => copy("clone", cloneCmd)} className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">
+                {copied === "clone" ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </li>
+
+          {/* Step 2 — open with Claude Code */}
+          <li className="border border-white/10 rounded-xl p-4">
+            <p className="text-sm font-medium mb-2"><span className="text-violet-400 mr-2">2</span>Open it with Claude Code</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs font-mono bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-violet-300 truncate">{runCmd}</code>
+              <button onClick={() => copy("run", runCmd)} className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">
+                {copied === "run" ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <p className="text-xs text-neutral-500 mt-2">
+              New to Claude Code? <Link href="/start" className="text-violet-300 hover:underline">Start here →</Link>
+            </p>
+          </li>
+
+          {/* Step 3 — describe */}
+          <li className="border border-white/10 rounded-xl p-4">
+            <p className="text-sm font-medium mb-2"><span className="text-violet-400 mr-2">3</span>Tell it what you want</p>
+            <p className="text-sm text-neutral-400">
+              Just type your idea. We&apos;ve pre-loaded <code className="text-violet-300 text-xs">CLAUDE.md</code> with
+              your objective, plan, and decisions — so the agent starts already knowing your project.
+            </p>
+          </li>
+        </ol>
+      )}
+
+      {/* Keep-on-track callout */}
+      <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
+        <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Launchpad keeps it on track</p>
+        <p className="text-sm text-neutral-400 leading-relaxed">
+          As you build, your{" "}
+          <Link href={`/projects/${project.id}/plan`} className="text-violet-300 hover:underline">Plan</Link>,{" "}
+          <Link href={`/projects/${project.id}/memory`} className="text-violet-300 hover:underline">Memory</Link>, and{" "}
+          <Link href={`/projects/${project.id}/drift`} className="text-violet-300 hover:underline">Course-keeper</Link>{" "}
+          update from your commits — so your agent stays anchored to your goal instead of wandering.
+        </p>
+      </div>
+
+      {/* Links */}
+      <div className="flex gap-3 flex-wrap">
+        {repo && (
+          <a href={repo} target="_blank" rel="noopener noreferrer"
+            className="border border-white/10 hover:border-white/20 text-sm text-neutral-300 px-4 py-2 rounded-lg transition-colors">
+            GitHub repo →
+          </a>
+        )}
+        {project.vercel_preview_url && (
+          <a href={project.vercel_preview_url} target="_blank" rel="noopener noreferrer"
+            className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors">
+            ↗ Open live app
+          </a>
+        )}
       </div>
     </div>
   );
-}
-
-/* ── Step icon ──────────────────────────────────────────────────────────── */
-function StepIcon({ status }: { status: StepStatus }) {
-  if (status === "done")
-    return <span className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-xs shrink-0">✓</span>;
-  if (status === "running")
-    return <span className="w-5 h-5 rounded-full border border-green-500/50 flex items-center justify-center shrink-0 animate-spin text-green-400 text-xs">⟳</span>;
-  if (status === "error")
-    return <span className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 text-xs shrink-0">✕</span>;
-  return <span className="w-5 h-5 rounded-full border border-white/15 shrink-0" />;
 }
 
 /* ── Coming soon placeholder ────────────────────────────────────────────── */
