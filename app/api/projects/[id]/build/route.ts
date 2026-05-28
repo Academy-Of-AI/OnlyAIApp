@@ -315,9 +315,8 @@ export async function updateSession(request: NextRequest) {
           console.log("[build] auto-healed lib/supabase/middleware.ts — resilient when Supabase unconfigured");
         }
 
-        /* Step 2 — generate ──────────────────────────────────────────── */
-        // Cap each file at 300 lines to avoid input token overflow
-        const MAX_FILE_LINES = 300;
+        /* Step 2 — generate (3-phase: plan → build → refine) ─────────── */
+        const MAX_FILE_LINES = 400;
         const foundPaths = Object.keys(files);
         const fileContext = foundPaths
           .map((p) => {
@@ -332,81 +331,188 @@ export async function updateSession(request: NextRequest) {
           .join("\n\n");
 
         console.log("[build] step 1 done: read", foundPaths.length, "files:", foundPaths.join(", "));
-        console.log("[build] step 2: calling Anthropic with prompt:", project.build_prompt?.slice(0, 120));
-        send({ step: "generating", message: "Generating your changes…" });
-
         const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-        const userMessage = `You are a senior Next.js developer. The user wants to modify their app.
+        // Only allow Claude to write app/ and components/ files; config, lib/,
+        // and middleware are managed by auto-heal and must not be clobbered.
+        const isAllowedPath = (p: string) =>
+          p.startsWith("app/") || p.startsWith("components/");
+
+        // The write_files tool — shared by the build and refine phases.
+        const writeFilesTool = {
+          name: "write_files",
+          description: "Write the complete files for the app to the repository",
+          input_schema: {
+            type: "object" as const,
+            properties: {
+              files: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    path:    { type: "string", description: "Relative path under app/ or components/, e.g. app/page.tsx" },
+                    content: { type: "string", description: "Complete file content — no placeholders or TODOs" },
+                  },
+                  required: ["path", "content"],
+                },
+              },
+              commitMessage: {
+                type: "string",
+                description: "Imperative git commit message under 72 chars",
+              },
+            },
+            required: ["files", "commitMessage"],
+          },
+        };
+
+        // Design system — the single biggest quality lever. Injected into the
+        // plan, build, and refine phases so every app looks intentional.
+        const DESIGN_SYSTEM = `DESIGN PRINCIPLES (follow ALL — this is what separates a real product from a toy):
+- Aesthetic: modern, confident SaaS. Think Linear, Vercel, Stripe — never a generic bootstrap template.
+- Spacing: be generous. Sections py-20 to py-32. Cards p-6 to p-8. Never cramped.
+- Typography: strong hierarchy. Headings text-4xl to text-6xl, font-bold, tracking-tight. Body text-base to text-lg in a muted neutral. Max 2 weights per screen.
+- Color: pick ONE accent color and commit. Everything else neutral grays. Use the accent sparingly for CTAs and highlights.
+- Content: write REAL, specific copy for THIS product. Never "Lorem ipsum", never "Feature 1/2/3", never placeholder names. Invent believable headlines, benefits, stats, and testimonials that fit the request.
+- Layout: full structure — sticky nav, hero with a sharp value prop + primary CTA, a features/benefits grid, social proof or stats, a secondary CTA, and a footer. Multi-section, not one centered box.
+- Depth & polish: subtle gradients, soft shadows, rounded-xl/2xl corners, thin borders. Tasteful, not heavy.
+- Interactivity: every button/link has hover: + transition. Use group-hover where it adds life.
+- Responsive: mobile-first. Stack on small screens, grid on md/lg. Nothing overflows.
+- Accessibility: semantic HTML (header/nav/main/section/footer), alt text, strong contrast.`;
+
+        const genStart = Date.now();
+
+        /* Phase 1 — PLAN (extended thinking) ──────────────────────────── */
+        send({ step: "generating", message: "Designing your app…" });
+        console.log("[build] phase 1: planning (thinking)");
+        let designPlan = "";
+        try {
+          const planResponse = await anthropic.messages.create({
+            model: "claude-opus-4-5",
+            max_tokens: 5000,
+            thinking: { type: "enabled", budget_tokens: 3000 },
+            messages: [{
+              role: "user",
+              content: `You are a senior product designer and Next.js engineer. PLAN (do not write code yet) the app for this request.
 
 User request: "${project.build_prompt}"
 
-Current codebase (${foundPaths.length} file${foundPaths.length !== 1 ? "s" : ""}):
+Current codebase (Next.js + TypeScript + Tailwind):
 ${fileContext}
 
-Call the write_files tool with the minimal changes needed to fulfil the request.
-Rules:
-- CRITICAL: Only modify files that already exist in the codebase above. Available paths: ${foundPaths.join(", ")}
-- Only modify 1–2 files maximum. Prefer changing just app/page.tsx.
-- Keep changes small and focused — do not rewrite the entire app unnecessarily.
-- Keep TypeScript + Tailwind CSS — same stack, same imports.
-- Write the complete updated content for each changed file.
-- Keep each file under 150 lines if possible.`;
+${DESIGN_SYSTEM}
 
-        // Use tool use to guarantee structured output — no JSON parsing needed
-        const aiResponse = await anthropic.messages.create({
+Produce a tight build plan:
+1. App concept in one sentence.
+2. The single accent color (hex) and the overall vibe.
+3. Page sections in order (nav → hero → … → footer), each with one line of the REAL content it holds.
+4. Files to create/modify (app/page.tsx plus small components/ files). 2-5 files.
+Under 400 words. This plan feeds the build step.`,
+            }],
+          });
+          designPlan = planResponse.content
+            .filter((c) => c.type === "text")
+            .map((c) => (c as { text: string }).text)
+            .join("\n")
+            .trim();
+          console.log("[build] phase 1 done: plan", designPlan.length, "chars");
+        } catch (planErr) {
+          console.warn("[build] phase 1 plan failed (non-fatal), building without plan:", planErr);
+        }
+
+        /* Phase 2 — BUILD (32k tokens, multi-file) ────────────────────── */
+        send({ step: "generating", message: "Building your app…" });
+        console.log("[build] phase 2: building");
+        const buildResponse = await anthropic.messages.create({
           model: "claude-opus-4-5",
-          max_tokens: 16000,
-          tools: [
-            {
-              name: "write_files",
-              description: "Write the changed files to the repository",
-              input_schema: {
-                type: "object" as const,
-                properties: {
-                  files: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        path:    { type: "string", description: "Relative file path, e.g. app/page.tsx" },
-                        content: { type: "string", description: "Full file content" },
-                      },
-                      required: ["path", "content"],
-                    },
-                  },
-                  commitMessage: {
-                    type: "string",
-                    description: "Imperative git commit message under 72 chars",
-                  },
-                },
-                required: ["files", "commitMessage"],
-              },
-            },
-          ],
+          max_tokens: 32000,
+          tools: [writeFilesTool],
           tool_choice: { type: "any" },
-          messages: [{ role: "user", content: userMessage }],
+          messages: [{
+            role: "user",
+            content: `You are a world-class Next.js + Tailwind engineer. Build the app for this request to production, portfolio-quality standard.
+
+User request: "${project.build_prompt}"
+${designPlan ? `\nApproved design plan:\n${designPlan}\n` : ""}
+Current codebase:
+${fileContext}
+
+${DESIGN_SYSTEM}
+
+Call write_files with the complete files. Rules:
+- TypeScript + Tailwind only. Keep the existing stack and imports.
+- app/page.tsx is the main page. Extract reusable pieces into components/ (e.g. components/hero.tsx) when it improves clarity. 2-6 files total.
+- Only write files under app/ or components/. Never touch config, lib/, or middleware.
+- Write COMPLETE file contents — no "// ..." placeholders, no TODOs.
+- Make it genuinely impressive: a customer should be impressed on first load.`,
+          }],
         });
 
-        const toolUse = aiResponse.content.find((c) => c.type === "tool_use");
+        const toolUse = buildResponse.content.find((c) => c.type === "tool_use");
         if (!toolUse || toolUse.type !== "tool_use") {
           throw new Error("AI did not generate file changes — please try again.");
         }
-
         const rawInput = toolUse.input as {
           files?: Array<{ path: string; content: string }>;
           commitMessage?: string;
         };
 
-        // Guard against truncated/incomplete tool response
-        if (!Array.isArray(rawInput.files) || rawInput.files.length === 0) {
-          throw new Error("AI returned an incomplete response — please try a simpler build prompt.");
+        const builtFiles = (Array.isArray(rawInput.files) ? rawInput.files : [])
+          .filter((f) => f && typeof f.path === "string" && typeof f.content === "string"
+            && f.content.length > 0 && isAllowedPath(f.path));
+        if (builtFiles.length === 0) {
+          throw new Error("AI returned no valid app files — please try again.");
         }
+        console.log("[build] phase 2 done: built", builtFiles.length, "files:", builtFiles.map(f => f.path).join(", "));
 
         const changes = {
-          files: rawInput.files as Array<{ path: string; content: string }>,
-          commitMessage: (rawInput.commitMessage ?? "AI: apply build changes").slice(0, 72),
+          files: builtFiles,
+          commitMessage: (rawInput.commitMessage ?? "AI: build app").slice(0, 72),
         };
+
+        /* Phase 3 — REFINE (best-effort; never blocks shipping phase 2) ── */
+        const elapsed = Date.now() - genStart;
+        if (elapsed < 200000) {
+          try {
+            send({ step: "generating", message: "Polishing the details…" });
+            console.log("[build] phase 3: refine (elapsed", Math.round(elapsed / 1000), "s)");
+            const builtContext = changes.files
+              .map((f) => `=== ${f.path} ===\n${f.content}`)
+              .join("\n\n");
+            const refineResponse = await anthropic.messages.create({
+              model: "claude-opus-4-5",
+              max_tokens: 32000,
+              tools: [writeFilesTool],
+              tool_choice: { type: "any" },
+              messages: [{
+                role: "user",
+                content: `You are a ruthless design reviewer. This app was just generated for: "${project.build_prompt}"
+
+${builtContext}
+
+${DESIGN_SYSTEM}
+
+Critique it hard against the principles, then call write_files with improved versions of ONLY the files that need work. Fix: weak spacing, generic copy, missing sections, flat hierarchy, missing hover states, anything that looks like a template. If a file is already excellent, leave it out. Write COMPLETE file contents for any file you return.`,
+              }],
+            });
+            const refineTool = refineResponse.content.find((c) => c.type === "tool_use");
+            if (refineTool && refineTool.type === "tool_use") {
+              const refineInput = refineTool.input as { files?: Array<{ path: string; content: string }> };
+              const refined = (Array.isArray(refineInput.files) ? refineInput.files : [])
+                .filter((f) => f && typeof f.path === "string" && typeof f.content === "string"
+                  && f.content.length > 0 && isAllowedPath(f.path));
+              if (refined.length > 0) {
+                const byPath = new Map(changes.files.map((f) => [f.path, f]));
+                for (const rf of refined) byPath.set(rf.path, rf);
+                changes.files = Array.from(byPath.values());
+                console.log("[build] phase 3 done: refined", refined.length, "files");
+              }
+            }
+          } catch (refineErr) {
+            console.warn("[build] phase 3 refine failed (non-fatal):", refineErr);
+          }
+        } else {
+          console.log("[build] phase 3 skipped — time budget low (", Math.round(elapsed / 1000), "s elapsed)");
+        }
 
         /* Step 3 — push as ONE atomic commit (Git Data API) ──────────────
            CRITICAL: pushing files one-by-one creates a separate commit per
