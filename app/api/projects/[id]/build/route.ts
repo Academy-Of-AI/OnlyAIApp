@@ -153,6 +153,8 @@ export async function POST(
           "components/hero.tsx",
           "components/landing.tsx",
           "components/home.tsx",
+          // Always check for known breaking files so we can auto-heal them
+          "lib/stripe/index.ts",
         ];
 
         type FileEntry = { content: string; sha: string };
@@ -208,6 +210,22 @@ export async function POST(
 
         if (Object.keys(files).length === 0) {
           throw new Error("Could not read any source files from the repo — make sure the GitHub repo is accessible.");
+        }
+
+        /* Auto-heal known template issues that would cause Vercel build failures.
+           These patches are pushed to GitHub regardless of what Claude changes. */
+        const autoPatches: Record<string, string> = {};
+
+        // Stripe SDK apiVersion — "2024-06-20" is no longer a valid type literal
+        // in stripe >=17; must use the latest stable value.
+        if (files["lib/stripe/index.ts"]?.content.includes('"2024-06-20"')) {
+          const fixed = files["lib/stripe/index.ts"].content.replace(
+            '"2024-06-20"',
+            '"2025-02-24.acacia"',
+          );
+          autoPatches["lib/stripe/index.ts"] = fixed;
+          files["lib/stripe/index.ts"] = { ...files["lib/stripe/index.ts"], content: fixed };
+          console.log("[build] auto-healed lib/stripe/index.ts — updated Stripe apiVersion");
         }
 
         /* Step 2 — generate ──────────────────────────────────────────── */
@@ -304,11 +322,20 @@ Rules:
         };
 
         /* Step 3 — push ──────────────────────────────────────────────── */
-        console.log("[build] step 2 done: AI wants to change", changes.files.length, "files:", changes.files.map(f => f.path).join(", "));
+        // Merge auto-patches with Claude's changes; Claude wins on overlap
+        const claudePaths = new Set(changes.files.map(f => f.path));
+        const allFilesToPush = [
+          ...changes.files,
+          ...Object.entries(autoPatches)
+            .filter(([p]) => !claudePaths.has(p))
+            .map(([path, content]) => ({ path, content })),
+        ];
+
+        console.log("[build] step 2 done: AI changes", changes.files.length, "files, auto-patches", Object.keys(autoPatches).length, "files");
         console.log("[build] step 3: pushing to GitHub");
         send({ step: "pushing", message: "Pushing changes to GitHub…" });
 
-        for (const file of changes.files) {
+        for (const file of allFilesToPush) {
           const existing = files[file.path];
           let sha = existing?.sha;
 
