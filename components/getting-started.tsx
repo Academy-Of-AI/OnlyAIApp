@@ -5,11 +5,13 @@ interface Step {
   done: boolean;
   href: string;
   cta: string;
+  external?: boolean;
 }
 
 /**
- * Data-driven onboarding checklist for the control-plane workflow.
- * Purely presentational — the dashboard computes `done` from real state.
+ * Beginner onramp checklist for the Claude Code arc. Purely presentational —
+ * the dashboard computes `done` from real state. Shows a graduation banner once
+ * the core loop (project + plan + first build captured) is complete.
  */
 export function GettingStarted({
   accountsConnected,
@@ -25,29 +27,42 @@ export function GettingStarted({
   firstProjectId: string | null;
 }) {
   const pid = firstProjectId;
+
+  // Graduation: they've run the full loop. Take the training wheels off.
+  if (hasProject && hasPlan && hasMemory) {
+    return (
+      <section className="border border-violet-500/30 bg-violet-500/5 rounded-xl p-6">
+        <h2 className="font-semibold text-lg">🎓 Training wheels are off</h2>
+        <p className="text-sm text-neutral-400 mt-1">
+          You&apos;ve shipped the full loop — set an objective, built with your agent, and your
+          memory is compounding. From here Launchpad just keeps you on course.{" "}
+          <Link href="/mission-control" className="text-violet-300 hover:underline">Open Mission Control →</Link>
+        </p>
+      </section>
+    );
+  }
+
   const steps: Step[] = [
-    { label: "Connect GitHub, Vercel & Supabase", done: accountsConnected, href: "#", cta: "Connect above" },
+    { label: "Set up Claude Code (your engine)", done: false, href: "/start", cta: "Guide" },
+    { label: "Connect GitHub", done: accountsConnected, href: "#", cta: "Connect above" },
     { label: "Create your first project", done: hasProject, href: "/new-project", cta: "New project" },
-    { label: "Set a plan of record (objective → milestones)", done: hasPlan,
-      href: pid ? `/projects/${pid}/plan` : "/new-project", cta: "Set plan" },
-    { label: "Capture project memory (synced to CLAUDE.md)", done: hasMemory,
-      href: pid ? `/projects/${pid}/memory` : "/new-project", cta: "Add memory" },
-    { label: "Watch everything from Mission Control", done: false,
-      href: "/mission-control", cta: "Open" },
+    { label: "Set your objective (→ a plan your agent follows)", done: hasPlan,
+      href: pid ? `/projects/${pid}/plan` : "/new-project", cta: "Set objective" },
+    { label: "Build it with Claude Code", done: hasMemory,
+      href: pid ? `/projects/${pid}` : "/new-project", cta: "Open project" },
   ];
 
   const completed = steps.filter((s) => s.done).length;
   const total = steps.length;
-  if (completed >= total - 1) return null; // hide once essentially done
 
   return (
     <section className="border border-white/10 rounded-xl p-6">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="font-semibold text-lg">Get set up</h2>
+        <h2 className="font-semibold text-lg">Your first app with an AI agent</h2>
         <span className="text-xs text-neutral-500">{completed}/{total}</span>
       </div>
       <p className="text-sm text-neutral-400 mb-4">
-        Your control plane for AI-coded projects — provision, track, and keep the agent on course.
+        Training wheels for Claude Code — we handle setup and keep the agent on course while you learn.
       </p>
       <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-5">
         <div className="h-full bg-violet-500 transition-all" style={{ width: `${(completed / total) * 100}%` }} />
@@ -73,8 +88,8 @@ export function GettingStarted({
         ))}
       </ul>
 
-      <Link href="/guide" className="inline-block mt-4 text-xs text-neutral-500 hover:text-neutral-300 transition-colors">
-        How it works →
+      <Link href="/start" className="inline-block mt-4 text-xs text-neutral-500 hover:text-neutral-300 transition-colors">
+        New to all this? Start here →
       </Link>
     </section>
   );
