@@ -342,9 +342,12 @@ Rules:
           commitMessage: (rawInput.commitMessage ?? "AI: apply build changes").slice(0, 72),
         };
 
-        /* Step 3 — push ──────────────────────────────────────────────── */
-        // Merge auto-patches with Claude's changes. Auto-patches are infrastructure
-        // fixes (next.config, Stripe) and MUST win — Claude can't undo them.
+        /* Step 3 — push as ONE atomic commit (Git Data API) ──────────────
+           CRITICAL: pushing files one-by-one creates a separate commit per
+           file, and Vercel builds each intermediate commit. An intermediate
+           commit that has Claude's code but not yet the next.config fix will
+           fail type-checking. Bundling everything into a single commit means
+           there is exactly one deploy, and it always has next.config. */
         const patchedPaths = new Set(Object.keys(autoPatches));
         const allFilesToPush = [
           ...changes.files.filter(f => !patchedPaths.has(f.path)),
@@ -352,33 +355,54 @@ Rules:
         ];
 
         console.log("[build] step 2 done: AI changes", changes.files.length, "files, auto-patches", Object.keys(autoPatches).length, "files");
-        console.log("[build] step 3: pushing to GitHub");
+        console.log("[build] step 3: pushing", allFilesToPush.length, "files in ONE commit");
         send({ step: "pushing", message: "Pushing changes to GitHub…" });
 
-        for (const file of allFilesToPush) {
-          const existing = files[file.path];
-          let sha = existing?.sha;
+        // Resolve the default branch and its latest commit / base tree
+        const { data: repoInfo } = await octokit.repos.get({ owner, repo });
+        const branch = repoInfo.default_branch;
+        const { data: refData } = await octokit.git.getRef({ owner, repo, ref: `heads/${branch}` });
+        const latestCommitSha = refData.object.sha;
+        const { data: latestCommit } = await octokit.git.getCommit({ owner, repo, commit_sha: latestCommitSha });
 
-          // If the file wasn't in our read set, check whether it exists in the repo.
-          // GitHub requires the current SHA to update an existing file; new files need no SHA.
-          if (!sha) {
-            try {
-              const { data } = await octokit.repos.getContent({ owner, repo, path: file.path });
-              if ("sha" in data) sha = data.sha as string;
-            } catch {
-              // 404 → file doesn't exist yet → create new (sha not needed)
-            }
-          }
+        // Upload each file as a blob, then assemble a single tree
+        const treeItems = await Promise.all(
+          allFilesToPush.map(async (file) => {
+            const { data: blob } = await octokit.git.createBlob({
+              owner,
+              repo,
+              content: Buffer.from(file.content).toString("base64"),
+              encoding: "base64",
+            });
+            return {
+              path: file.path,
+              mode: "100644" as const,
+              type: "blob" as const,
+              sha: blob.sha,
+            };
+          }),
+        );
 
-          await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: file.path,
-            message: changes.commitMessage,
-            content: Buffer.from(file.content).toString("base64"),
-            ...(sha ? { sha } : {}),
-          });
-        }
+        const { data: newTree } = await octokit.git.createTree({
+          owner,
+          repo,
+          base_tree: latestCommit.tree.sha,
+          tree: treeItems,
+        });
+        const { data: newCommit } = await octokit.git.createCommit({
+          owner,
+          repo,
+          message: changes.commitMessage,
+          tree: newTree.sha,
+          parents: [latestCommitSha],
+        });
+        await octokit.git.updateRef({
+          owner,
+          repo,
+          ref: `heads/${branch}`,
+          sha: newCommit.sha,
+        });
+        console.log("[build] step 3 done: pushed single commit", newCommit.sha);
 
         /* Step 4 — trigger Vercel deploy ─────────────────────────────── */
         console.log("[build] step 3 done: all files pushed");
