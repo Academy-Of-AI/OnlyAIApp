@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 /** Monthly price for Pro, in cents. Change here to reprice. */
-const PRO_PRICE_CENTS = 2000;
+const PRO_PRICE_CENTS = 1200;
 
 /**
  * POST /api/stripe/subscribe
