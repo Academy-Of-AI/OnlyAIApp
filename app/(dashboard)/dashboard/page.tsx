@@ -1,3 +1,4 @@
+import { GettingStarted } from "@/components/getting-started";
 import { ResendConnectForm } from "@/components/resend-connect-form";
 import { SupabaseConnectForm } from "@/components/supabase-connect-form";
 import { VercelConnectForm } from "@/components/vercel-connect-form";
@@ -23,7 +24,7 @@ export default async function DashboardPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: projects }, { data: connections }] = await Promise.all([
+  const [{ data: projects }, { data: connections }, { count: planCount }, { count: memoryCount }] = await Promise.all([
     supabase
       .from("projects")
       .select("*")
@@ -32,6 +33,14 @@ export default async function DashboardPage({
     supabase
       .from("oauth_connections")
       .select("provider")
+      .eq("user_id", user!.id),
+    supabase
+      .from("project_plans")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user!.id),
+    supabase
+      .from("project_memory")
+      .select("*", { count: "exact", head: true })
       .eq("user_id", user!.id),
   ]);
 
@@ -195,6 +204,17 @@ export default async function DashboardPage({
             </p>
           )}
         </section>
+      )}
+
+      {/* Control-plane onboarding checklist */}
+      {!!projects?.length && (
+        <GettingStarted
+          accountsConnected={!!allRequired}
+          hasProject={!!projects?.length}
+          hasPlan={(planCount ?? 0) > 0}
+          hasMemory={(memoryCount ?? 0) > 0}
+          firstProjectId={projects?.[0]?.id ?? null}
+        />
       )}
 
       {/* Projects header */}
