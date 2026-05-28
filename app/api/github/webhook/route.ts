@@ -61,7 +61,7 @@ export async function POST(request: Request) {
   // Run digest for each matching project (await within maxDuration)
   for (const p of projects) {
     try {
-      await runDigest(admin, p, commits);
+      await runDigest(admin, p, { commits });
     } catch (err) {
       console.error("[github/webhook] digest failed for", p.id, err);
     }

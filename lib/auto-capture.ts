@@ -31,7 +31,7 @@ const VALID_KINDS = ["objective", "decision", "architecture", "gotcha", "note"];
 export async function runDigest(
   admin: SupabaseClient,
   project: ProjectRow,
-  pushedCommits?: string[],
+  opts: { commits?: string[]; sessionText?: string } = {},
 ): Promise<void> {
   const anthropicKey = process.env.ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_SECRET_KEY;
   if (!anthropicKey || !project.github_repo_url) return;
@@ -44,18 +44,19 @@ export async function runDigest(
   const { data: ghConn } = await admin
     .from("oauth_connections").select("access_token")
     .eq("user_id", project.user_id).eq("provider", "github").single();
-  if (!ghConn) return;
 
-  // Prefer the commits from this push; fall back to recent history
-  let commitLog = (pushedCommits ?? []).map((c) => `- ${c.split("\n")[0]}`).join("\n");
-  if (!commitLog) {
+  // Prefer the commits from this push; fall back to recent history (if GitHub
+  // is connected). Session text from the local CLI can stand in on its own.
+  let commitLog = (opts.commits ?? []).map((c) => `- ${c.split("\n")[0]}`).join("\n");
+  if (!commitLog && ghConn) {
     try {
       const octokit = new Octokit({ auth: await decrypt(ghConn.access_token as string) });
       const { data: commits } = await octokit.repos.listCommits({ owner, repo, per_page: 10 });
       commitLog = commits.map((c) => `- ${c.commit.message.split("\n")[0]}`).join("\n");
-    } catch { return; }
+    } catch { /* continue with session text only */ }
   }
-  if (!commitLog.trim()) return;
+  const sessionText = (opts.sessionText ?? "").slice(0, 8000);
+  if (!commitLog.trim() && !sessionText.trim()) return;
 
   // Existing context
   const { data: memRows } = await admin
@@ -128,9 +129,7 @@ export async function runDigest(
       tool_choice: { type: "any" },
       messages: [{
         role: "user",
-        content: `Recent commits on this project:
-${commitLog}
-
+        content: `${commitLog ? `Recent commits on this project:\n${commitLog}\n` : ""}${sessionText ? `\nRecent Claude Code session (decisions, what was tried):\n${sessionText}\n` : ""}
 ${plan ? `Objective: ${plan.objective}` : "No objective set."}
 ${milestones.length ? `Milestones:\n${milestones.map((x) => `- [${x.status}] ${x.title}`).join("\n")}` : ""}
 Existing memory (do NOT duplicate): ${existing.length ? existing.slice(0, 30).join(" | ") : "(none)"}
