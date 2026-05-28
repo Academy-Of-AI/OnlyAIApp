@@ -293,6 +293,90 @@ export async function getDeploymentErrorLine({
   }
 }
 
+export interface VercelEnvVar { key: string; target: string[]; type: string }
+
+/**
+ * List a project's environment variables (keys + targets only — Vercel never
+ * returns decrypted secret values, which is what we want).
+ */
+export async function listVercelEnvVars({
+  token, projectId, teamId,
+}: { token: string; projectId: string; teamId?: string }): Promise<VercelEnvVar[]> {
+  try {
+    const qs = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
+    const res = await fetch(`${VERCEL_API}/v9/projects/${projectId}/env${qs}`, {
+      headers: vercelHeaders(token),
+    });
+    if (!res.ok) return [];
+    const data = await res.json() as { envs?: Array<{ key: string; target?: string[] | string; type: string }> };
+    return (data.envs ?? []).map((e) => ({
+      key: e.key,
+      target: Array.isArray(e.target) ? e.target : e.target ? [e.target] : [],
+      type: e.type,
+    }));
+  } catch { return []; }
+}
+
+/**
+ * Create or update a single env var (upsert) across all targets.
+ */
+export async function upsertVercelEnvVar({
+  token, projectId, key, value, teamId,
+  targets = ["production", "preview", "development"],
+}: {
+  token: string; projectId: string; key: string; value: string; teamId?: string; targets?: string[];
+}): Promise<void> {
+  const qs = `?upsert=true${teamId ? `&teamId=${encodeURIComponent(teamId)}` : ""}`;
+  const res = await fetch(`${VERCEL_API}/v10/projects/${projectId}/env${qs}`, {
+    method: "POST",
+    headers: vercelHeaders(token),
+    body: JSON.stringify({ key, value, type: "encrypted", target: targets }),
+  });
+  if (!res.ok) throw new Error(`Vercel set env failed: ${await res.text()}`);
+}
+
+/**
+ * Roll back to the previous successful production deployment by re-deploying
+ * its exact commit SHA. Uses the same /v13/deployments path proven to work,
+ * so it doesn't depend on a less-stable promote endpoint.
+ */
+export async function rollbackVercelProject({
+  token, projectId, projectName, teamId,
+}: {
+  token: string; projectId: string; projectName: string; teamId?: string;
+}): Promise<{ ok: boolean; sha?: string; message?: string }> {
+  try {
+    const qs = `projectId=${encodeURIComponent(projectId)}&limit=10&target=production${teamId ? `&teamId=${encodeURIComponent(teamId)}` : ""}`;
+    const res = await fetch(`${VERCEL_API}/v6/deployments?${qs}`, { headers: vercelHeaders(token) });
+    if (!res.ok) return { ok: false, message: "Could not list deployments." };
+    const data = await res.json() as {
+      deployments?: Array<{ state?: string; readyState?: string; meta?: { githubCommitSha?: string } }>;
+    };
+    const all = data.deployments ?? [];
+    // Skip the latest; find the most recent prior READY deploy with a commit SHA.
+    const prev = all.slice(1).find(
+      (d) => (d.state ?? d.readyState) === "READY" && d.meta?.githubCommitSha,
+    );
+    if (!prev?.meta?.githubCommitSha) {
+      return { ok: false, message: "No earlier successful deploy to roll back to." };
+    }
+    const sha = prev.meta.githubCommitSha;
+    const tq = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
+    const dep = await fetch(`${VERCEL_API}/v13/deployments${tq}`, {
+      method: "POST",
+      headers: vercelHeaders(token),
+      body: JSON.stringify({
+        name: projectName, project: projectId, target: "production",
+        gitSource: { type: "github", ref: sha },
+      }),
+    });
+    if (!dep.ok) return { ok: false, message: await dep.text() };
+    return { ok: true, sha: sha.slice(0, 7) };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : "Rollback failed." };
+  }
+}
+
 /**
  * Delete a Vercel project — best-effort, swallow errors.
  */

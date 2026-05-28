@@ -53,6 +53,12 @@ export default async function ProjectPage({
           )}
         </div>
         <div className="flex gap-2 shrink-0">
+          <Link
+            href={`/projects/${project.id}/ops`}
+            className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
+          >
+            ⚙ Ops
+          </Link>
           {project.github_repo_url && (
             <a
               href={project.github_repo_url}
