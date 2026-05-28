@@ -15,7 +15,10 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { inviteCode } = await request.json() as { inviteCode: string };
+  const { inviteCode, projectName: requestedName } = await request.json() as {
+    inviteCode: string;
+    projectName?: string;   // optional — user-chosen name; auto-generated if omitted
+  };
   if (!inviteCode?.trim()) {
     return NextResponse.json({ error: "Invite code required" }, { status: 400 });
   }
@@ -77,10 +80,34 @@ export async function POST(request: Request) {
   const githubToken = await decrypt(githubConn.access_token);
   const vercelToken = await decrypt(vercelConn.access_token);
 
-  // Auto-generate project name
+  // Use caller-supplied name or fall back to auto-generated slug
   const { data: profile } = await supabase
     .from("profiles").select("github_username").eq("id", user.id).single();
-  const projectName = `${hackathon.name.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 20)}-${profile?.github_username ?? user.id.slice(0, 6)}`;
+
+  let projectName: string;
+  if (requestedName && /^[a-z0-9-]{3,40}$/.test(requestedName)) {
+    projectName = requestedName;
+  } else {
+    // Auto-generate: hackathon-slug-githubusername
+    const hackathonSlug = hackathon.name.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 20);
+    const userSlug = (profile?.github_username ?? user.id.slice(0, 6)).toLowerCase().replace(/[^a-z0-9]/g, "-");
+    projectName = `${hackathonSlug}-${userSlug}`.slice(0, 40);
+  }
+
+  // Verify the name isn't already taken by this user
+  const { data: nameTaken } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("name", projectName)
+    .single();
+
+  if (nameTaken) {
+    return NextResponse.json(
+      { error: `Project name "${projectName}" is already taken. Choose a different name.` },
+      { status: 409 },
+    );
+  }
 
   // Create project record
   const { data: project } = await supabase

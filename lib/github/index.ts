@@ -58,6 +58,26 @@ export async function getGithubUser(token: string) {
 }
 
 /**
+ * Rename a GitHub repository.
+ * Returns the new repo URL and full name.
+ */
+export async function renameRepo({
+  token,
+  owner,
+  repo,
+  newName,
+}: {
+  token: string;
+  owner: string;
+  repo: string;
+  newName: string;
+}): Promise<{ repoUrl: string; repoFullName: string }> {
+  const octokit = githubClient(token);
+  const { data } = await octokit.repos.update({ owner, repo, name: newName });
+  return { repoUrl: data.html_url, repoFullName: data.full_name };
+}
+
+/**
  * Delete a GitHub repository — best-effort, swallow errors.
  */
 export async function deleteRepo({

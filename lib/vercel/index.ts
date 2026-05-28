@@ -97,6 +97,37 @@ export async function getLatestDeploymentUrl({
 }
 
 /**
+ * Rename a Vercel project. Returns the new domain.
+ */
+export async function renameVercelProject({
+  token,
+  projectId,
+  newName,
+  teamId,
+}: {
+  token: string;
+  projectId: string;
+  newName: string;
+  teamId?: string;
+}): Promise<string> {
+  const qs = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
+  const res = await fetch(`${VERCEL_API}/v9/projects/${projectId}${qs}`, {
+    method: "PATCH",
+    headers: vercelHeaders(token),
+    body: JSON.stringify({ name: newName }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Vercel renameProject failed: ${err}`);
+  }
+  const data = await res.json() as { domains?: string[] };
+  const prod = (data.domains ?? [])
+    .filter((d) => !d.includes("-git-"))
+    .sort((a, b) => a.length - b.length)[0];
+  return prod ? `https://${prod}` : `https://${newName}.vercel.app`;
+}
+
+/**
  * Get the production domain(s) assigned to a Vercel project.
  * Returns the shortest/cleanest one, e.g. "aoai-hrdc-xienpuo-9035s-projects.vercel.app".
  * Falls back to the guessed pattern if the API call fails.
