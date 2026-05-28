@@ -195,14 +195,16 @@ ${Object.entries(files)
 
 Call the write_files tool with the minimal changes needed to fulfil the request.
 Rules:
-- Only include files that actually need to change (1–4 files max)
-- Keep TypeScript + Tailwind CSS — same stack, same imports
-- Write the full file content for each changed file`;
+- CRITICAL: Only modify 1–2 files maximum. Prefer changing just app/page.tsx.
+- Keep changes small and focused — do not rewrite the entire app.
+- Keep TypeScript + Tailwind CSS — same stack, same imports.
+- Write the complete file content for each changed file.
+- Keep each file under 150 lines if possible.`;
 
         // Use tool use to guarantee structured output — no JSON parsing needed
         const aiResponse = await anthropic.messages.create({
           model: "claude-opus-4-5",
-          max_tokens: 8000,
+          max_tokens: 16000,
           tools: [
             {
               name: "write_files",
@@ -239,9 +241,19 @@ Rules:
           throw new Error("AI did not generate file changes — please try again.");
         }
 
-        const changes = toolUse.input as {
-          files: Array<{ path: string; content: string }>;
-          commitMessage: string;
+        const rawInput = toolUse.input as {
+          files?: Array<{ path: string; content: string }>;
+          commitMessage?: string;
+        };
+
+        // Guard against truncated/incomplete tool response
+        if (!Array.isArray(rawInput.files) || rawInput.files.length === 0) {
+          throw new Error("AI returned an incomplete response — please try a simpler build prompt.");
+        }
+
+        const changes = {
+          files: rawInput.files as Array<{ path: string; content: string }>,
+          commitMessage: (rawInput.commitMessage ?? "AI: apply build changes").slice(0, 72),
         };
 
         /* Step 3 — push ──────────────────────────────────────────────── */
