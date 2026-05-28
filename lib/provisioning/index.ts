@@ -5,7 +5,7 @@ import {
   getProjectKeys,
   waitForProject,
 } from "@/lib/supabase-mgmt";
-import { addVercelEnvVars, createVercelProject, deleteVercelProject } from "@/lib/vercel";
+import { addVercelEnvVars, createVercelProject, deleteVercelProject, getVercelProjectDomain } from "@/lib/vercel";
 
 export type ProgressEvent = {
   step: string;      // e.g. "github_done"
@@ -122,10 +122,18 @@ export async function provisionProject(
     vercelProjectId = projectId;
     onProgress({ step: "vercel_project_done", message: "Vercel project created ✓" });
 
-    // Step 4: Inject env vars
+    // Step 4: Resolve the real Vercel domain (team accounts use a slug suffix)
+    const vercelDomain = await getVercelProjectDomain({
+      token: vercelToken,
+      projectId,
+      projectName,
+      teamId: undefined, // passed via token scope already
+    });
+
+    // Step 5: Inject env vars
     onProgress({ step: "env_start", message: "Injecting environment variables…" });
     const envVars: Record<string, string> = {
-      NEXT_PUBLIC_APP_URL: `https://${projectName}.vercel.app`,
+      NEXT_PUBLIC_APP_URL: vercelDomain,
     };
     if (resolvedSupabaseUrl) envVars["NEXT_PUBLIC_SUPABASE_URL"] = resolvedSupabaseUrl;
     if (resolvedAnonKey) envVars["NEXT_PUBLIC_SUPABASE_ANON_KEY"] = resolvedAnonKey;
@@ -133,14 +141,14 @@ export async function provisionProject(
     await addVercelEnvVars({ token: vercelToken, projectId, envVars });
     onProgress({ step: "env_done", message: "Environment variables set ✓" });
 
-    // Step 5: Done
+    // Step 6: Done
     onProgress({ step: "deploy_start", message: "Triggering first deployment…" });
 
     return {
       githubRepoUrl: repoUrl,
       githubRepoFullName: repoFullName,
       vercelProjectId: projectId,
-      vercelPreviewUrl: `https://${projectName}.vercel.app`,
+      vercelPreviewUrl: vercelDomain,
       supabaseProjectRef: supabaseRef ?? undefined,
       supabaseUrl: resolvedSupabaseUrl || undefined,
     };

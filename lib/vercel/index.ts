@@ -97,6 +97,39 @@ export async function getLatestDeploymentUrl({
 }
 
 /**
+ * Get the production domain(s) assigned to a Vercel project.
+ * Returns the shortest/cleanest one, e.g. "aoai-hrdc-xienpuo-9035s-projects.vercel.app".
+ * Falls back to the guessed pattern if the API call fails.
+ */
+export async function getVercelProjectDomain({
+  token,
+  projectId,
+  projectName,
+  teamId,
+}: {
+  token: string;
+  projectId: string;
+  projectName: string;
+  teamId?: string;
+}): Promise<string> {
+  const qs = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
+  try {
+    const res = await fetch(`${VERCEL_API}/v9/projects/${projectId}${qs}`, {
+      headers: vercelHeaders(token),
+    });
+    if (res.ok) {
+      const data = await res.json() as { domains?: string[] };
+      // Pick the shortest non-git-branch domain (production alias)
+      const prod = (data.domains ?? [])
+        .filter((d) => !d.includes("-git-"))
+        .sort((a, b) => a.length - b.length)[0];
+      if (prod) return `https://${prod}`;
+    }
+  } catch { /* fall through to guess */ }
+  return `https://${projectName}.vercel.app`;
+}
+
+/**
  * Trigger a new deployment for a Vercel project via its linked GitHub branch.
  * Non-fatal: if the API call fails, Vercel's GitHub webhook will still fire
  * when it receives the push event (may just take a few extra seconds).
