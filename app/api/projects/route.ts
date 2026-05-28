@@ -1,6 +1,7 @@
 import { decrypt } from "@/lib/crypto";
 import { provisionProject, type ProgressEvent } from "@/lib/provisioning";
 import { createClient } from "@/lib/supabase/server";
+import { getTemplate } from "@/lib/templates";
 import { NextResponse } from "next/server";
 
 export const maxDuration = 300;
@@ -134,6 +135,7 @@ export async function POST(request: Request) {
       };
 
       try {
+        const tpl = getTemplate(templateId);
         const result = await provisionProject(
           {
             projectName: name,
@@ -144,6 +146,8 @@ export async function POST(request: Request) {
             supabaseUrl,
             supabaseAnonKey,
             resendApiKey,
+            templateOwner: tpl.owner,
+            templateRepo: tpl.repo,
           },
           (progressEvent: ProgressEvent) => send(progressEvent),
         );
