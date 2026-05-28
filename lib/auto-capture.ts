@@ -4,6 +4,7 @@ import { logActivity } from "@/lib/activity";
 import { decrypt } from "@/lib/crypto";
 import { notify } from "@/lib/notify";
 import { syncClaudeMd } from "@/lib/sync-claude-md";
+import { logUsage } from "@/lib/usage";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 interface ProjectRow {
@@ -140,6 +141,10 @@ Call digest. Only surface durable, specific facts and real status changes.`,
     });
     const tool = res.content.find((c) => c.type === "tool_use");
     if (tool && tool.type === "tool_use") digest = tool.input as Digest;
+    await logUsage(admin, {
+      userId: project.user_id, projectId: project.id, kind: "digest",
+      inputTokens: res.usage?.input_tokens, outputTokens: res.usage?.output_tokens,
+    });
   } catch { return; }
   if (!digest) return;
 
