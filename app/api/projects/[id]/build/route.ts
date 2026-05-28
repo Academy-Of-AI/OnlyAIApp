@@ -25,7 +25,8 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  const anthropicKey = process.env.ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_SECRET_KEY;
+  if (!anthropicKey) {
     return NextResponse.json(
       { error: "AI build not configured — add ANTHROPIC_API_KEY to your Vercel environment variables." },
       { status: 500 },
@@ -168,7 +169,7 @@ export async function POST(
         /* Step 2 — generate ──────────────────────────────────────────── */
         send({ step: "generating", message: "Generating your changes…" });
 
-        const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        const anthropic = new Anthropic({ apiKey: anthropicKey });
 
         const systemPrompt = `You are a senior Next.js developer modifying an existing app.
 Given the user's request and the current codebase, return ONLY a valid JSON object:
