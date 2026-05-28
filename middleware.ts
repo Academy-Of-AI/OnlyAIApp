@@ -4,14 +4,27 @@ import { updateSession } from "@/lib/supabase/middleware";
 const PROTECTED = ["/dashboard", "/new-project"];
 
 export async function middleware(request: NextRequest) {
-  const { response, user } = await updateSession(request);
   const { pathname } = request.nextUrl;
 
-  if (PROTECTED.some((p) => pathname.startsWith(p)) && !user) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
-  }
+  try {
+    const { response, user } = await updateSession(request);
 
-  return response;
+    if (PROTECTED.some((p) => pathname.startsWith(p)) && !user) {
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    }
+
+    return response;
+  } catch (err) {
+    // If Supabase is temporarily unreachable, don't crash the whole site.
+    // Protected routes redirect to sign-in as a safe fallback.
+    console.error("[middleware] updateSession failed:", err);
+
+    if (PROTECTED.some((p) => pathname.startsWith(p))) {
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    }
+
+    return NextResponse.next();
+  }
 }
 
 export const config = {
