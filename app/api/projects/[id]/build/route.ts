@@ -1,0 +1,238 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { Octokit } from "@octokit/rest";
+import { NextResponse } from "next/server";
+import { decrypt } from "@/lib/crypto";
+import { createClient } from "@/lib/supabase/server";
+
+export const maxDuration = 300;
+
+/**
+ * POST /api/projects/:id/build
+ * Reads the user's GitHub repo, sends files to Claude, commits AI-generated
+ * changes back, and lets Vercel auto-deploy via the GitHub webhook.
+ * Streams SSE progress events to the client.
+ */
+export async function POST(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+
+  /* ── auth ────────────────────────────────────────────────────────────── */
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json(
+      { error: "AI build not configured — add ANTHROPIC_API_KEY to your Vercel environment variables." },
+      { status: 500 },
+    );
+  }
+
+  /* ── load project ────────────────────────────────────────────────────── */
+  const { data: project } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!project)
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  if (!project.build_prompt)
+    return NextResponse.json({ error: "No build prompt saved" }, { status: 400 });
+  if (!project.github_repo_url)
+    return NextResponse.json({ error: "No GitHub repo linked to this project" }, { status: 400 });
+
+  /* ── parse repo ──────────────────────────────────────────────────────── */
+  const repoMatch = project.github_repo_url.match(
+    /github\.com\/([^/]+)\/([^/?#]+)/,
+  );
+  if (!repoMatch)
+    return NextResponse.json({ error: "Could not parse GitHub repo URL" }, { status: 400 });
+  const [, owner, rawRepo] = repoMatch;
+  const repo = rawRepo.replace(/\.git$/, "");
+
+  /* ── load github token ───────────────────────────────────────────────── */
+  const { data: githubConn } = await supabase
+    .from("oauth_connections")
+    .select("access_token")
+    .eq("user_id", user.id)
+    .eq("provider", "github")
+    .single();
+
+  if (!githubConn)
+    return NextResponse.json({ error: "GitHub not connected" }, { status: 400 });
+
+  const githubToken = await decrypt(githubConn.access_token as string);
+  const octokit = new Octokit({ auth: githubToken });
+
+  /* ── SSE stream ──────────────────────────────────────────────────────── */
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (data: object) =>
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+
+      try {
+        /* Step 1 — read code ──────────────────────────────────────────── */
+        send({ step: "reading", message: "Reading your app's code…" });
+        await supabase.from("projects").update({ status: "building" }).eq("id", id);
+
+        // Candidates to fetch (Acme / Next.js dashboard template structure)
+        const candidates = [
+          "app/page.tsx",
+          "app/layout.tsx",
+          "app/(overview)/page.tsx",
+          "app/dashboard/page.tsx",
+          "app/ui/home.tsx",
+          "app/ui/dashboard/cards.tsx",
+          "app/globals.css",
+        ];
+
+        type FileEntry = { content: string; sha: string };
+        const files: Record<string, FileEntry> = {};
+
+        for (const path of candidates) {
+          try {
+            const { data } = await octokit.repos.getContent({ owner, repo, path });
+            if ("content" in data && "sha" in data) {
+              files[path] = {
+                content: Buffer.from(data.content as string, "base64").toString("utf-8"),
+                sha: data.sha as string,
+              };
+            }
+          } catch {
+            /* file doesn't exist in this repo — skip */
+          }
+        }
+
+        // If nothing found, fall back to walking the tree
+        if (Object.keys(files).length === 0) {
+          const { data: tree } = await octokit.git.getTree({
+            owner,
+            repo,
+            tree_sha: "HEAD",
+            recursive: "true",
+          });
+          const appFiles = (tree.tree ?? [])
+            .filter(
+              (f) =>
+                f.type === "blob" &&
+                f.path?.match(/\.(tsx?|jsx?|css)$/) &&
+                !f.path?.includes("node_modules") &&
+                !f.path?.includes(".next"),
+            )
+            .slice(0, 6);
+
+          for (const f of appFiles) {
+            if (!f.path) continue;
+            try {
+              const { data } = await octokit.repos.getContent({ owner, repo, path: f.path });
+              if ("content" in data && "sha" in data) {
+                files[f.path] = {
+                  content: Buffer.from(data.content as string, "base64").toString("utf-8"),
+                  sha: data.sha as string,
+                };
+              }
+            } catch { /* skip */ }
+          }
+        }
+
+        /* Step 2 — generate ──────────────────────────────────────────── */
+        send({ step: "generating", message: "Generating your changes…" });
+
+        const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+        const systemPrompt = `You are a senior Next.js developer modifying an existing app.
+Given the user's request and the current codebase, return ONLY a valid JSON object:
+{
+  "files": [{ "path": "relative/path.tsx", "content": "<full file content>" }],
+  "commitMessage": "<imperative sentence under 72 chars>"
+}
+Rules:
+- Include only files that need to change (1–4 files max)
+- Preserve the TypeScript + Tailwind CSS stack
+- Keep imports and component names consistent with existing code
+- Return ONLY the raw JSON — no markdown fences, no explanation`;
+
+        const userMessage = `User request: "${project.build_prompt}"
+
+Current codebase:
+${Object.entries(files)
+  .map(([p, { content }]) => `=== ${p} ===\n${content}`)
+  .join("\n\n")}
+
+Generate the minimal file changes to fulfil the request.`;
+
+        const aiResponse = await anthropic.messages.create({
+          model: "claude-opus-4-5",
+          max_tokens: 8000,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userMessage }],
+        });
+
+        const raw =
+          aiResponse.content[0].type === "text" ? aiResponse.content[0].text : "";
+
+        let changes: { files: Array<{ path: string; content: string }>; commitMessage: string };
+        try {
+          // Strip markdown fences if the model added them
+          const cleaned = raw.replace(/^```(?:json)?\n?/m, "").replace(/```\s*$/m, "").trim();
+          const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+          changes = JSON.parse(jsonMatch ? jsonMatch[0] : cleaned);
+        } catch {
+          throw new Error("Could not parse AI response — please try again.");
+        }
+
+        /* Step 3 — push ──────────────────────────────────────────────── */
+        send({ step: "pushing", message: "Pushing changes to GitHub…" });
+
+        for (const file of changes.files) {
+          const existing = files[file.path];
+          await octokit.repos.createOrUpdateFileContents({
+            owner,
+            repo,
+            path: file.path,
+            message: changes.commitMessage,
+            content: Buffer.from(file.content).toString("base64"),
+            ...(existing ? { sha: existing.sha } : {}),
+          });
+        }
+
+        /* Step 4 — deploying ─────────────────────────────────────────── */
+        send({ step: "deploying", message: "Vercel is deploying your app…" });
+
+        // Revert to "deployed" — Vercel webhook will handle the actual deploy
+        await supabase
+          .from("projects")
+          .update({ status: "deployed", build_prompt: null })
+          .eq("id", id);
+
+        // Brief pause so the client can show the step
+        await new Promise((r) => setTimeout(r, 1500));
+
+        send({ step: "done", commitMessage: changes.commitMessage });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Build failed";
+        // Restore status to deployed so the project isn't stuck in "building"
+        await supabase.from("projects").update({ status: "deployed" }).eq("id", id);
+        send({ step: "error", message });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
