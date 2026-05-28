@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { Octokit } from "@octokit/rest";
+import { logActivity } from "@/lib/activity";
 import { decrypt } from "@/lib/crypto";
 import { notify } from "@/lib/notify";
 import { syncClaudeMd } from "@/lib/sync-claude-md";
@@ -151,7 +152,13 @@ Call digest. Only surface durable, specific facts and real status changes.`,
       kind: VALID_KINDS.includes(e.kind) ? e.kind : "note",
       content: e.content.slice(0, 2000),
     }));
-  if (inserts.length) await admin.from("project_memory").insert(inserts);
+  if (inserts.length) {
+    await admin.from("project_memory").insert(inserts);
+    await logActivity(admin, {
+      userId: project.user_id, projectId: project.id, type: "memory",
+      summary: `Captured ${inserts.length} memory item${inserts.length > 1 ? "s" : ""} from recent work`,
+    });
+  }
 
   // Advance milestones (match by title) + notify on completion
   for (const u of digest.milestoneUpdates ?? []) {
@@ -159,6 +166,10 @@ Call digest. Only surface durable, specific facts and real status changes.`,
     const match = milestones.find((x) => x.title.trim().toLowerCase() === u.title.trim().toLowerCase());
     if (match && match.status !== u.status) {
       await admin.from("plan_milestones").update({ status: u.status }).eq("id", match.id);
+      await logActivity(admin, {
+        userId: project.user_id, projectId: project.id, type: "milestone",
+        summary: `Milestone "${match.title}" → ${u.status}`,
+      });
       if (u.status === "done") {
         await notify(admin, project.user_id, {
           type: "milestone", projectId: project.id,
