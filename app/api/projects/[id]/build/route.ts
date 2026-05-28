@@ -171,46 +171,65 @@ export async function POST(
 
         const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-        const systemPrompt = `You are a senior Next.js developer modifying an existing app.
-Given the user's request and the current codebase, return ONLY a valid JSON object:
-{
-  "files": [{ "path": "relative/path.tsx", "content": "<full file content>" }],
-  "commitMessage": "<imperative sentence under 72 chars>"
-}
-Rules:
-- Include only files that need to change (1–4 files max)
-- Preserve the TypeScript + Tailwind CSS stack
-- Keep imports and component names consistent with existing code
-- Return ONLY the raw JSON — no markdown fences, no explanation`;
+        const userMessage = `You are a senior Next.js developer. The user wants to modify their app.
 
-        const userMessage = `User request: "${project.build_prompt}"
+User request: "${project.build_prompt}"
 
 Current codebase:
 ${Object.entries(files)
   .map(([p, { content }]) => `=== ${p} ===\n${content}`)
   .join("\n\n")}
 
-Generate the minimal file changes to fulfil the request.`;
+Call the write_files tool with the minimal changes needed to fulfil the request.
+Rules:
+- Only include files that actually need to change (1–4 files max)
+- Keep TypeScript + Tailwind CSS — same stack, same imports
+- Write the full file content for each changed file`;
 
+        // Use tool use to guarantee structured output — no JSON parsing needed
         const aiResponse = await anthropic.messages.create({
           model: "claude-opus-4-5",
           max_tokens: 8000,
-          system: systemPrompt,
+          tools: [
+            {
+              name: "write_files",
+              description: "Write the changed files to the repository",
+              input_schema: {
+                type: "object" as const,
+                properties: {
+                  files: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        path:    { type: "string", description: "Relative file path, e.g. app/page.tsx" },
+                        content: { type: "string", description: "Full file content" },
+                      },
+                      required: ["path", "content"],
+                    },
+                  },
+                  commitMessage: {
+                    type: "string",
+                    description: "Imperative git commit message under 72 chars",
+                  },
+                },
+                required: ["files", "commitMessage"],
+              },
+            },
+          ],
+          tool_choice: { type: "any" },
           messages: [{ role: "user", content: userMessage }],
         });
 
-        const raw =
-          aiResponse.content[0].type === "text" ? aiResponse.content[0].text : "";
-
-        let changes: { files: Array<{ path: string; content: string }>; commitMessage: string };
-        try {
-          // Strip markdown fences if the model added them
-          const cleaned = raw.replace(/^```(?:json)?\n?/m, "").replace(/```\s*$/m, "").trim();
-          const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-          changes = JSON.parse(jsonMatch ? jsonMatch[0] : cleaned);
-        } catch {
-          throw new Error("Could not parse AI response — please try again.");
+        const toolUse = aiResponse.content.find((c) => c.type === "tool_use");
+        if (!toolUse || toolUse.type !== "tool_use") {
+          throw new Error("AI did not generate file changes — please try again.");
         }
+
+        const changes = toolUse.input as {
+          files: Array<{ path: string; content: string }>;
+          commitMessage: string;
+        };
 
         /* Step 3 — push ──────────────────────────────────────────────── */
         send({ step: "pushing", message: "Pushing changes to GitHub…" });
