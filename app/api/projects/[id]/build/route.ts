@@ -103,6 +103,7 @@ export async function POST(
         }
 
         /* Step 1 — read code ──────────────────────────────────────────── */
+        console.log("[build] step 1: reading code for project", id, "repo", owner + "/" + repo);
         send({ step: "reading", message: "Reading your app's code…" });
         await supabase.from("projects").update({ status: "building" }).eq("id", id);
 
@@ -167,6 +168,8 @@ export async function POST(
         }
 
         /* Step 2 — generate ──────────────────────────────────────────── */
+        console.log("[build] step 1 done: read", Object.keys(files).length, "files:", Object.keys(files).join(", "));
+        console.log("[build] step 2: calling Anthropic with prompt:", project.build_prompt?.slice(0, 120));
         send({ step: "generating", message: "Generating your changes…" });
 
         const anthropic = new Anthropic({ apiKey: anthropicKey });
@@ -232,6 +235,8 @@ Rules:
         };
 
         /* Step 3 — push ──────────────────────────────────────────────── */
+        console.log("[build] step 2 done: AI wants to change", changes.files.length, "files:", changes.files.map(f => f.path).join(", "));
+        console.log("[build] step 3: pushing to GitHub");
         send({ step: "pushing", message: "Pushing changes to GitHub…" });
 
         for (const file of changes.files) {
@@ -247,6 +252,8 @@ Rules:
         }
 
         /* Step 4 — deploying ─────────────────────────────────────────── */
+        console.log("[build] step 3 done: all files pushed");
+        console.log("[build] step 4: waiting for Vercel deploy");
         send({ step: "deploying", message: "Vercel is deploying your app…" });
 
         // Revert to "deployed" — Vercel webhook will handle the actual deploy
@@ -260,6 +267,7 @@ Rules:
 
         send({ step: "done", commitMessage: changes.commitMessage });
       } catch (err) {
+        console.error("[build] pipeline error:", err);
         const message = err instanceof Error ? err.message : "Build failed";
         // Restore project status
         await supabase.from("projects").update({ status: "deployed" }).eq("id", id);
