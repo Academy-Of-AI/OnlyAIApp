@@ -1,5 +1,6 @@
 import { decrypt } from "@/lib/crypto";
 import { registerPushWebhook } from "@/lib/github";
+import { isProUser, PRO_REQUIRED } from "@/lib/plan";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -12,6 +13,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!(await isProUser(supabase, user.id))) {
+    return NextResponse.json(PRO_REQUIRED, { status: 402 });
+  }
 
   const { data: project } = await supabase
     .from("projects").select("github_repo_url")

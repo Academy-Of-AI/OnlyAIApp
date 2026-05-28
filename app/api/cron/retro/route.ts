@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { notify } from "@/lib/notify";
+import { isProUser } from "@/lib/plan";
 import { createAdminClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -30,6 +31,9 @@ export async function GET(req: Request) {
   let sent = 0;
 
   for (const p of projects) {
+    // Retro is a Pro feature (runs AI on us) — skip free owners
+    if (!(await isProUser(admin, p.user_id))) continue;
+
     const { data: acts } = await admin
       .from("project_activity").select("type, summary, created_at")
       .eq("project_id", p.id).gte("created_at", weekAgo)

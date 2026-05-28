@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { Octokit } from "@octokit/rest";
 import { decrypt } from "@/lib/crypto";
+import { isProUser, PRO_REQUIRED } from "@/lib/plan";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -25,6 +26,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!(await isProUser(supabase, user.id))) {
+    return NextResponse.json(PRO_REQUIRED, { status: 402 });
+  }
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_SECRET_KEY;
   if (!anthropicKey) return NextResponse.json({ error: "AI not configured" }, { status: 500 });

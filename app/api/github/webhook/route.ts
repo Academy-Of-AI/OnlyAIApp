@@ -1,4 +1,5 @@
 import { runDigest } from "@/lib/auto-capture";
+import { isProUser } from "@/lib/plan";
 import { createAdminClient } from "@/lib/supabase/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
@@ -58,9 +59,12 @@ export async function POST(request: Request) {
 
   if (!projects?.length) return NextResponse.json({ ok: true, matched: 0 });
 
-  // Run digest for each matching project (await within maxDuration)
+  // Run digest for each matching project (await within maxDuration).
+  // Defense-in-depth: only Pro owners get AI digests (auto-capture is Pro-gated
+  // at enable, but re-check here so owner AI cost only lands on paying users).
   for (const p of projects) {
     try {
+      if (!(await isProUser(admin, p.user_id))) continue;
       await runDigest(admin, p, { commits });
     } catch (err) {
       console.error("[github/webhook] digest failed for", p.id, err);
