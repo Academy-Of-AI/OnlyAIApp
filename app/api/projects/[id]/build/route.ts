@@ -3,13 +3,14 @@ import { Octokit } from "@octokit/rest";
 import { NextResponse } from "next/server";
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
+import { triggerVercelDeployment } from "@/lib/vercel";
 
 export const maxDuration = 300;
 
 /**
  * POST /api/projects/:id/build
  * Reads the user's GitHub repo, sends files to Claude, commits AI-generated
- * changes back, and lets Vercel auto-deploy via the GitHub webhook.
+ * changes back, then explicitly triggers a Vercel deployment.
  * Streams SSE progress events to the client.
  */
 export async function POST(
@@ -57,6 +58,15 @@ export async function POST(
 
   if (!project)
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
+
+  /* ── build mutex — block concurrent builds on the same project ────── */
+  if (project.status === "building") {
+    return NextResponse.json(
+      { error: "A build is already in progress for this project.", code: "build_in_progress" },
+      { status: 409 },
+    );
+  }
+
   if (!project.build_prompt)
     return NextResponse.json({ error: "No build prompt saved" }, { status: 400 });
   if (!project.github_repo_url)
@@ -71,19 +81,38 @@ export async function POST(
   const [, owner, rawRepo] = repoMatch;
   const repo = rawRepo.replace(/\.git$/, "");
 
-  /* ── load github token ───────────────────────────────────────────────── */
-  const { data: githubConn } = await supabase
-    .from("oauth_connections")
-    .select("access_token")
-    .eq("user_id", user.id)
-    .eq("provider", "github")
-    .single();
+  /* ── load github + vercel tokens in parallel ─────────────────────────── */
+  const [{ data: githubConn }, { data: vercelConn }] = await Promise.all([
+    supabase
+      .from("oauth_connections")
+      .select("access_token")
+      .eq("user_id", user.id)
+      .eq("provider", "github")
+      .single(),
+    supabase
+      .from("oauth_connections")
+      .select("access_token, metadata")
+      .eq("user_id", user.id)
+      .eq("provider", "vercel")
+      .single(),
+  ]);
 
   if (!githubConn)
     return NextResponse.json({ error: "GitHub not connected" }, { status: 400 });
 
   const githubToken = await decrypt(githubConn.access_token as string);
   const octokit = new Octokit({ auth: githubToken });
+
+  // Vercel token is optional — we'll still push to GitHub even if it's missing
+  let vercelToken: string | null = null;
+  let vercelTeamId: string | null = null;
+  if (vercelConn) {
+    try {
+      vercelToken = await decrypt(vercelConn.access_token as string);
+      const meta = vercelConn.metadata as { team_id?: string | null } | null;
+      vercelTeamId = meta?.team_id ?? null;
+    } catch { /* non-fatal */ }
+  }
 
   /* ── SSE stream ──────────────────────────────────────────────────────── */
   const encoder = new TextEncoder();
@@ -177,8 +206,27 @@ export async function POST(
           }
         }
 
+        if (Object.keys(files).length === 0) {
+          throw new Error("Could not read any source files from the repo — make sure the GitHub repo is accessible.");
+        }
+
         /* Step 2 — generate ──────────────────────────────────────────── */
-        console.log("[build] step 1 done: read", Object.keys(files).length, "files:", Object.keys(files).join(", "));
+        // Cap each file at 300 lines to avoid input token overflow
+        const MAX_FILE_LINES = 300;
+        const foundPaths = Object.keys(files);
+        const fileContext = foundPaths
+          .map((p) => {
+            const lines = files[p].content.split("\n");
+            const capped =
+              lines.length > MAX_FILE_LINES
+                ? lines.slice(0, MAX_FILE_LINES).join("\n") +
+                  "\n// [truncated — file continues beyond this point]"
+                : files[p].content;
+            return `=== ${p} ===\n${capped}`;
+          })
+          .join("\n\n");
+
+        console.log("[build] step 1 done: read", foundPaths.length, "files:", foundPaths.join(", "));
         console.log("[build] step 2: calling Anthropic with prompt:", project.build_prompt?.slice(0, 120));
         send({ step: "generating", message: "Generating your changes…" });
 
@@ -188,17 +236,16 @@ export async function POST(
 
 User request: "${project.build_prompt}"
 
-Current codebase:
-${Object.entries(files)
-  .map(([p, { content }]) => `=== ${p} ===\n${content}`)
-  .join("\n\n")}
+Current codebase (${foundPaths.length} file${foundPaths.length !== 1 ? "s" : ""}):
+${fileContext}
 
 Call the write_files tool with the minimal changes needed to fulfil the request.
 Rules:
-- CRITICAL: Only modify 1–2 files maximum. Prefer changing just app/page.tsx.
-- Keep changes small and focused — do not rewrite the entire app.
+- CRITICAL: Only modify files that already exist in the codebase above. Available paths: ${foundPaths.join(", ")}
+- Only modify 1–2 files maximum. Prefer changing just app/page.tsx.
+- Keep changes small and focused — do not rewrite the entire app unnecessarily.
 - Keep TypeScript + Tailwind CSS — same stack, same imports.
-- Write the complete file content for each changed file.
+- Write the complete updated content for each changed file.
 - Keep each file under 150 lines if possible.`;
 
         // Use tool use to guarantee structured output — no JSON parsing needed
@@ -286,18 +333,35 @@ Rules:
           });
         }
 
-        /* Step 4 — deploying ─────────────────────────────────────────── */
+        /* Step 4 — trigger Vercel deploy ─────────────────────────────── */
         console.log("[build] step 3 done: all files pushed");
-        console.log("[build] step 4: waiting for Vercel deploy");
-        send({ step: "deploying", message: "Vercel is deploying your app…" });
+        console.log("[build] step 4: triggering Vercel deployment");
+        send({ step: "deploying", message: "Triggering Vercel deployment…" });
 
-        // Revert to "deployed" — Vercel webhook will handle the actual deploy
+        // Explicitly trigger a Vercel deploy — don't rely solely on the GitHub webhook
+        if (vercelToken && project.vercel_project_id) {
+          try {
+            await triggerVercelDeployment({
+              token: vercelToken,
+              projectId: project.vercel_project_id as string,
+              projectName: project.name as string,
+              teamId: vercelTeamId ?? undefined,
+            });
+            console.log("[build] step 4: Vercel deployment triggered for project", project.vercel_project_id);
+          } catch (vercelErr) {
+            // Non-fatal: GitHub webhook may still deploy on its own
+            console.warn("[build] step 4: Vercel trigger failed (non-fatal):", vercelErr);
+          }
+        } else {
+          console.log("[build] step 4: no Vercel token/projectId — relying on GitHub webhook");
+        }
+
         await supabase
           .from("projects")
           .update({ status: "deployed", build_prompt: null })
           .eq("id", id);
 
-        // Brief pause so the client can show the step
+        // Brief pause so the client can show the deploying step
         await new Promise((r) => setTimeout(r, 1500));
 
         send({ step: "done", commitMessage: changes.commitMessage });

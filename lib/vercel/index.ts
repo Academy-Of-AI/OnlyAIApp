@@ -97,6 +97,40 @@ export async function getLatestDeploymentUrl({
 }
 
 /**
+ * Trigger a new deployment for a Vercel project via its linked GitHub branch.
+ * Non-fatal: if the API call fails, Vercel's GitHub webhook will still fire
+ * when it receives the push event (may just take a few extra seconds).
+ */
+export async function triggerVercelDeployment({
+  token,
+  projectId,
+  projectName,
+  branch = "main",
+  teamId,
+}: {
+  token: string;
+  projectId: string;
+  projectName: string;
+  branch?: string;
+  teamId?: string;
+}): Promise<void> {
+  const qs = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
+  const res = await fetch(`${VERCEL_API}/v13/deployments${qs}`, {
+    method: "POST",
+    headers: vercelHeaders(token),
+    body: JSON.stringify({
+      name: projectName,
+      project: projectId,
+      gitSource: { type: "github", ref: branch },
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    console.warn(`[vercel] triggerDeployment non-fatal: ${err}`);
+  }
+}
+
+/**
  * Delete a Vercel project — best-effort, swallow errors.
  */
 export async function deleteVercelProject({
