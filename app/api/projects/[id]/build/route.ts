@@ -217,16 +217,32 @@ export async function POST(
            These patches are pushed to GitHub regardless of what Claude changes. */
         const autoPatches: Record<string, string> = {};
 
-        // Stripe SDK apiVersion — "2024-06-20" is no longer a valid type literal
-        // in stripe >=17; must use the latest stable value.
-        if (files["lib/stripe/index.ts"]?.content.includes('"2024-06-20"')) {
-          const fixed = files["lib/stripe/index.ts"].content.replace(
-            '"2024-06-20"',
-            '"2025-02-24.acacia"',
-          );
-          autoPatches["lib/stripe/index.ts"] = fixed;
-          files["lib/stripe/index.ts"] = { ...files["lib/stripe/index.ts"], content: fixed };
-          console.log("[build] auto-healed lib/stripe/index.ts — updated Stripe apiVersion");
+        // lib/stripe/index.ts — two template issues:
+        //  1. apiVersion "2024-06-20" is no longer a valid type literal (stripe >=17)
+        //  2. `new Stripe(process.env.STRIPE_SECRET_KEY!)` throws at BUILD time
+        //     (during "Collecting page data") when the key isn't configured.
+        if (files["lib/stripe/index.ts"]) {
+          let stripeContent = files["lib/stripe/index.ts"].content;
+          let stripeChanged = false;
+
+          if (stripeContent.includes('"2024-06-20"')) {
+            stripeContent = stripeContent.replace('"2024-06-20"', '"2025-02-24.acacia"');
+            stripeChanged = true;
+          }
+          // Replace the non-null assertion that crashes the build with a safe fallback
+          if (stripeContent.includes("process.env.STRIPE_SECRET_KEY!")) {
+            stripeContent = stripeContent.replace(
+              "process.env.STRIPE_SECRET_KEY!",
+              'process.env.STRIPE_SECRET_KEY ?? "sk_test_placeholder_build_only"',
+            );
+            stripeChanged = true;
+          }
+
+          if (stripeChanged) {
+            autoPatches["lib/stripe/index.ts"] = stripeContent;
+            files["lib/stripe/index.ts"] = { ...files["lib/stripe/index.ts"], content: stripeContent };
+            console.log("[build] auto-healed lib/stripe/index.ts — apiVersion + build-safe key fallback");
+          }
         }
 
         // next.config.ts — the single most important auto-heal. Template type/lint
