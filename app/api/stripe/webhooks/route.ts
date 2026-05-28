@@ -68,11 +68,15 @@ export async function POST(request: Request) {
           cancel_at_period_end: sub.cancel_at_period_end,
           updated_at: new Date().toISOString(),
         });
-        if (sub.status === "active") {
+        if (sub.status === "active" || sub.status === "trialing") {
+          // Flip the user onto Pro so gated features unlock
+          await supabase.from("profiles").update({ plan: "pro" }).eq("id", userId);
           await track("plan_upgraded", userId, {
             price_id: sub.items.data[0]?.price.id,
             subscription_id: sub.id,
           });
+        } else if (["canceled", "unpaid", "incomplete_expired"].includes(sub.status)) {
+          await supabase.from("profiles").update({ plan: "free" }).eq("id", userId);
         }
         break;
       }
@@ -82,6 +86,9 @@ export async function POST(request: Request) {
         await supabase.from("subscriptions")
           .update({ status: "canceled", updated_at: new Date().toISOString() })
           .eq("id", sub.id);
+        // Downgrade the user back to free
+        const userId = sub.metadata?.userId;
+        if (userId) await supabase.from("profiles").update({ plan: "free" }).eq("id", userId);
         break;
       }
     }
