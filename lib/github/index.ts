@@ -78,6 +78,27 @@ export async function renameRepo({
 }
 
 /**
+ * Create or update a single file in a repo (handles the required SHA for updates).
+ */
+export async function upsertFile({
+  token, owner, repo, path, content, message,
+}: {
+  token: string; owner: string; repo: string; path: string; content: string; message: string;
+}): Promise<void> {
+  const octokit = githubClient(token);
+  let sha: string | undefined;
+  try {
+    const { data } = await octokit.repos.getContent({ owner, repo, path });
+    if ("sha" in data) sha = data.sha as string;
+  } catch { /* file doesn't exist yet */ }
+  await octokit.repos.createOrUpdateFileContents({
+    owner, repo, path, message,
+    content: Buffer.from(content).toString("base64"),
+    ...(sha ? { sha } : {}),
+  });
+}
+
+/**
  * Delete a GitHub repository — best-effort, swallow errors.
  */
 export async function deleteRepo({
