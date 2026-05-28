@@ -1,6 +1,6 @@
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
-import { getLatestDeploymentStatus, type DeploymentState } from "@/lib/vercel";
+import { getDeploymentErrorLine, getLatestDeploymentStatus, type DeploymentState } from "@/lib/vercel";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -57,7 +57,22 @@ export default async function MissionControlPage() {
     }),
   );
 
-  const live = (projects ?? []).map((p, i) => ({ project: p, status: statuses[i] }));
+  // For broken deploys, pull a plain-English error line from the build log.
+  const errorLines = await Promise.all(
+    (projects ?? []).map(async (p, i) => {
+      const s = statuses[i];
+      if (!vercelToken || !s || s.state !== "ERROR" || !s.deploymentId) return null;
+      return getDeploymentErrorLine({
+        token: vercelToken,
+        deploymentId: s.deploymentId,
+        teamId: vercelTeamId,
+      });
+    }),
+  );
+
+  const live = (projects ?? []).map((p, i) => ({
+    project: p, status: statuses[i], errorLine: errorLines[i],
+  }));
   const broken = live.filter((x) => x.status?.state === "ERROR").length;
 
   return (
@@ -83,7 +98,7 @@ export default async function MissionControlPage() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
-          {live.map(({ project: p, status }) => {
+          {live.map(({ project: p, status, errorLine }) => {
             const state: DeploymentState = status?.state ?? "unknown";
             const ui = STATE_UI[state];
             return (
@@ -112,7 +127,9 @@ export default async function MissionControlPage() {
 
                 {state === "ERROR" && (
                   <div className="mt-3 bg-red-500/10 border border-red-500/25 rounded-lg px-3 py-2 text-xs text-red-300">
-                    ⚠ Last deploy failed — open the project to see the build log.
+                    ⚠ {errorLine
+                      ? <span className="font-mono break-words">{errorLine}</span>
+                      : "Last deploy failed — open the project to see the build log."}
                   </div>
                 )}
               </Link>

@@ -251,6 +251,49 @@ export async function getLatestDeploymentStatus({
 }
 
 /**
+ * Fetch a failed deployment's build logs and extract the single most useful
+ * error line, in plain-ish English. Heuristic (no LLM) so it's cheap to call
+ * on a server-rendered page. Returns null if nothing useful is found.
+ */
+export async function getDeploymentErrorLine({
+  token,
+  deploymentId,
+  teamId,
+}: {
+  token: string;
+  deploymentId: string;
+  teamId?: string;
+}): Promise<string | null> {
+  try {
+    const qs = `${teamId ? `?teamId=${encodeURIComponent(teamId)}` : ""}`;
+    const res = await fetch(`${VERCEL_API}/v2/deployments/${deploymentId}/events${qs}`, {
+      headers: vercelHeaders(token),
+    });
+    if (!res.ok) return null;
+    const events = await res.json() as Array<{ text?: string; payload?: { text?: string } }>;
+    const lines = (Array.isArray(events) ? events : [])
+      .map((e) => (e.text ?? e.payload?.text ?? "").replace(/\[[0-9;]*m/g, "").trim())
+      .filter(Boolean);
+
+    // Prefer the most specific signal, in priority order
+    const patterns = [
+      /Type error:.*/i,
+      /Module not found:.*/i,
+      /Error:\s*.*(required|missing|undefined|not found|cannot).*/i,
+      /Failed to compile/i,
+      /Error:.*/i,
+    ];
+    for (const re of patterns) {
+      const hit = lines.find((l) => re.test(l));
+      if (hit) return hit.slice(0, 180);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Delete a Vercel project — best-effort, swallow errors.
  */
 export async function deleteVercelProject({
