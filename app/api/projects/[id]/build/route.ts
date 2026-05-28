@@ -26,6 +26,22 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  /* ── on-ramp economics ───────────────────────────────────────────────────
+     The owner-funded in-app generator is OFF by default. Newbies drive the
+     build with their OWN Claude Code (their subscription), so we never pay for
+     their tokens. Flip OWNER_FUNDED_BUILDS=true only for a controlled "quick
+     draft" experiment. */
+  if (process.env.OWNER_FUNDED_BUILDS !== "true") {
+    return NextResponse.json(
+      {
+        error: "Build it with your own Claude Code — open the project locally and point your agent at it. Launchpad keeps it on track.",
+        code: "use_own_agent",
+        guide: "/start",
+      },
+      { status: 409 },
+    );
+  }
+
   const anthropicKey = process.env.ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_SECRET_KEY;
   if (!anthropicKey) {
     return NextResponse.json(
