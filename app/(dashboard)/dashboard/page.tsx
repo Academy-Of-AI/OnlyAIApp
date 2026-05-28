@@ -3,6 +3,7 @@ import { SupabaseConnectForm } from "@/components/supabase-connect-form";
 import { VercelConnectForm } from "@/components/vercel-connect-form";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { UpdateConnectionButton } from "@/components/update-connection-button";
 
 const STATUS_STYLES: Record<string, string> = {
   deployed:     "bg-green-500/20 text-green-400",
@@ -84,7 +85,12 @@ export default async function DashboardPage({
                   <GHIcon />
                   <span className="font-medium text-sm">GitHub</span>
                 </div>
-                {hasGitHub && <span className="text-xs text-green-400 font-medium">✓ Connected</span>}
+                {hasGitHub && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-green-400 font-medium">✓ Connected</span>
+                    <UpdateConnectionButton provider="github" label="Update" />
+                  </div>
+                )}
               </div>
               <p className="text-xs text-neutral-400 leading-relaxed">
                 Every project gets its own <strong className="text-neutral-200">private GitHub repository</strong> created
@@ -111,7 +117,12 @@ export default async function DashboardPage({
                   <span className="text-sm">▲</span>
                   <span className="font-medium text-sm">Vercel</span>
                 </div>
-                {hasVercel && <span className="text-xs text-green-400 font-medium">✓ Connected</span>}
+                {hasVercel && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-green-400 font-medium">✓ Connected</span>
+                    <UpdateConnectionButton provider="vercel" label="Update" />
+                  </div>
+                )}
               </div>
               <p className="text-xs text-neutral-400 leading-relaxed">
                 Your project is deployed live to <strong className="text-neutral-200">Vercel&apos;s global network</strong> the
@@ -131,7 +142,12 @@ export default async function DashboardPage({
                   <span className="text-sm">⚡</span>
                   <span className="font-medium text-sm">Supabase</span>
                 </div>
-                {hasSupabase && <span className="text-xs text-green-400 font-medium">✓ Connected</span>}
+                {hasSupabase && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-green-400 font-medium">✓ Connected</span>
+                    <UpdateConnectionButton provider="supabase" label="Update" />
+                  </div>
+                )}
               </div>
               <p className="text-xs text-neutral-400 leading-relaxed">
                 Every project gets its own <strong className="text-neutral-200">Supabase database</strong> — authentication,
@@ -152,7 +168,12 @@ export default async function DashboardPage({
                     <span className="text-xs text-neutral-600 border border-white/10 px-1.5 py-0.5 rounded-full">optional</span>
                   )}
                 </div>
-                {hasResend && <span className="text-xs text-green-400 font-medium">✓ Connected</span>}
+                {hasResend && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-green-400 font-medium">✓ Connected</span>
+                    <UpdateConnectionButton provider="resend" label="Update" />
+                  </div>
+                )}
               </div>
               <p className="text-xs text-neutral-400 leading-relaxed">
                 Every project gets <strong className="text-neutral-200">transactional email</strong> working
@@ -203,14 +224,15 @@ export default async function DashboardPage({
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {projects.map((p) => (
-            <div
+            <Link
               key={p.id}
-              className="border border-white/10 rounded-xl p-5 space-y-3 hover:border-white/20 transition-colors"
+              href={`/projects/${p.id}`}
+              className="block border border-white/10 rounded-xl p-5 space-y-3 hover:border-white/25 hover:bg-white/[0.02] transition-all cursor-pointer"
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="font-semibold truncate">{p.name}</span>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
+                  className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
                     STATUS_STYLES[p.status] ?? STATUS_STYLES.pending
                   }`}
                 >
@@ -220,31 +242,17 @@ export default async function DashboardPage({
               <p className="text-xs text-neutral-500">{p.template_id}</p>
               <div className="flex gap-3 text-xs">
                 {p.github_repo_url && (
-                  <a
-                    href={p.github_repo_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-neutral-400 hover:text-white transition-colors"
-                  >
-                    GitHub →
-                  </a>
+                  <span className="text-neutral-400">GitHub →</span>
                 )}
                 {p.vercel_preview_url && (
-                  <a
-                    href={p.vercel_preview_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-green-400 hover:text-green-300 transition-colors"
-                  >
-                    Live URL →
-                  </a>
+                  <span className="text-green-400">Live URL →</span>
                 )}
               </div>
               {p.error && <p className="text-xs text-red-400 truncate">{p.error}</p>}
               <p className="text-xs text-neutral-600">
                 {new Date(p.created_at).toLocaleDateString()}
               </p>
-            </div>
+            </Link>
           ))}
         </div>
       )}

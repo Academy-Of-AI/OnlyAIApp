@@ -1,0 +1,45 @@
+"use client";
+
+import { useState } from "react";
+import { VercelConnectForm } from "@/components/vercel-connect-form";
+import { SupabaseConnectForm } from "@/components/supabase-connect-form";
+import { ResendConnectForm } from "@/components/resend-connect-form";
+
+type Provider = "github" | "vercel" | "supabase" | "resend";
+
+export function UpdateConnectionButton({
+  provider,
+  label = "Update",
+}: {
+  provider: Provider;
+  label?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="text-xs text-neutral-500 hover:text-neutral-300 underline underline-offset-2 transition-colors"
+      >
+        {open ? "Cancel" : label}
+      </button>
+
+      {open && (
+        <div className="mt-3">
+          {provider === "vercel"   && <VercelConnectForm />}
+          {provider === "supabase" && <SupabaseConnectForm />}
+          {provider === "resend"   && <ResendConnectForm />}
+          {provider === "github"   && (
+            <a
+              href="/api/github/connect"
+              className="flex items-center justify-center gap-2 bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-neutral-200 transition-colors w-full"
+            >
+              Reconnect GitHub →
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
