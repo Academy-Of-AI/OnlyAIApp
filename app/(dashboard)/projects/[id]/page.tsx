@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 const STATUS_STYLES: Record<string, string> = {
   deployed:     "bg-green-500/20 text-green-400",
   provisioning: "bg-yellow-500/20 text-yellow-400",
+  building:     "bg-blue-500/20 text-blue-400",
   pending:      "bg-neutral-500/20 text-neutral-400",
   failed:       "bg-red-500/20 text-red-400",
 };
@@ -19,12 +20,10 @@ export default async function ProjectPage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: project } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("id", id)
-    .eq("user_id", user!.id)
-    .single();
+  const [{ data: project }, { data: profile }] = await Promise.all([
+    supabase.from("projects").select("*").eq("id", id).eq("user_id", user!.id).single(),
+    supabase.from("profiles").select("build_credits").eq("id", user!.id).single(),
+  ]);
 
   if (!project) notFound();
 
@@ -78,7 +77,7 @@ export default async function ProjectPage({
       </div>
 
       {/* Tabs */}
-      <ProjectTabs project={project} />
+      <ProjectTabs project={project} buildCredits={profile?.build_credits ?? 0} />
     </main>
   );
 }

@@ -21,7 +21,13 @@ type Project = {
 const TABS = ["Build", "Analytics", "CRM", "Settings"] as const;
 type Tab = (typeof TABS)[number];
 
-export function ProjectTabs({ project }: { project: Project }) {
+export function ProjectTabs({
+  project,
+  buildCredits,
+}: {
+  project: Project;
+  buildCredits: number;
+}) {
   const [tab, setTab] = useState<Tab>("Build");
 
   return (
@@ -43,7 +49,7 @@ export function ProjectTabs({ project }: { project: Project }) {
         ))}
       </div>
 
-      {tab === "Build"     && <BuildTab project={project} />}
+      {tab === "Build"     && <BuildTab project={project} buildCredits={buildCredits} />}
       {tab === "Analytics" && <ComingSoonTab title="Analytics" desc="Once your app has real users, their activity will appear here — signups, active users, activation funnel, and revenue." icon="📊" />}
       {tab === "CRM"       && <ComingSoonTab title="CRM" desc="Every user who signs up to your app will appear here. See who they are, what they've done, and send them emails directly." icon="👥" />}
       {tab === "Settings"  && <SettingsTab project={project} />}
@@ -66,14 +72,37 @@ const INITIAL_STEPS: BuildStep[] = [
   { label: "Going live on Vercel",     status: "pending" },
 ];
 
+/* ── Credit packs ───────────────────────────────────────────────────────── */
+const PACKS = [
+  { key: "starter",    credits: 5,  price: "$5",  badge: "Starter"    },
+  { key: "builder",    credits: 15, price: "$12", badge: "Builder"    },
+  { key: "accelerate", credits: 30, price: "$20", badge: "Best value" },
+] as const;
+
 /* ── Build tab ─────────────────────────────────────────────────────────── */
-function BuildTab({ project }: { project: Project }) {
+function BuildTab({ project, buildCredits: initialCredits }: { project: Project; buildCredits: number }) {
   const router = useRouter();
+  const [credits, setCredits]     = useState(initialCredits);
   const [prompt, setPrompt]       = useState(project.build_prompt ?? "");
   const [phase, setPhase]         = useState<"idle" | "building" | "done" | "error">("idle");
   const [steps, setSteps]         = useState<BuildStep[]>(INITIAL_STEPS);
   const [commitMsg, setCommitMsg] = useState("");
   const [errorMsg, setErrorMsg]   = useState("");
+  const [buyingPack, setBuyingPack] = useState<string | null>(null);
+
+  async function handleBuyCredits(pack: string) {
+    setBuyingPack(pack);
+    const res = await fetch("/api/credits/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pack }),
+    });
+    setBuyingPack(null);
+    if (res.ok) {
+      const { url } = await res.json();
+      window.location.href = url;
+    }
+  }
 
   function setStep(index: number, status: StepStatus) {
     setSteps((prev) =>
@@ -161,6 +190,7 @@ function BuildTab({ project }: { project: Project }) {
               setSteps((prev) => prev.map((s) => ({ ...s, status: "done" })));
               setCommitMsg(event.commitMessage ?? "");
               setPhase("done");
+              setCredits((c) => Math.max(0, c - 1));
               router.refresh();
               break;
             case "error":
@@ -179,40 +209,86 @@ function BuildTab({ project }: { project: Project }) {
   if (phase === "idle") {
     return (
       <div className="space-y-6 max-w-2xl">
-        <div>
-          <h2 className="text-lg font-semibold mb-1">Build your app</h2>
-          <p className="text-sm text-neutral-400">
-            Describe what you want to add or change — we&apos;ll build it for you.
-          </p>
-        </div>
-
-        <div className="border border-white/10 rounded-xl overflow-hidden focus-within:border-green-500/40 focus-within:ring-1 focus-within:ring-green-500/20 transition-all">
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            className="w-full bg-transparent text-sm text-white placeholder-neutral-500 p-4 resize-none min-h-[110px] outline-none"
-            placeholder="e.g. Add a pricing page with three tiers — Starter, Pro, and Enterprise…"
-          />
-          <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/10">
-            <span className="text-xs text-neutral-600">Describe what you want built</span>
-            <button
-              onClick={handleGenerate}
-              disabled={!prompt.trim()}
-              className="bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed text-black text-xs font-bold px-4 py-1.5 rounded-lg transition-colors"
-            >
-              ✦ Generate
-            </button>
+        {/* Header + credit balance */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold mb-1">Build your app</h2>
+            <p className="text-sm text-neutral-400">
+              Describe what you want to add or change — we&apos;ll build it for you.
+            </p>
+          </div>
+          <div className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${
+            credits > 0
+              ? "bg-green-500/10 border-green-500/30 text-green-400"
+              : "bg-neutral-500/10 border-white/10 text-neutral-500"
+          }`}>
+            <span>✦</span>
+            <span>{credits} build credit{credits !== 1 ? "s" : ""}</span>
           </div>
         </div>
 
-        <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">How it works</p>
-          <p className="text-sm text-neutral-400 leading-relaxed">
-            Describe your idea and we handle everything — reading your existing code,
-            figuring out what needs to change, and deploying it live automatically.
-            No code. No setup. Just describe and ship.
-          </p>
-        </div>
+        {/* No-credits panel */}
+        {credits === 0 ? (
+          <div className="border border-white/10 rounded-xl p-6 space-y-5">
+            <div>
+              <p className="font-semibold text-sm mb-1">You&apos;re out of build credits</p>
+              <p className="text-sm text-neutral-400">
+                Pick a pack to top up. Credits never expire and work across all your projects.
+              </p>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {PACKS.map((pack) => (
+                <button
+                  key={pack.key}
+                  onClick={() => handleBuyCredits(pack.key)}
+                  disabled={buyingPack !== null}
+                  className="relative border border-white/10 hover:border-green-500/40 rounded-xl p-4 text-left transition-all disabled:opacity-60 group"
+                >
+                  {pack.badge === "Best value" && (
+                    <span className="absolute -top-2 left-3 text-[10px] bg-green-500 text-black font-bold px-2 py-0.5 rounded-full">
+                      Best value
+                    </span>
+                  )}
+                  <p className="text-xl font-bold text-white mb-0.5">{pack.price}</p>
+                  <p className="text-sm text-neutral-400">{pack.credits} builds</p>
+                  <p className="text-xs text-neutral-600 mt-2 group-hover:text-green-400 transition-colors">
+                    {buyingPack === pack.key ? "Redirecting…" : "Buy →"}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="border border-white/10 rounded-xl overflow-hidden focus-within:border-green-500/40 focus-within:ring-1 focus-within:ring-green-500/20 transition-all">
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="w-full bg-transparent text-sm text-white placeholder-neutral-500 p-4 resize-none min-h-[110px] outline-none"
+                placeholder="e.g. Add a pricing page with three tiers — Starter, Pro, and Enterprise…"
+              />
+              <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/10">
+                <span className="text-xs text-neutral-600">Uses 1 build credit</span>
+                <button
+                  onClick={handleGenerate}
+                  disabled={!prompt.trim()}
+                  className="bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed text-black text-xs font-bold px-4 py-1.5 rounded-lg transition-colors"
+                >
+                  ✦ Generate
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">How it works</p>
+              <p className="text-sm text-neutral-400 leading-relaxed">
+                Describe your idea and we handle everything — reading your existing code,
+                figuring out what needs to change, and deploying it live automatically.
+                No code. No setup. Just describe and ship.
+              </p>
+            </div>
+          </>
+        )}
 
         {project.vercel_preview_url && (
           <div className="flex gap-3">

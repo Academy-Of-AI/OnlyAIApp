@@ -24,6 +24,15 @@ export const PLANS = {
   org:  { name: "Org",  price: 99, projects: Infinity },
 } as const;
 
+/** One-time credit packs — sold via Stripe checkout with price_data */
+export const CREDIT_PACKS = {
+  starter:    { credits: 5,  amountCents: 500,  label: "5 builds",  badge: "Starter"    },
+  builder:    { credits: 15, amountCents: 1200, label: "15 builds", badge: "Builder"    },
+  accelerate: { credits: 30, amountCents: 2000, label: "30 builds", badge: "Best value" },
+} as const;
+
+export type CreditPackKey = keyof typeof CREDIT_PACKS;
+
 export async function createCheckoutSession({
   userId,
   priceId,

@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vibe Launchpad — Module 2 Mockup</title>
+  <style>
+    /* ─── Reset & Base ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0a0a0a;
+      --surface:   #111111;
+      --surface2:  #1a1a1a;
+      --border:    rgba(255,255,255,0.08);
+      --border2:   rgba(255,255,255,0.12);
+      --green:     #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+      --green-glow:rgba(34,197,94,0.25);
+      --text:      #f5f5f5;
+      --muted:     #737373;
+      --muted2:    #525252;
+      --red:       #ef4444;
+      --yellow:    #eab308;
+      --blue:      #3b82f6;
+      --purple:    #a855f7;
+      --radius:    12px;
+      --radius-sm: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    html { background: var(--bg); color: var(--text); line-height: 1.5; }
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ─── Nav ────────────────────────────────────────────────────── */
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(10,10,10,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      height: 56px;
+      display: flex; align-items: center;
+      padding: 0 20px; gap: 20px;
+    }
+    .nav-logo {
+      font-weight: 700; font-size: 15px; letter-spacing: -0.3px;
+      white-space: nowrap; color: var(--text);
+    }
+    .nav-logo span { color: var(--green); }
+    .nav-sep { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; }
+
+    /* Project selector */
+    .project-sel {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: var(--radius-sm); padding: 5px 10px;
+      cursor: pointer; font-size: 13px; font-weight: 500;
+      transition: border-color .15s;
+    }
+    .project-sel:hover { border-color: rgba(255,255,255,0.2); }
+    .project-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green); flex-shrink: 0;
+    }
+    .project-sel svg { color: var(--muted); flex-shrink: 0; }
+
+    /* Tab pills */
+    .nav-tabs { display: flex; gap: 2px; margin-left: auto; }
+    .tab-pill {
+      padding: 5px 14px; border-radius: 6px;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      border: none; background: transparent; color: var(--muted);
+      transition: background .15s, color .15s;
+    }
+    .tab-pill:hover { background: var(--surface2); color: var(--text); }
+    .tab-pill.active { background: var(--surface2); color: var(--text); }
+    .tab-pill.active.build { color: var(--green); }
+
+    /* User avatar */
+    .nav-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #000; flex-shrink: 0;
+      margin-left: 8px; cursor: pointer;
+    }
+
+    /* ─── Screens ─────────────────────────────────────────────────── */
+    .screen { display: none; flex: 1; padding: 32px 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+    .screen.active { display: block; }
+
+    /* ─── SCREEN 1: BUILD ─────────────────────────────────────────── */
+    .build-header { margin-bottom: 28px; }
+    .build-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .build-header p  { font-size: 14px; color: var(--muted); }
+
+    .prompt-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .prompt-wrap:focus-within {
+      border-color: rgba(34,197,94,0.4);
+      box-shadow: 0 0 0 3px var(--green-dim);
+    }
+    .prompt-textarea {
+      width: 100%; background: transparent; border: none; outline: none;
+      color: var(--text); font-size: 15px; line-height: 1.7;
+      padding: 18px 20px 12px; resize: none; min-height: 130px;
+      font-family: inherit;
+    }
+    .prompt-textarea::placeholder { color: var(--muted); }
+    .prompt-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; border-top: 1px solid var(--border);
+    }
+    .prompt-hint { font-size: 12px; color: var(--muted2); }
+    .prompt-hint strong { color: var(--muted); font-weight: 500; }
+    .btn-generate {
+      background: var(--green); color: #000; font-weight: 700;
+      font-size: 13px; padding: 7px 18px; border-radius: 7px;
+      border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;
+      transition: background .15s, transform .1s;
+    }
+    .btn-generate:hover  { background: #16a34a; }
+    .btn-generate:active { transform: scale(0.97); }
+    .btn-generate svg { width: 14px; height: 14px; }
+
+    /* Pipeline card */
+    .pipeline-card {
+      margin-top: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .pipeline-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+    }
+    .pipeline-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .pipeline-title .badge {
+      font-size: 11px; font-weight: 500; padding: 2px 8px;
+      background: rgba(234,179,8,0.12); color: #eab308; border-radius: 999px;
+    }
+    .pipeline-title .badge.done { background: var(--green-dim); color: var(--green); }
+    .progress-bar-wrap { padding: 0 18px 14px; }
+    .progress-bar-track {
+      height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden;
+      margin-top: 12px;
+    }
+    .progress-bar-fill {
+      height: 100%; background: linear-gradient(90deg, var(--green) 0%, #16a34a 100%);
+      border-radius: 2px; width: 0%;
+      transition: width 0.6s ease;
+    }
+
+    /* Steps list */
+    .steps-list { padding: 4px 18px 6px; }
+    .step-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .step-row:last-child { border-bottom: none; }
+    .step-icon {
+      width: 20px; height: 20px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px; font-size: 11px;
+    }
+    .step-icon.done    { background: var(--green-dim); color: var(--green); }
+    .step-icon.active  { background: rgba(59,130,246,0.15); color: var(--blue); }
+    .step-icon.pending { background: var(--surface2); color: var(--muted2); }
+    .step-icon.error   { background: rgba(239,68,68,0.12); color: var(--red); }
+    .step-label { font-weight: 500; line-height: 1.4; }
+    .step-detail { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+    /* Terminal log */
+    .terminal {
+      background: #000; border-top: 1px solid var(--border);
+      padding: 14px 18px; font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 12px; line-height: 1.8; max-height: 120px; overflow-y: auto;
+    }
+    .terminal .t-line { display: block; }
+    .terminal .t-dim   { color: #444; }
+    .terminal .t-green { color: var(--green); }
+    .terminal .t-blue  { color: #60a5fa; }
+    .terminal .t-amber { color: #fbbf24; }
+    .terminal .t-spin  { color: var(--blue); animation: spin-text .8s linear infinite; display: inline-block; }
+    @keyframes spin-text {
+      0%   { content: "⠋"; } 12%  { content: "⠙"; } 25%  { content: "⠹"; }
+      37%  { content: "⠸"; } 50%  { content: "⠼"; } 62%  { content: "⠴"; }
+      75%  { content: "⠦"; } 87%  { content: "⠧"; } 100% { content: "⠇"; }
+    }
+
+    /* ─── SCREEN 2: ANALYTICS ─────────────────────────────────────── */
+    .analytics-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .analytics-header h1 { font-size: 20px; font-weight: 700; }
+    .date-range {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: var(--radius-sm); padding: 5px 12px;
+      font-size: 12px; color: var(--muted); cursor: pointer;
+    }
+    .date-range svg { width: 13px; height: 13px; }
+
+    /* Metric cards */
+    .metrics-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+      margin-bottom: 20px;
+    }
+    .metric-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px;
+    }
+    .metric-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
+    .metric-value { font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+    .metric-delta {
+      font-size: 12px; font-weight: 500;
+      display: flex; align-items: center; gap: 3px;
+    }
+    .metric-delta.up   { color: var(--green); }
+    .metric-delta.down { color: var(--red); }
+
+    /* Charts row */
+    .charts-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .chart-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px;
+    }
+    .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+    .chart-subtitle { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+
+    /* SVG chart */
+    .chart-svg { width: 100%; overflow: visible; }
+
+    /* Funnel */
+    .funnel-list { display: flex; flex-direction: column; gap: 10px; }
+    .funnel-row { }
+    .funnel-meta { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+    .funnel-name { color: var(--muted); }
+    .funnel-count { font-weight: 600; color: var(--text); }
+    .funnel-pct   { color: var(--muted); margin-left: 6px; font-weight: 400; }
+    .funnel-bar-track { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+    .funnel-bar-fill  { height: 100%; background: var(--green); border-radius: 3px; }
+
+    /* Events table */
+    .events-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .events-header {
+      padding: 14px 18px; font-size: 13px; font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .events-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .events-table th {
+      text-align: left; padding: 10px 18px; font-size: 11px;
+      font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+      color: var(--muted); border-bottom: 1px solid var(--border);
+    }
+    .events-table td { padding: 11px 18px; border-bottom: 1px solid var(--border); }
+    .events-table tr:last-child td { border-bottom: none; }
+    .events-table tr:hover td { background: var(--surface2); }
+    .event-user { display: flex; align-items: center; gap: 8px; }
+    .avatar-xs {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; flex-shrink: 0;
+    }
+    .event-badge {
+      display: inline-flex; align-items: center; padding: 2px 8px;
+      border-radius: 999px; font-size: 11px; font-weight: 500;
+    }
+    .badge-green  { background: var(--green-dim); color: var(--green); }
+    .badge-blue   { background: rgba(59,130,246,0.12); color: var(--blue); }
+    .badge-purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+    .badge-amber  { background: rgba(234,179,8,0.12); color: var(--yellow); }
+    .badge-red    { background: rgba(239,68,68,0.1); color: var(--red); }
+
+    /* ─── SCREEN 3: CRM ───────────────────────────────────────────── */
+    .crm-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .crm-header h1 { font-size: 20px; font-weight: 700; }
+    .crm-actions { display: flex; gap: 8px; align-items: center; }
+
+    .search-wrap {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: var(--radius-sm); padding: 7px 12px;
+      font-size: 13px; color: var(--muted); width: 240px;
+    }
+    .search-wrap svg { flex-shrink: 0; }
+    .search-wrap input {
+      background: none; border: none; outline: none; color: var(--text);
+      font-size: 13px; width: 100%;
+    }
+    .search-wrap input::placeholder { color: var(--muted); }
+
+    .filter-chips { display: flex; gap: 6px; margin-bottom: 16px; }
+    .chip {
+      padding: 4px 12px; border-radius: 999px;
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      border: 1px solid var(--border2); background: transparent; color: var(--muted);
+      transition: all .15s;
+    }
+    .chip:hover  { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .chip.active { background: var(--green-dim); border-color: rgba(34,197,94,0.3); color: var(--green); }
+
+    /* CRM table */
+    .crm-table-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .crm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .crm-table th {
+      text-align: left; padding: 11px 16px; font-size: 11px;
+      font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+      color: var(--muted); border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .crm-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .crm-table tr:last-child td { border-bottom: none; }
+    .crm-table tbody tr { cursor: pointer; transition: background .1s; }
+    .crm-table tbody tr:hover td { background: var(--surface2); }
+    .crm-table tbody tr.selected td { background: rgba(34,197,94,0.05); }
+
+    .user-cell { display: flex; align-items: center; gap: 10px; }
+    .avatar-sm {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; flex-shrink: 0;
+    }
+    .user-name  { font-weight: 600; font-size: 13px; }
+    .user-email { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px;
+    }
+    .status-dot.active   { background: var(--green); box-shadow: 0 0 4px var(--green-glow); }
+    .status-dot.inactive { background: var(--muted2); }
+    .plan-tag {
+      font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    }
+    .plan-pro  { background: rgba(168,85,247,0.12); color: var(--purple); }
+    .plan-free { background: var(--surface2); color: var(--muted); }
+
+    /* Detail Panel */
+    .detail-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.5);
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    .detail-overlay.open { opacity: 1; pointer-events: all; }
+
+    .detail-panel {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: 400px; z-index: 101;
+      background: var(--surface); border-left: 1px solid var(--border2);
+      display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .25s cubic-bezier(.16,1,.3,1);
+    }
+    .detail-panel.open { transform: translateX(0); }
+
+    .panel-top {
+      padding: 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; justify-content: space-between;
+    }
+    .panel-user { display: flex; align-items: center; gap: 12px; }
+    .avatar-lg {
+      width: 48px; height: 48px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 700; flex-shrink: 0;
+    }
+    .panel-name  { font-weight: 700; font-size: 15px; }
+    .panel-email { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .panel-plan  { margin-top: 6px; }
+    .close-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); width: 28px; height: 28px;
+      border-radius: 6px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+      flex-shrink: 0;
+      transition: color .15s, border-color .15s;
+    }
+    .close-btn:hover { color: var(--text); border-color: var(--border2); }
+
+    .panel-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px; background: var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-stat { background: var(--surface); padding: 14px; text-align: center; }
+    .panel-stat-val  { font-size: 18px; font-weight: 700; }
+    .panel-stat-lbl  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .panel-body { flex: 1; overflow-y: auto; padding: 18px 20px; }
+    .panel-section-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+
+    /* Timeline */
+    .timeline { position: relative; }
+    .timeline-item {
+      display: flex; gap: 12px; padding-bottom: 16px;
+      position: relative;
+    }
+    .timeline-item::before {
+      content: ''; position: absolute; left: 10px; top: 20px; bottom: 0;
+      width: 1px; background: var(--border);
+    }
+    .timeline-item:last-child::before { display: none; }
+    .tl-dot {
+      width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; margin-top: 1px; z-index: 1;
+    }
+    .tl-dot.green  { background: var(--green-dim); color: var(--green); }
+    .tl-dot.blue   { background: rgba(59,130,246,0.12); color: var(--blue); }
+    .tl-dot.purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+    .tl-dot.amber  { background: rgba(234,179,8,0.1); color: var(--yellow); }
+    .tl-content { flex: 1; }
+    .tl-event  { font-size: 13px; font-weight: 500; }
+    .tl-time   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* Action row at bottom of panel */
+    .panel-footer {
+      padding: 16px 20px; border-top: 1px solid var(--border);
+      display: flex; gap: 8px;
+    }
+    .btn-email {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border2);
+      color: var(--text); font-size: 13px; font-weight: 600;
+      padding: 9px; border-radius: var(--radius-sm); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all .15s;
+    }
+    .btn-email:hover { border-color: rgba(255,255,255,0.2); }
+    .btn-email.resend { background: var(--green-dim); border-color: rgba(34,197,94,0.3); color: var(--green); }
+    .btn-email.resend:hover { background: rgba(34,197,94,0.18); }
+
+    /* ─── Scrollbar ───────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+    /* ─── Tooltip ─────────────────────────────────────────────────── */
+    [data-tooltip] { position: relative; }
+    [data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute; bottom: calc(100% + 6px); left: 50%;
+      transform: translateX(-50%);
+      background: #1e1e1e; border: 1px solid var(--border2);
+      color: var(--text); font-size: 11px; padding: 4px 8px;
+      border-radius: 5px; white-space: nowrap; pointer-events: none;
+      opacity: 0; transition: opacity .15s;
+    }
+    [data-tooltip]:hover::after { opacity: 1; }
+
+    /* ─── Responsive ──────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts-row   { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      .detail-panel { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ NAV -->
+<nav class="nav">
+  <span class="nav-logo">vibe<span>.</span>launchpad</span>
+  <div class="nav-sep"></div>
+  <!-- Project selector -->
+  <div class="project-sel" onclick="toggleProjectMenu()">
+    <span class="project-dot"></span>
+    <span>my-saas-app</span>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+
+  <!-- Tabs -->
+  <div class="nav-tabs">
+    <button class="tab-pill build active" onclick="showScreen('build', this)">Build</button>
+    <button class="tab-pill" onclick="showScreen('analytics', this)">Analytics</button>
+    <button class="tab-pill" onclick="showScreen('crm', this)">CRM</button>
+  </div>
+
+  <!-- Avatar -->
+  <div class="nav-avatar" data-tooltip="John D.">J</div>
+</nav>
+
+
+<!-- ═══════════════════════════════════════════════════ SCREEN 1: BUILD -->
+<div class="screen active" id="screen-build">
+  <div class="build-header">
+    <h1>Build Your App</h1>
+    <p>Describe what you want to build — we handle the rest.</p>
+  </div>
+
+  <!-- Prompt input -->
+  <div class="prompt-wrap">
+    <textarea
+      class="prompt-textarea"
+      id="promptInput"
+      placeholder="e.g. A marketplace where freelancers post briefs and clients bid to hire them. Include project tracking, messaging, and Stripe payments."
+    >A marketplace where freelancers post briefs and clients bid to hire them. Include project tracking, messaging, and Stripe payments.</textarea>
+    <div class="prompt-toolbar">
+      <span class="prompt-hint">
+        <strong>Tip:</strong> Describe your users, core actions, and any must-have features.
+      </span>
+      <button class="btn-generate" onclick="startPipeline()">
+        <svg viewBox="0 0 14 14" fill="none"><path d="M7 1L8.5 5.5H13L9.5 8.5L11 13L7 10.5L3 13L4.5 8.5L1 5.5H5.5L7 1Z" fill="currentColor"/></svg>
+        Generate App
+      </button>
+    </div>
+  </div>
+
+  <!-- Pipeline (shows after generate click) -->
+  <div class="pipeline-card" id="pipelineCard" style="display:none">
+    <div class="pipeline-header">
+      <div class="pipeline-title">
+        Generation Pipeline
+        <span class="badge" id="pipelineBadge">Running…</span>
+      </div>
+      <span style="font-size:12px; color:var(--muted)" id="pipelineTime">0s</span>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+    </div>
+
+    <!-- Steps -->
+    <div class="steps-list" id="stepsList">
+      <!-- Injected by JS -->
+    </div>
+
+    <!-- Terminal -->
+    <div class="terminal" id="terminalLog">
+      <span class="t-line t-dim">$ vibe-engine start --project my-saas-app</span>
+    </div>
+  </div>
+
+  <!-- Success card (shows after all done) -->
+  <div id="successCard" style="display:none; margin-top:20px;">
+    <div style="background:var(--surface); border:1px solid rgba(34,197,94,0.25); border-radius:var(--radius); padding:24px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--green-dim);display:flex;align-items:center;justify-content:center;font-size:16px;">✓</div>
+        <div>
+          <div style="font-weight:700; font-size:15px; color:var(--green)">App deployed successfully</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:2px;">Your app is live and ready to use</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="https://my-saas-app.vercel.app" target="_blank" rel="noopener" style="background:var(--green);color:#000;font-weight:700;font-size:13px;padding:8px 16px;border-radius:7px;text-decoration:none;display:flex;align-items:center;gap:5px;" onclick="showToast('Opening your app…')">
+          ↗ View live app
+        </a>
+        <a href="https://github.com/my-account/my-saas-app" target="_blank" rel="noopener" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:13px;padding:8px 16px;border-radius:7px;text-decoration:none;display:flex;align-items:center;gap:5px;">
+          GitHub repo →
+        </a>
+        <button onclick="showScreen('analytics', document.querySelectorAll('.tab-pill')[1])" style="background:transparent;border:1px solid var(--border2);color:var(--muted);font-size:13px;padding:8px 16px;border-radius:7px;cursor:pointer;transition:all .15s;">
+          View Analytics →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- "What happens" explainer (hides after success) -->
+  <div id="explainerSection" style="margin-top:32px;">
+    <p style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">What gets built for you</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;">
+        <div style="font-size:20px;margin-bottom:8px;">🗄️</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Organises everything</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6;">Your app knows who your users are, what they do, and what to show them — all structured and ready. Nothing for you to set up.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;">
+        <div style="font-size:20px;margin-bottom:8px;">🎨</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Looks the part</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6;">A real website with every page your users need — home page, sign-up, dashboard, and your core features. Designed and built.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;">
+        <div style="font-size:20px;margin-bottom:8px;">⚡</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Live in minutes</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6;">You get a real link you can share straight away. Your app is on the internet, working, from day one. No technical steps.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ SCREEN 2: ANALYTICS -->
+<div class="screen" id="screen-analytics">
+
+  <div class="analytics-header">
+    <h1>Analytics <span style="font-size:14px;color:var(--muted);font-weight:400">my-saas-app</span></h1>
+    <div class="date-range">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="2" width="11" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M1 5h11" stroke="currentColor" stroke-width="1.2"/><path d="M4 1v2M9 1v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Last 30 days ▾
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-label">Total Users</div>
+      <div class="metric-value">1,284</div>
+      <div class="metric-delta up">↑ 18% vs last month</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Active Today</div>
+      <div class="metric-value">342</div>
+      <div class="metric-delta up">↑ 9% vs yesterday</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Activation Rate</div>
+      <div class="metric-value">64<span style="font-size:16px;font-weight:500;color:var(--muted)">%</span></div>
+      <div class="metric-delta up">↑ 5pp this week</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">MRR</div>
+      <div class="metric-value" style="color:var(--green)">$2,840</div>
+      <div class="metric-delta up">↑ 22% vs last month</div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="charts-row">
+    <!-- Line chart -->
+    <div class="chart-card">
+      <div class="chart-title">User Growth <span class="chart-subtitle">cumulative, last 30 days</span></div>
+      <svg class="chart-svg" viewBox="0 0 480 140" preserveAspectRatio="none" style="height:140px">
+        <!-- Grid lines -->
+        <line x1="0" y1="28" x2="480" y2="28" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <line x1="0" y1="56" x2="480" y2="56" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <line x1="0" y1="84" x2="480" y2="84" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <line x1="0" y1="112" x2="480" y2="112" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <!-- Y labels -->
+        <text x="0" y="26" fill="rgba(255,255,255,0.3)" font-size="9">1.2k</text>
+        <text x="0" y="54" fill="rgba(255,255,255,0.3)" font-size="9">900</text>
+        <text x="0" y="82" fill="rgba(255,255,255,0.3)" font-size="9">600</text>
+        <text x="0" y="110" fill="rgba(255,255,255,0.3)" font-size="9">300</text>
+        <!-- Area fill -->
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#22c55e" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="M30,110 C50,108 70,105 90,100 C110,95 130,92 150,88 C170,84 190,80 210,74 C230,68 250,62 270,56 C290,50 310,45 330,40 C350,35 370,32 390,29 C410,26 430,26 450,25 L450,130 L30,130 Z"
+              fill="url(#areaGrad)"/>
+        <!-- Line -->
+        <path d="M30,110 C50,108 70,105 90,100 C110,95 130,92 150,88 C170,84 190,80 210,74 C230,68 250,62 270,56 C290,50 310,45 330,40 C350,35 370,32 390,29 C410,26 430,26 450,25"
+              fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <!-- Dots -->
+        <circle cx="210" cy="74" r="3" fill="#22c55e"/>
+        <circle cx="330" cy="40" r="3" fill="#22c55e"/>
+        <circle cx="450" cy="25" r="4" fill="#22c55e" stroke="#0a0a0a" stroke-width="2"/>
+        <!-- X labels -->
+        <text x="30"  y="128" fill="rgba(255,255,255,0.3)" font-size="9" text-anchor="middle">May 1</text>
+        <text x="150" y="128" fill="rgba(255,255,255,0.3)" font-size="9" text-anchor="middle">May 11</text>
+        <text x="270" y="128" fill="rgba(255,255,255,0.3)" font-size="9" text-anchor="middle">May 20</text>
+        <text x="390" y="128" fill="rgba(255,255,255,0.3)" font-size="9" text-anchor="middle">May 28</text>
+        <!-- Tooltip marker -->
+        <line x1="450" y1="25" x2="450" y2="112" stroke="rgba(34,197,94,0.3)" stroke-width="1" stroke-dasharray="3,3"/>
+        <rect x="420" y="8" width="52" height="18" rx="4" fill="#1a1a1a" stroke="rgba(34,197,94,0.3)" stroke-width="1"/>
+        <text x="446" y="20" fill="#22c55e" font-size="10" text-anchor="middle" font-weight="600">1,284</text>
+      </svg>
+    </div>
+
+    <!-- Funnel -->
+    <div class="chart-card">
+      <div class="chart-title">Activation Funnel</div>
+      <div class="funnel-list">
+        <div class="funnel-row">
+          <div class="funnel-meta">
+            <span class="funnel-name">Visited</span>
+            <span class="funnel-count">1,284 <span class="funnel-pct">100%</span></span>
+          </div>
+          <div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:100%"></div></div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-meta">
+            <span class="funnel-name">Signed up</span>
+            <span class="funnel-count">847 <span class="funnel-pct">66%</span></span>
+          </div>
+          <div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:66%"></div></div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-meta">
+            <span class="funnel-name">Completed profile</span>
+            <span class="funnel-count">621 <span class="funnel-pct">48%</span></span>
+          </div>
+          <div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:48%"></div></div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-meta">
+            <span class="funnel-name">Posted brief</span>
+            <span class="funnel-count">412 <span class="funnel-pct">32%</span></span>
+          </div>
+          <div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:32%"></div></div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-meta">
+            <span class="funnel-name">Made payment</span>
+            <span class="funnel-count">218 <span class="funnel-pct">17%</span></span>
+          </div>
+          <div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:17%; background:var(--purple)"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent events -->
+  <div class="events-card">
+    <div class="events-header">
+      Recent Events
+      <span style="font-size:12px;color:var(--muted)">Live feed</span>
+    </div>
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Event</th>
+          <th>Location</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="event-user"><div class="avatar-xs" style="background:rgba(59,130,246,0.15);color:#60a5fa">S</div>Sarah K.</div></td>
+          <td><span class="event-badge badge-green">payment</span></td>
+          <td style="color:var(--muted);font-size:12px">London, UK</td>
+          <td style="color:var(--muted);font-size:12px">2 min ago</td>
+        </tr>
+        <tr>
+          <td><div class="event-user"><div class="avatar-xs" style="background:rgba(168,85,247,0.15);color:#c084fc">M</div>Marcus T.</div></td>
+          <td><span class="event-badge badge-blue">sign_up</span></td>
+          <td style="color:var(--muted);font-size:12px">Berlin, DE</td>
+          <td style="color:var(--muted);font-size:12px">5 min ago</td>
+        </tr>
+        <tr>
+          <td><div class="event-user"><div class="avatar-xs" style="background:rgba(234,179,8,0.12);color:#fbbf24">A</div>Aisha O.</div></td>
+          <td><span class="event-badge badge-purple">brief_posted</span></td>
+          <td style="color:var(--muted);font-size:12px">Lagos, NG</td>
+          <td style="color:var(--muted);font-size:12px">11 min ago</td>
+        </tr>
+        <tr>
+          <td><div class="event-user"><div class="avatar-xs" style="background:rgba(34,197,94,0.12);color:#4ade80">J</div>James R.</div></td>
+          <td><span class="event-badge badge-amber">profile_complete</span></td>
+          <td style="color:var(--muted);font-size:12px">Sydney, AU</td>
+          <td style="color:var(--muted);font-size:12px">18 min ago</td>
+        </tr>
+        <tr>
+          <td><div class="event-user"><div class="avatar-xs" style="background:rgba(239,68,68,0.1);color:#f87171">P</div>Priya M.</div></td>
+          <td><span class="event-badge badge-red">churn</span></td>
+          <td style="color:var(--muted);font-size:12px">Mumbai, IN</td>
+          <td style="color:var(--muted);font-size:12px">34 min ago</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ SCREEN 3: CRM -->
+<div class="screen" id="screen-crm">
+
+  <div class="crm-header">
+    <h1>CRM <span style="font-size:14px;color:var(--muted);font-weight:400">1,284 users</span></h1>
+    <div class="crm-actions">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M9.5 9.5L13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="Search users…" />
+      </div>
+      <button style="background:var(--surface2);border:1px solid var(--border2);color:var(--muted);font-size:12px;padding:7px 12px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;gap:5px;">
+        ↓ Export
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter chips -->
+  <div class="filter-chips">
+    <button class="chip active">All (1,284)</button>
+    <button class="chip" onclick="setChip(this)">Active (342)</button>
+    <button class="chip" onclick="setChip(this)">Inactive (695)</button>
+    <button class="chip" onclick="setChip(this)">Paying (218)</button>
+    <button class="chip" onclick="setChip(this)">At risk (86)</button>
+  </div>
+
+  <!-- Table -->
+  <div class="crm-table-wrap">
+    <table class="crm-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Status</th>
+          <th>Plan</th>
+          <th>Joined</th>
+          <th>Last active</th>
+          <th>MRR</th>
+        </tr>
+      </thead>
+      <tbody id="crmTbody">
+        <tr onclick="openPanel(0)">
+          <td><div class="user-cell"><div class="avatar-sm" style="background:rgba(59,130,246,0.15);color:#60a5fa">S</div><div><div class="user-name">Sarah Kim</div><div class="user-email">sarah@designco.io</div></div></div></td>
+          <td><span class="status-dot active"></span><span style="font-size:12px;">Active</span></td>
+          <td><span class="plan-tag plan-pro">Pro</span></td>
+          <td style="color:var(--muted);font-size:12px">Apr 2, 2025</td>
+          <td style="color:var(--muted);font-size:12px">2 min ago</td>
+          <td style="font-weight:600;color:var(--green)">$49</td>
+        </tr>
+        <tr onclick="openPanel(1)">
+          <td><div class="user-cell"><div class="avatar-sm" style="background:rgba(168,85,247,0.15);color:#c084fc">M</div><div><div class="user-name">Marcus Torres</div><div class="user-email">marcus@freelance.dev</div></div></div></td>
+          <td><span class="status-dot active"></span><span style="font-size:12px;">Active</span></td>
+          <td><span class="plan-tag plan-free">Free</span></td>
+          <td style="color:var(--muted);font-size:12px">May 15, 2025</td>
+          <td style="color:var(--muted);font-size:12px">5 min ago</td>
+          <td style="color:var(--muted);font-size:12px">—</td>
+        </tr>
+        <tr onclick="openPanel(2)">
+          <td><div class="user-cell"><div class="avatar-sm" style="background:rgba(234,179,8,0.12);color:#fbbf24">A</div><div><div class="user-name">Aisha Okonkwo</div><div class="user-email">aisha@lagosstartup.ng</div></div></div></td>
+          <td><span class="status-dot active"></span><span style="font-size:12px;">Active</span></td>
+          <td><span class="plan-tag plan-pro">Pro</span></td>
+          <td style="color:var(--muted);font-size:12px">Mar 18, 2025</td>
+          <td style="color:var(--muted);font-size:12px">11 min ago</td>
+          <td style="font-weight:600;color:var(--green)">$49</td>
+        </tr>
+        <tr onclick="openPanel(3)">
+          <td><div class="user-cell"><div class="avatar-sm" style="background:rgba(34,197,94,0.12);color:#4ade80">J</div><div><div class="user-name">James Rowe</div><div class="user-email">james@sydneycreative.au</div></div></div></td>
+          <td><span class="status-dot inactive"></span><span style="color:var(--muted);font-size:12px;">Inactive</span></td>
+          <td><span class="plan-tag plan-free">Free</span></td>
+          <td style="color:var(--muted);font-size:12px">Feb 28, 2025</td>
+          <td style="color:var(--muted);font-size:12px">3 days ago</td>
+          <td style="color:var(--muted);font-size:12px">—</td>
+        </tr>
+        <tr onclick="openPanel(4)">
+          <td><div class="user-cell"><div class="avatar-sm" style="background:rgba(239,68,68,0.1);color:#f87171">P</div><div><div class="user-name">Priya Menon</div><div class="user-email">priya@techventures.in</div></div></div></td>
+          <td><span class="status-dot inactive"></span><span style="color:var(--red);font-size:12px;">Churned</span></td>
+          <td><span class="plan-tag plan-free">Free</span></td>
+          <td style="color:var(--muted);font-size:12px">Jan 11, 2025</td>
+          <td style="color:var(--muted);font-size:12px">34 days ago</td>
+          <td style="color:var(--muted);font-size:12px">—</td>
+        </tr>
+        <tr onclick="openPanel(5)">
+          <td><div class="user-cell"><div class="avatar-sm" style="background:rgba(251,146,60,0.12);color:#fb923c">D</div><div><div class="user-name">Daniel Park</div><div class="user-email">daniel@seoultech.kr</div></div></div></td>
+          <td><span class="status-dot active"></span><span style="font-size:12px;">Active</span></td>
+          <td><span class="plan-tag plan-pro">Pro</span></td>
+          <td style="color:var(--muted);font-size:12px">Apr 22, 2025</td>
+          <td style="color:var(--muted);font-size:12px">1 hr ago</td>
+          <td style="font-weight:600;color:var(--green)">$49</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════ DETAIL PANEL -->
+<div class="detail-overlay" id="detailOverlay" onclick="closePanel()"></div>
+<div class="detail-panel" id="detailPanel">
+  <!-- Filled by JS -->
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ SCRIPTS -->
+<script>
+  /* ── Tab switching ──────────────────────────────────────── */
+  function showScreen(id, btn) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-pill').forEach(t => { t.classList.remove('active', 'build'); });
+    document.getElementById('screen-' + id).classList.add('active');
+    btn.classList.add('active');
+    if (id === 'build') btn.classList.add('build');
+  }
+
+  /* ── Filter chips ───────────────────────────────────────── */
+  function setChip(el) {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  /* ── Pipeline steps data ────────────────────────────────── */
+  const STEPS = [
+    { key:'understand', label:'Reading your idea',      detail:'Working out what your app needs to do' },
+    { key:'schema',     label:'Planning your app',      detail:'Figuring out how everything fits together' },
+    { key:'pages',      label:'Building your pages',    detail:'Home page, sign-in, dashboard and more' },
+    { key:'deploy',     label:'Putting it live',        detail:'Your app is going online now' },
+  ];
+
+  const TERMINAL_LINES = [
+    { cls: 't-dim',   text: '→ Reading your idea…' },
+    { cls: 't-green', text: '✓ Got it — a marketplace for freelancers and clients' },
+    { cls: 't-blue',  text: '→ Planning what your app needs to handle: users, projects, messages, payments and more' },
+    { cls: 't-green', text: '✓ All ready — everything is organised behind the scenes' },
+    { cls: 't-blue',  text: '→ Building your pages: home, sign-in, dashboard, project view, messages, profile, payments' },
+    { cls: 't-amber', text: '⟳ Building your dashboard…' },
+  ];
+
+  let pipelineRunning = false;
+  let pipelineTimer = 0;
+  let timerInterval = null;
+
+  function startPipeline() {
+    if (pipelineRunning) return;
+    pipelineRunning = true;
+    document.getElementById('pipelineCard').style.display = 'block';
+    document.getElementById('explainerSection').style.display = 'none';
+    document.getElementById('successCard').style.display = 'none';
+    document.getElementById('pipelineBadge').textContent = 'Running…';
+    document.getElementById('pipelineBadge').className = 'badge';
+
+    pipelineTimer = 0;
+    timerInterval = setInterval(() => {
+      pipelineTimer++;
+      document.getElementById('pipelineTime').textContent = pipelineTimer + 's';
+    }, 1000);
+
+    renderSteps([], null);
+    document.getElementById('terminalLog').innerHTML = '';
+    document.getElementById('progressBar').style.width = '0%';
+
+    let lineIdx = 0;
+    let stepIdx = 0;
+    const doneSteps = [];
+
+    function nextTermLine() {
+      if (lineIdx < TERMINAL_LINES.length) {
+        const { cls, text } = TERMINAL_LINES[lineIdx];
+        const span = document.createElement('span');
+        span.className = 't-line ' + cls;
+        span.textContent = text;
+        const log = document.getElementById('terminalLog');
+        log.appendChild(span);
+        log.scrollTop = log.scrollHeight;
+        lineIdx++;
+      }
+    }
+
+    function advanceStep() {
+      if (stepIdx < STEPS.length) {
+        const activeKey = STEPS[stepIdx].key;
+        renderSteps(doneSteps, activeKey);
+        const pct = Math.round((stepIdx / STEPS.length) * 90);
+        document.getElementById('progressBar').style.width = pct + '%';
+        nextTermLine();
+        nextTermLine();
+        setTimeout(() => {
+          doneSteps.push(activeKey);
+          stepIdx++;
+          if (stepIdx < STEPS.length) {
+            setTimeout(advanceStep, 1400 + Math.random() * 800);
+          } else {
+            // Done
+            clearInterval(timerInterval);
+            renderSteps(doneSteps, null);
+            document.getElementById('progressBar').style.width = '100%';
+            document.getElementById('pipelineBadge').textContent = 'Done ✓';
+            document.getElementById('pipelineBadge').className = 'badge done';
+
+            const final = document.createElement('span');
+            final.className = 't-line t-green';
+            final.textContent = '✓ Deployment complete → https://my-saas-app.vercel.app';
+            const log = document.getElementById('terminalLog');
+            log.appendChild(final);
+            log.scrollTop = log.scrollHeight;
+
+            setTimeout(() => {
+              document.getElementById('successCard').style.display = 'block';
+              pipelineRunning = false;
+            }, 600);
+          }
+        }, 1200 + Math.random() * 600);
+      }
+    }
+
+    setTimeout(advanceStep, 400);
+  }
+
+  function renderSteps(doneKeys, activeKey) {
+    const list = document.getElementById('stepsList');
+    list.innerHTML = STEPS.map(s => {
+      const isDone   = doneKeys.includes(s.key);
+      const isActive = s.key === activeKey;
+      const iconCls  = isDone ? 'done' : isActive ? 'active' : 'pending';
+      const icon     = isDone ? '✓' : isActive ? '⟳' : '○';
+      return `
+        <div class="step-row">
+          <div class="step-icon ${iconCls}">${icon}</div>
+          <div>
+            <div class="step-label" style="${isDone ? 'color:var(--text)' : isActive ? 'color:var(--text)' : 'color:var(--muted)'}">${s.label}</div>
+            ${isActive || isDone ? `<div class="step-detail">${s.detail}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /* ── CRM Panel data ─────────────────────────────────────── */
+  const USERS = [
+    {
+      name: 'Sarah Kim', email: 'sarah@designco.io', avatar: 'S',
+      color: 'rgba(59,130,246,0.15)', textColor: '#60a5fa',
+      plan: 'Pro', status: 'Active', joined: 'Apr 2, 2025',
+      briefs: 12, hired: 8, revenue: '$588',
+      timeline: [
+        { dot: 'green',  icon: '💳', event: 'Upgraded to Pro',           time: '2 days ago' },
+        { dot: 'purple', icon: '📋', event: 'Posted brief #12',           time: '4 days ago' },
+        { dot: 'blue',   icon: '💬', event: 'Sent 3 messages to Marcus',  time: '5 days ago' },
+        { dot: 'amber',  icon: '⭐', event: 'Left 5-star review',         time: '1 week ago' },
+        { dot: 'green',  icon: '✅', event: 'Completed first project',     time: '2 weeks ago' },
+      ]
+    },
+    {
+      name: 'Marcus Torres', email: 'marcus@freelance.dev', avatar: 'M',
+      color: 'rgba(168,85,247,0.15)', textColor: '#c084fc',
+      plan: 'Free', status: 'Active', joined: 'May 15, 2025',
+      briefs: 0, hired: 3, revenue: '$0',
+      timeline: [
+        { dot: 'blue',   icon: '👤', event: 'Signed up',                  time: '5 min ago' },
+        { dot: 'purple', icon: '🔧', event: 'Completed profile (skills)',  time: '12 min ago' },
+        { dot: 'amber',  icon: '🔔', event: 'Welcome email delivered',     time: '6 min ago' },
+      ]
+    },
+    {
+      name: 'Aisha Okonkwo', email: 'aisha@lagosstartup.ng', avatar: 'A',
+      color: 'rgba(234,179,8,0.12)', textColor: '#fbbf24',
+      plan: 'Pro', status: 'Active', joined: 'Mar 18, 2025',
+      briefs: 7, hired: 5, revenue: '$245',
+      timeline: [
+        { dot: 'purple', icon: '📋', event: 'Posted brief #7',            time: '11 min ago' },
+        { dot: 'green',  icon: '💳', event: 'Renewal processed ($49)',     time: '3 days ago' },
+        { dot: 'blue',   icon: '💬', event: 'Replied to bid',             time: '5 days ago' },
+        { dot: 'amber',  icon: '🔔', event: 'Nudge email: "complete hire"', time: '1 week ago' },
+      ]
+    },
+    {
+      name: 'James Rowe', email: 'james@sydneycreative.au', avatar: 'J',
+      color: 'rgba(34,197,94,0.12)', textColor: '#4ade80',
+      plan: 'Free', status: 'Inactive', joined: 'Feb 28, 2025',
+      briefs: 1, hired: 0, revenue: '$0',
+      timeline: [
+        { dot: 'amber',  icon: '⚠️', event: 'Profile completion dropped below 50%', time: '3 days ago' },
+        { dot: 'blue',   icon: '📋', event: 'Posted brief #1 (no bids yet)',         time: '5 days ago' },
+        { dot: 'blue',   icon: '👤', event: 'Signed up',                             time: '3 months ago' },
+      ]
+    },
+    {
+      name: 'Priya Menon', email: 'priya@techventures.in', avatar: 'P',
+      color: 'rgba(239,68,68,0.1)', textColor: '#f87171',
+      plan: 'Free', status: 'Churned', joined: 'Jan 11, 2025',
+      briefs: 0, hired: 0, revenue: '$0',
+      timeline: [
+        { dot: 'amber', icon: '❌', event: 'Account marked churned',      time: '34 days ago' },
+        { dot: 'amber', icon: '🔔', event: 'Re-engagement email sent',    time: '34 days ago' },
+        { dot: 'blue',  icon: '👤', event: 'Last login',                  time: '5 weeks ago' },
+        { dot: 'blue',  icon: '👤', event: 'Signed up',                   time: '4 months ago' },
+      ]
+    },
+    {
+      name: 'Daniel Park', email: 'daniel@seoultech.kr', avatar: 'D',
+      color: 'rgba(251,146,60,0.12)', textColor: '#fb923c',
+      plan: 'Pro', status: 'Active', joined: 'Apr 22, 2025',
+      briefs: 4, hired: 4, revenue: '$196',
+      timeline: [
+        { dot: 'green',  icon: '💳', event: 'Payment processed ($49)',     time: '1 hr ago' },
+        { dot: 'purple', icon: '⭐', event: 'Received 5-star review',      time: '2 days ago' },
+        { dot: 'green',  icon: '✅', event: 'Completed project #4',         time: '3 days ago' },
+        { dot: 'blue',   icon: '💬', event: 'Sent proposal on brief #9',   time: '5 days ago' },
+      ]
+    },
+  ];
+
+  function openPanel(idx) {
+    const u = USERS[idx];
+    const panel = document.getElementById('detailPanel');
+
+    // Highlight row
+    document.querySelectorAll('.crm-table tbody tr').forEach((r,i) => {
+      r.classList.toggle('selected', i === idx);
+    });
+
+    const statusColor = u.status === 'Active' ? 'var(--green)' : u.status === 'Churned' ? 'var(--red)' : 'var(--muted)';
+    const planCls = u.plan === 'Pro' ? 'plan-pro' : 'plan-free';
+
+    panel.innerHTML = `
+      <div class="panel-top">
+        <div class="panel-user">
+          <div class="avatar-lg" style="background:${u.color};color:${u.textColor}">${u.avatar}</div>
+          <div>
+            <div class="panel-name">${u.name}</div>
+            <div class="panel-email">${u.email}</div>
+            <div class="panel-plan" style="margin-top:6px;display:flex;align-items:center;gap:6px;">
+              <span class="plan-tag ${planCls}">${u.plan}</span>
+              <span style="font-size:12px;color:${statusColor}">● ${u.status}</span>
+            </div>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closePanel()">✕</button>
+      </div>
+
+      <div class="panel-stats">
+        <div class="panel-stat">
+          <div class="panel-stat-val">${u.briefs}</div>
+          <div class="panel-stat-lbl">Briefs posted</div>
+        </div>
+        <div class="panel-stat">
+          <div class="panel-stat-val">${u.hired}</div>
+          <div class="panel-stat-lbl">Hires made</div>
+        </div>
+        <div class="panel-stat">
+          <div class="panel-stat-val" style="color:var(--green)">${u.revenue}</div>
+          <div class="panel-stat-lbl">Total spend</div>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <div style="margin-bottom:20px;">
+          <div class="panel-section-title">Account details</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:var(--surface2);border-radius:8px;padding:10px;">
+              <div style="font-size:11px;color:var(--muted)">Joined</div>
+              <div style="font-size:13px;font-weight:500;margin-top:2px">${u.joined}</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:10px;">
+              <div style="font-size:11px;color:var(--muted)">Plan</div>
+              <div style="font-size:13px;font-weight:500;margin-top:2px">${u.plan}</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel-section-title">Activity timeline</div>
+          <div class="timeline">
+            ${u.timeline.map(t => `
+              <div class="timeline-item">
+                <div class="tl-dot ${t.dot}">${t.icon}</div>
+                <div class="tl-content">
+                  <div class="tl-event">${t.event}</div>
+                  <div class="tl-time">${t.time}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-footer">
+        <button class="btn-email resend">
+          <span>✉</span> Send email via Resend
+        </button>
+        <button class="btn-email" style="flex:none;padding:9px 14px;">
+          ⋯
+        </button>
+      </div>
+    `;
+
+    document.getElementById('detailOverlay').classList.add('open');
+    panel.classList.add('open');
+  }
+
+  function closePanel() {
+    document.getElementById('detailOverlay').classList.remove('open');
+    document.getElementById('detailPanel').classList.remove('open');
+    document.querySelectorAll('.crm-table tbody tr').forEach(r => r.classList.remove('selected'));
+  }
+
+  /* close with Escape */
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+  /* project menu stub */
+  function toggleProjectMenu() {}
+
+  /* Toast */
+  function showToast(msg) {
+    let t = document.getElementById('toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'toast';
+      t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);color:#f5f5f5;font-size:13px;font-weight:500;padding:10px 18px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.4);opacity:0;transition:opacity .2s,transform .2s;z-index:200;white-space:nowrap;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => {
+      t.style.opacity = '0';
+      t.style.transform = 'translateX(-50%) translateY(12px)';
+    }, 2200);
+  }
+</script>
+
+</body>
+</html>

@@ -32,6 +32,20 @@ export async function POST(
     );
   }
 
+  /* ── check credits ───────────────────────────────────────────────────── */
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("build_credits")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || profile.build_credits <= 0) {
+    return NextResponse.json(
+      { error: "No build credits remaining — purchase more to continue.", code: "no_credits" },
+      { status: 402 },
+    );
+  }
+
   /* ── load project ────────────────────────────────────────────────────── */
   const { data: project } = await supabase
     .from("projects")
@@ -79,6 +93,14 @@ export async function POST(
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
 
       try {
+        /* Deduct 1 credit atomically before we do any expensive work */
+        const { data: deducted } = await supabase.rpc("use_build_credit", { p_user_id: user.id });
+        if (!deducted) {
+          send({ step: "error", message: "No build credits remaining — purchase more to continue." });
+          controller.close();
+          return;
+        }
+
         /* Step 1 — read code ──────────────────────────────────────────── */
         send({ step: "reading", message: "Reading your app's code…" });
         await supabase.from("projects").update({ status: "building" }).eq("id", id);
@@ -219,8 +241,10 @@ Generate the minimal file changes to fulfil the request.`;
         send({ step: "done", commitMessage: changes.commitMessage });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Build failed";
-        // Restore status to deployed so the project isn't stuck in "building"
+        // Restore project status
         await supabase.from("projects").update({ status: "deployed" }).eq("id", id);
+        // Refund the credit so the user isn't charged for a failed build
+        await supabase.rpc("refund_build_credit", { p_user_id: user.id });
         send({ step: "error", message });
       } finally {
         controller.close();

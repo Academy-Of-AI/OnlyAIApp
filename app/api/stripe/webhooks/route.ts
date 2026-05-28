@@ -1,5 +1,6 @@
 import { track } from "@/lib/analytics";
 import { constructWebhookEvent } from "@/lib/stripe";
+import { createAdminClient } from "@/lib/supabase/server";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
@@ -23,10 +24,32 @@ export async function POST(request: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.userId;
-        if (!userId || !session.customer) break;
-        await supabase.from("profiles")
-          .update({ stripe_customer_id: session.customer as string })
-          .eq("id", userId);
+        if (!userId) break;
+
+        // Always save the Stripe customer ID
+        if (session.customer) {
+          await supabase.from("profiles")
+            .update({ stripe_customer_id: session.customer as string })
+            .eq("id", userId);
+        }
+
+        // Credit-pack purchase — add credits using the service-role client
+        // so RLS doesn't block the update from the webhook server-side context.
+        if (session.metadata?.type === "credits") {
+          const credits = parseInt(session.metadata.credits ?? "0", 10);
+          if (credits > 0) {
+            const admin = await createAdminClient();
+            await admin.rpc("add_build_credits", {
+              p_user_id: userId,
+              p_amount: credits,
+            });
+            await track("credits_purchased", userId, {
+              pack: session.metadata.pack,
+              credits,
+              amount_cents: session.amount_total,
+            });
+          }
+        }
         break;
       }
 
