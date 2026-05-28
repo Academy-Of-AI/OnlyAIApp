@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { Octokit } from "@octokit/rest";
 import { decrypt } from "@/lib/crypto";
+import { notify } from "@/lib/notify";
 import { syncClaudeMd } from "@/lib/sync-claude-md";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -153,13 +154,29 @@ Call digest. Only surface durable, specific facts and real status changes.`,
     }));
   if (inserts.length) await admin.from("project_memory").insert(inserts);
 
-  // Advance milestones (match by title)
+  // Advance milestones (match by title) + notify on completion
   for (const u of digest.milestoneUpdates ?? []) {
     if (!["todo", "in_progress", "done"].includes(u.status)) continue;
     const match = milestones.find((x) => x.title.trim().toLowerCase() === u.title.trim().toLowerCase());
     if (match && match.status !== u.status) {
       await admin.from("plan_milestones").update({ status: u.status }).eq("id", match.id);
+      if (u.status === "done") {
+        await notify(admin, project.user_id, {
+          type: "milestone", projectId: project.id,
+          title: `Milestone done: ${match.title}`,
+          body: `${project.name} advanced a milestone.`,
+        });
+      }
     }
+  }
+
+  // Notify on drift
+  if (digest.drift && digest.drift.onTrack === false) {
+    await notify(admin, project.user_id, {
+      type: "drift", projectId: project.id,
+      title: `${project.name} is drifting`,
+      body: digest.drift.note ?? "Recent work is off the objective.",
+    });
   }
 
   // Store drift badge on the project

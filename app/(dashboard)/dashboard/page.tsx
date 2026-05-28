@@ -1,4 +1,5 @@
 import { GettingStarted } from "@/components/getting-started";
+import { NotificationsBell } from "@/components/notifications-bell";
 import { ResendConnectForm } from "@/components/resend-connect-form";
 import { SupabaseConnectForm } from "@/components/supabase-connect-form";
 import { VercelConnectForm } from "@/components/vercel-connect-form";
@@ -221,6 +222,7 @@ export default async function DashboardPage({
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Your projects</h1>
         <div className="flex items-center gap-2">
+          <NotificationsBell />
           {!!projects?.length && (
             <Link
               href="/mission-control"
