@@ -47,7 +47,7 @@ export default async function ProjectPage({
             </span>
           </div>
           <p className="text-sm text-neutral-500">
-            {project.template_id} · Created {new Date(project.created_at).toLocaleDateString()}
+            Created {new Date(project.created_at).toLocaleDateString()}
           </p>
           {project.error && (
             <p className="text-xs text-red-400 mt-1 truncate max-w-lg">{project.error}</p>

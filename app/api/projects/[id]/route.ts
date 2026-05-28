@@ -17,6 +17,7 @@ export async function PATCH(
   const body = await request.json() as {
     name?: string;
     vercel_preview_url?: string;
+    build_prompt?: string;
   };
 
   const updates: Record<string, string> = {};
@@ -40,6 +41,10 @@ export async function PATCH(
       );
     }
     updates.vercel_preview_url = url;
+  }
+
+  if (body.build_prompt !== undefined) {
+    updates.build_prompt = body.build_prompt.slice(0, 2000); // cap length
   }
 
   if (Object.keys(updates).length === 0) {

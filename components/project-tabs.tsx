@@ -51,6 +51,23 @@ export function ProjectTabs({ project }: { project: Project }) {
 
 /* ── Build tab ─────────────────────────────────────────────── */
 function BuildTab({ project }: { project: Project }) {
+  const [prompt, setPrompt]     = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleGenerate() {
+    if (!prompt.trim()) return;
+    setSubmitting(true);
+    // Save prompt against the project for Module 2 to pick up
+    await fetch(`/api/projects/${project.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ build_prompt: prompt.trim() }),
+    });
+    setSubmitting(false);
+    setSubmitted(true);
+  }
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -60,31 +77,56 @@ function BuildTab({ project }: { project: Project }) {
         </p>
       </div>
 
-      <div className="border border-white/10 rounded-xl overflow-hidden focus-within:border-green-500/40 focus-within:ring-1 focus-within:ring-green-500/20 transition-all">
-        <textarea
-          className="w-full bg-transparent text-sm text-white placeholder-neutral-500 p-4 resize-none min-h-[110px] outline-none"
-          placeholder="e.g. Add a dashboard page that shows total signups and revenue this month…"
-        />
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/10">
-          <span className="text-xs text-neutral-600">Describe a feature, page, or change</span>
+      {submitted ? (
+        <div className="border border-green-500/25 bg-green-500/5 rounded-xl p-6 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center text-green-400 text-sm">✓</div>
+            <div>
+              <p className="font-semibold text-sm text-green-400">Got it — your idea is saved</p>
+              <p className="text-xs text-neutral-500 mt-0.5">We&apos;ll build it when Module 2 launches. You&apos;ll be first in line.</p>
+            </div>
+          </div>
+          <div className="bg-white/[0.03] rounded-lg px-4 py-3 text-sm text-neutral-400 italic border border-white/[0.06]">
+            &ldquo;{prompt}&rdquo;
+          </div>
           <button
-            className="bg-green-500 hover:bg-green-400 text-black text-xs font-bold px-4 py-1.5 rounded-lg transition-colors opacity-50 cursor-not-allowed"
-            disabled
-            title="Coming in Module 2"
+            onClick={() => { setSubmitted(false); setPrompt(""); }}
+            className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors underline underline-offset-2"
           >
-            ✦ Generate
+            Submit a different idea
           </button>
         </div>
-      </div>
+      ) : (
+        <div className="border border-white/10 rounded-xl overflow-hidden focus-within:border-green-500/40 focus-within:ring-1 focus-within:ring-green-500/20 transition-all">
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            className="w-full bg-transparent text-sm text-white placeholder-neutral-500 p-4 resize-none min-h-[110px] outline-none"
+            placeholder="e.g. Build a corporate training app with a learning roadmap, course catalogue, and booking flow…"
+          />
+          <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/10">
+            <span className="text-xs text-neutral-600">Describe what you want built</span>
+            <button
+              onClick={handleGenerate}
+              disabled={!prompt.trim() || submitting}
+              className="bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed text-black text-xs font-bold px-4 py-1.5 rounded-lg transition-colors"
+            >
+              {submitting ? "Saving…" : "✦ Generate"}
+            </button>
+          </div>
+        </div>
+      )}
 
-      <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
-        <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Module 2 — coming soon</p>
-        <p className="text-sm text-neutral-400 leading-relaxed">
-          Prompt your idea above and we&apos;ll handle the whole thing: figuring out what your app needs,
-          building every page, and deploying it live — all automatically.
-          No code. No setup. Just describe and ship.
-        </p>
-      </div>
+      {!submitted && (
+        <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">How it works</p>
+          <p className="text-sm text-neutral-400 leading-relaxed">
+            Describe your idea and we handle everything — figuring out what your app needs,
+            building every page, and deploying it live automatically.
+            No code. No setup. Just describe and ship.
+          </p>
+        </div>
+      )}
 
       {project.vercel_preview_url && (
         <div className="flex gap-3">
