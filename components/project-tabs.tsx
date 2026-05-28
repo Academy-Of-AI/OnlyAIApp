@@ -130,47 +130,146 @@ function ComingSoonTab({ title, desc, icon }: { title: string; desc: string; ico
 
 /* ── Settings tab ──────────────────────────────────────────── */
 function SettingsTab({ project }: { project: Project }) {
-  const rows: { label: string; value: string | null; href?: string; copy?: boolean }[] = [
-    { label: "Project name",     value: project.name },
-    { label: "Status",           value: project.status },
-    { label: "Template",         value: project.template_id },
-    { label: "Created",          value: new Date(project.created_at).toLocaleString() },
-    { label: "Deployed",         value: project.deployed_at ? new Date(project.deployed_at).toLocaleString() : "—" },
-    { label: "Live URL",         value: project.vercel_preview_url, href: project.vercel_preview_url ?? undefined },
-    { label: "GitHub repo",      value: project.github_repo_url,    href: project.github_repo_url ?? undefined },
-    { label: "Supabase ref",     value: project.supabase_project_ref, copy: true },
-    { label: "Vercel project",   value: project.vercel_project_id },
-  ];
+  const [name, setName]         = useState(project.name);
+  const [url, setUrl]           = useState(project.vercel_preview_url ?? "");
+  const [editingName, setEditingName] = useState(false);
+  const [editingUrl, setEditingUrl]   = useState(false);
+  const [saving, setSaving]     = useState<"name" | "url" | null>(null);
+  const [error, setError]       = useState<string | null>(null);
+  const [saved, setSaved]       = useState<"name" | "url" | null>(null);
+
+  async function save(field: "name" | "url") {
+    setError(null);
+    setSaving(field);
+    const body = field === "name"
+      ? { name }
+      : { vercel_preview_url: url };
+
+    const res = await fetch(`/api/projects/${project.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    setSaving(null);
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error ?? "Save failed");
+    } else {
+      if (field === "name") setEditingName(false);
+      if (field === "url")  setEditingUrl(false);
+      setSaved(field);
+      setTimeout(() => setSaved(null), 2000);
+    }
+  }
 
   function copyToClipboard(value: string) {
     navigator.clipboard.writeText(value);
   }
 
+  const readOnlyRows: { label: string; value: string | null; href?: string; copy?: boolean }[] = [
+    { label: "Status",         value: project.status },
+    { label: "Created",        value: new Date(project.created_at).toLocaleString() },
+    { label: "Deployed",       value: project.deployed_at ? new Date(project.deployed_at).toLocaleString() : "—" },
+    { label: "GitHub repo",    value: project.github_repo_url, href: project.github_repo_url ?? undefined },
+    { label: "Supabase ref",   value: project.supabase_project_ref, copy: true },
+    { label: "Vercel project", value: project.vercel_project_id },
+  ];
+
   return (
     <div className="max-w-xl space-y-6">
+      {error && (
+        <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">
+          {error}
+        </div>
+      )}
+
       <div>
         <h2 className="text-base font-semibold mb-4">Project details</h2>
         <div className="border border-white/10 rounded-xl overflow-hidden divide-y divide-white/[0.06]">
-          {rows.map(({ label, value, href, copy }) => (
+
+          {/* Editable: name */}
+          <div className="flex items-center justify-between px-5 py-3 text-sm gap-4">
+            <span className="text-neutral-500 w-36 shrink-0">Project name</span>
+            <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+              {editingName ? (
+                <>
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="bg-white/5 border border-white/15 rounded-md px-2 py-1 text-sm text-white outline-none focus:border-green-500/50 w-48"
+                    autoFocus
+                    onKeyDown={(e) => { if (e.key === "Enter") save("name"); if (e.key === "Escape") { setName(project.name); setEditingName(false); } }}
+                  />
+                  <button onClick={() => save("name")} disabled={saving === "name"}
+                    className="text-xs bg-green-500 hover:bg-green-400 text-black font-semibold px-2.5 py-1 rounded-md transition-colors disabled:opacity-50">
+                    {saving === "name" ? "…" : "Save"}
+                  </button>
+                  <button onClick={() => { setName(project.name); setEditingName(false); }}
+                    className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors">Cancel</button>
+                </>
+              ) : (
+                <>
+                  <span className="text-neutral-300 truncate">{name}</span>
+                  {saved === "name" && <span className="text-xs text-green-400">Saved ✓</span>}
+                  <button onClick={() => setEditingName(true)}
+                    className="text-neutral-600 hover:text-neutral-300 text-xs transition-colors ml-1" title="Edit">✎</button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Editable: live URL */}
+          <div className="flex items-center justify-between px-5 py-3 text-sm gap-4">
+            <span className="text-neutral-500 w-36 shrink-0">Live URL</span>
+            <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+              {editingUrl ? (
+                <>
+                  <input
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    className="bg-white/5 border border-white/15 rounded-md px-2 py-1 text-sm text-white outline-none focus:border-green-500/50 w-56"
+                    autoFocus
+                    placeholder="https://your-app.vercel.app"
+                    onKeyDown={(e) => { if (e.key === "Enter") save("url"); if (e.key === "Escape") { setUrl(project.vercel_preview_url ?? ""); setEditingUrl(false); } }}
+                  />
+                  <button onClick={() => save("url")} disabled={saving === "url"}
+                    className="text-xs bg-green-500 hover:bg-green-400 text-black font-semibold px-2.5 py-1 rounded-md transition-colors disabled:opacity-50">
+                    {saving === "url" ? "…" : "Save"}
+                  </button>
+                  <button onClick={() => { setUrl(project.vercel_preview_url ?? ""); setEditingUrl(false); }}
+                    className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors">Cancel</button>
+                </>
+              ) : (
+                <>
+                  {url ? (
+                    <a href={url} target="_blank" rel="noopener noreferrer"
+                      className="text-green-400 hover:text-green-300 truncate transition-colors">{url}</a>
+                  ) : (
+                    <span className="text-neutral-600">—</span>
+                  )}
+                  {saved === "url" && <span className="text-xs text-green-400">Saved ✓</span>}
+                  <button onClick={() => setEditingUrl(true)}
+                    className="text-neutral-600 hover:text-neutral-300 text-xs transition-colors ml-1" title="Edit">✎</button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Read-only rows */}
+          {readOnlyRows.map(({ label, value, href, copy }) => (
             <div key={label} className="flex items-center justify-between px-5 py-3 text-sm">
               <span className="text-neutral-500 w-36 shrink-0">{label}</span>
               <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
                 {href && value ? (
                   <a href={href} target="_blank" rel="noopener noreferrer"
-                    className="text-green-400 hover:text-green-300 truncate transition-colors">
-                    {value}
-                  </a>
+                    className="text-green-400 hover:text-green-300 truncate transition-colors">{value}</a>
                 ) : (
                   <span className="text-neutral-300 truncate">{value ?? "—"}</span>
                 )}
                 {copy && value && (
-                  <button
-                    onClick={() => copyToClipboard(value)}
-                    className="text-neutral-600 hover:text-neutral-400 text-xs shrink-0 transition-colors"
-                    title="Copy"
-                  >
-                    ⎘
-                  </button>
+                  <button onClick={() => copyToClipboard(value)}
+                    className="text-neutral-600 hover:text-neutral-400 text-xs shrink-0 transition-colors" title="Copy">⎘</button>
                 )}
               </div>
             </div>
@@ -184,10 +283,7 @@ function SettingsTab({ project }: { project: Project }) {
           Need to update your Vercel token, Supabase access, or Resend key?
           Go back to your dashboard to reconnect or update any integration.
         </p>
-        <a
-          href="/dashboard"
-          className="inline-block text-sm text-green-400 hover:text-green-300 transition-colors"
-        >
+        <a href="/dashboard" className="inline-block text-sm text-green-400 hover:text-green-300 transition-colors">
           ← Back to dashboard &amp; connections
         </a>
       </div>
