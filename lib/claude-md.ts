@@ -16,20 +16,36 @@ const KIND_HEADINGS: Record<string, string> = {
   note: "Notes",
 };
 
+export interface StackInfo {
+  framework?: string;
+  commands?: Record<string, string>;
+}
+
 export function renderClaudeMd({
   projectName,
   objective,
   milestones,
   memory,
+  stack,
 }: {
   projectName: string;
   objective?: string | null;
   milestones?: Milestone[];
   memory?: MemoryEntry[];
+  stack?: StackInfo | null;
 }): string {
   const lines: string[] = [];
   lines.push(`# ${projectName}`, "");
   lines.push("<!-- Managed by Launchpad. Edits here may be overwritten on next sync. -->", "");
+
+  if (stack && (stack.framework || (stack.commands && Object.keys(stack.commands).length))) {
+    lines.push("## Stack & commands", "");
+    if (stack.framework) lines.push(`- Framework: ${stack.framework}`);
+    for (const [name, cmd] of Object.entries(stack.commands ?? {})) {
+      lines.push(`- \`${name}\`: \`${cmd}\``);
+    }
+    lines.push("");
+  }
 
   if (objective) {
     lines.push("## Objective", "", objective.trim(), "");

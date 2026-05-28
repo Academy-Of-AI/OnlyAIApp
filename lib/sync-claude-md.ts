@@ -1,7 +1,26 @@
-import { renderClaudeMd, type MemoryEntry, type Milestone } from "@/lib/claude-md";
+import { renderClaudeMd, type MemoryEntry, type Milestone, type StackInfo } from "@/lib/claude-md";
 import { decrypt } from "@/lib/crypto";
-import { upsertFile } from "@/lib/github";
+import { githubClient, upsertFile } from "@/lib/github";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+/** Read package.json from the repo to derive framework + key commands. */
+async function deriveStack(token: string, owner: string, repo: string): Promise<StackInfo | null> {
+  try {
+    const octokit = githubClient(token);
+    const { data } = await octokit.repos.getContent({ owner, repo, path: "package.json" });
+    if (!("content" in data)) return null;
+    const pkg = JSON.parse(Buffer.from(data.content as string, "base64").toString("utf-8")) as {
+      scripts?: Record<string, string>;
+      dependencies?: Record<string, string>;
+    };
+    const deps = pkg.dependencies ?? {};
+    const framework = deps.next ? "Next.js" : deps.react ? "React" : deps.vue ? "Vue" : deps.svelte ? "Svelte" : undefined;
+    const wanted = ["dev", "build", "test", "lint", "start"];
+    const commands: Record<string, string> = {};
+    for (const k of wanted) if (pkg.scripts?.[k]) commands[k] = pkg.scripts[k];
+    return { framework, commands };
+  } catch { return null; }
+}
 
 // Accept either the SSR server client or the service-role admin client.
 type DB = SupabaseClient;
@@ -51,8 +70,6 @@ export async function syncClaudeMd(
     objective = memory.find((e) => e.kind === "objective")?.content ?? null;
   }
 
-  const md = renderClaudeMd({ projectName: project.name, objective, milestones, memory });
-
   const { data: conn } = await supabase
     .from("oauth_connections").select("access_token")
     .eq("user_id", userId).eq("provider", "github").single();
@@ -60,6 +77,8 @@ export async function syncClaudeMd(
 
   try {
     const token = await decrypt(conn.access_token as string);
+    const stack = await deriveStack(token, owner, repo);
+    const md = renderClaudeMd({ projectName: project.name, objective, milestones, memory, stack });
     await upsertFile({
       token, owner, repo, path: "CLAUDE.md", content: md,
       message: "chore: sync CLAUDE.md (Launchpad memory)",
