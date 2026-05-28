@@ -1,3 +1,4 @@
+import { AutoCaptureToggle } from "@/components/auto-capture-toggle";
 import { ProjectTabs } from "@/components/project-tabs";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -98,6 +99,11 @@ export default async function ProjectPage({
             </a>
           )}
         </div>
+      </div>
+
+      {/* Auto-capture toggle */}
+      <div className="mb-6">
+        <AutoCaptureToggle projectId={project.id} enabled={!!project.auto_capture} />
       </div>
 
       {/* Tabs */}

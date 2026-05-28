@@ -99,6 +99,28 @@ export async function upsertFile({
 }
 
 /**
+ * Register a push webhook on a repo (idempotent — skips if one already points
+ * at the same callback URL).
+ */
+export async function registerPushWebhook({
+  token, owner, repo, callbackUrl, secret,
+}: {
+  token: string; owner: string; repo: string; callbackUrl: string; secret?: string;
+}): Promise<void> {
+  const octokit = githubClient(token);
+  try {
+    const { data: hooks } = await octokit.repos.listWebhooks({ owner, repo });
+    if (hooks.some((h) => h.config?.url === callbackUrl)) return;
+  } catch { /* listing may fail on fresh repos — proceed to create */ }
+  await octokit.repos.createWebhook({
+    owner, repo,
+    config: { url: callbackUrl, content_type: "json", ...(secret ? { secret } : {}) },
+    events: ["push"],
+    active: true,
+  });
+}
+
+/**
  * Delete a GitHub repository — best-effort, swallow errors.
  */
 export async function deleteRepo({

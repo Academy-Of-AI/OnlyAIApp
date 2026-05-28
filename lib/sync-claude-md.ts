@@ -1,9 +1,10 @@
 import { renderClaudeMd, type MemoryEntry, type Milestone } from "@/lib/claude-md";
 import { decrypt } from "@/lib/crypto";
 import { upsertFile } from "@/lib/github";
-import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-type DB = Awaited<ReturnType<typeof createClient>>;
+// Accept either the SSR server client or the service-role admin client.
+type DB = SupabaseClient;
 
 /**
  * Build CLAUDE.md from a project's memory + plan-of-record and commit it to the

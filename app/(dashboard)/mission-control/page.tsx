@@ -132,6 +132,16 @@ export default async function MissionControlPage() {
                       : "Last deploy failed — open the project to see the build log."}
                   </div>
                 )}
+
+                {(() => {
+                  const d = p.last_digest as { onTrack?: boolean; note?: string } | null;
+                  if (!d || d.onTrack !== false) return null;
+                  return (
+                    <div className="mt-3 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2 text-xs text-amber-300">
+                      ⟲ Drifting{d.note ? `: ${d.note}` : ""}
+                    </div>
+                  );
+                })()}
               </Link>
             );
           })}
