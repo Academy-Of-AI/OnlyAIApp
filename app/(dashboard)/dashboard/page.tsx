@@ -200,14 +200,24 @@ export default async function DashboardPage({
       {/* Projects header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Your projects</h1>
-        {allRequired && (
-          <Link
-            href="/new-project"
-            className="bg-green-500 hover:bg-green-400 text-black text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-          >
-            + New project
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          {!!projects?.length && (
+            <Link
+              href="/mission-control"
+              className="border border-white/10 hover:border-white/25 text-sm text-neutral-300 hover:text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              ▦ Mission Control
+            </Link>
+          )}
+          {allRequired && (
+            <Link
+              href="/new-project"
+              className="bg-green-500 hover:bg-green-400 text-black text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+            >
+              + New project
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Project list */}

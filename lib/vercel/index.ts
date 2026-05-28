@@ -194,6 +194,62 @@ export async function triggerVercelDeployment({
   }
 }
 
+export type DeploymentState =
+  | "READY" | "BUILDING" | "ERROR" | "QUEUED" | "CANCELED" | "INITIALIZING" | "unknown";
+
+export interface LatestDeployment {
+  state: DeploymentState;
+  url: string | null;
+  commitMessage: string | null;
+  createdAt: number | null;
+  deploymentId: string | null;
+}
+
+/**
+ * Get the latest deployment for a project (any state) so Mission Control can
+ * show live status: READY / BUILDING / ERROR / etc.
+ */
+export async function getLatestDeploymentStatus({
+  token,
+  projectId,
+  teamId,
+}: {
+  token: string;
+  projectId: string;
+  teamId?: string;
+}): Promise<LatestDeployment> {
+  const empty: LatestDeployment = {
+    state: "unknown", url: null, commitMessage: null, createdAt: null, deploymentId: null,
+  };
+  try {
+    const qs = `projectId=${encodeURIComponent(projectId)}&limit=1${teamId ? `&teamId=${encodeURIComponent(teamId)}` : ""}`;
+    const res = await fetch(`${VERCEL_API}/v6/deployments?${qs}`, {
+      headers: vercelHeaders(token),
+    });
+    if (!res.ok) return empty;
+    const data = await res.json() as {
+      deployments?: Array<{
+        uid?: string; url?: string; state?: string; readyState?: string;
+        created?: number; meta?: { githubCommitMessage?: string };
+      }>;
+    };
+    const d = data.deployments?.[0];
+    if (!d) return empty;
+    const raw = (d.state ?? d.readyState ?? "unknown").toUpperCase();
+    const state = (["READY", "BUILDING", "ERROR", "QUEUED", "CANCELED", "INITIALIZING"].includes(raw)
+      ? raw : "unknown") as DeploymentState;
+    return {
+      state,
+      url: d.url ? `https://${d.url}` : null,
+      commitMessage: d.meta?.githubCommitMessage ?? null,
+      createdAt: d.created ?? null,
+      deploymentId: d.uid ?? null,
+    };
+  } catch {
+    return empty;
+  }
+}
+
 /**
  * Delete a Vercel project — best-effort, swallow errors.
  */
