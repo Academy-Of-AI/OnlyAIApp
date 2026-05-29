@@ -23,13 +23,13 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="flex-1 flex flex-col items-center justify-center text-center px-6 py-24 gap-6">
+      <section className="flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-6 py-16 sm:py-24 gap-6">
         <div className="inline-flex items-center gap-2 bg-white/10 text-white/70 text-xs px-3 py-1 rounded-full border border-white/20">
           <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
           The on-ramp to agentic coding
         </div>
 
-        <h1 className="text-5xl sm:text-7xl font-bold tracking-tight max-w-3xl leading-tight">
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight max-w-3xl leading-[1.1]">
           Build your first real app{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-300">
             with Claude Code
@@ -57,7 +57,7 @@ export default function LandingPage() {
       </section>
 
       {/* Steps */}
-      <section className="border-t border-white/10 px-6 py-16">
+      <section className="border-t border-white/10 px-5 sm:px-6 py-14 sm:py-16">
         <div className="max-w-4xl mx-auto grid sm:grid-cols-3 gap-8">
           {steps.map((s) => (
             <div key={s.n} className="space-y-2">

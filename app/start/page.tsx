@@ -35,7 +35,7 @@ const steps = [
 
 export default function StartPage() {
   return (
-    <main className="max-w-2xl mx-auto px-6 py-14">
+    <main className="max-w-2xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
       <nav className="flex items-center justify-between mb-12">
         <Link href="/" className="font-bold tracking-tight">🚀 Launchpad</Link>
         <Link href="/sign-up" className="text-sm bg-violet-500 hover:bg-violet-400 text-white font-medium px-4 py-2 rounded-lg transition-colors">
@@ -43,7 +43,7 @@ export default function StartPage() {
         </Link>
       </nav>
 
-      <h1 className="text-4xl font-bold tracking-tight mb-3">Your first app with an AI agent</h1>
+      <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3 leading-tight">Your first app with an AI agent</h1>
       <p className="text-neutral-400 text-lg mb-2">
         Never coded before? Good. Launchpad is training wheels for Claude Code — we handle the
         scary parts so you ship something real and learn the actual workflow.
