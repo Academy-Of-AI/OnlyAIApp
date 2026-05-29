@@ -26,21 +26,31 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
+  const navItems = [
+    { href: `/projects/${project.id}/plan`,     label: "◇ Plan" },
+    { href: `/projects/${project.id}/drift`,    label: "⟲ Course-keeper" },
+    { href: `/projects/${project.id}/memory`,   label: "◆ Memory" },
+    { href: `/projects/${project.id}/activity`, label: "☰ Activity" },
+    { href: `/projects/${project.id}/usage`,    label: "$ Usage" },
+    { href: `/projects/${project.id}/share`,    label: "⇲ Share" },
+    { href: `/projects/${project.id}/ops`,      label: "⚙ Ops" },
+  ];
+
   return (
-    <main className="max-w-4xl mx-auto px-6 py-10">
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-6">
-        <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
-        <span>/</span>
-        <span className="text-neutral-300">{project.name}</span>
+      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-5 min-w-0">
+        <Link href="/dashboard" className="hover:text-white transition-colors shrink-0">Dashboard</Link>
+        <span className="shrink-0">/</span>
+        <span className="text-neutral-300 truncate">{project.name}</span>
       </div>
 
-      {/* Project header */}
-      <div className="flex items-start justify-between gap-4 mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold">{project.name}</h1>
-            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${STATUS_STYLES[project.status] ?? STATUS_STYLES.pending}`}>
+      {/* Project header — stacks on mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3 mb-1 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight truncate">{project.name}</h1>
+            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium shrink-0 ${STATUS_STYLES[project.status] ?? STATUS_STYLES.pending}`}>
               {project.status}
             </span>
           </div>
@@ -51,70 +61,32 @@ export default async function ProjectPage({
             <p className="text-xs text-red-400 mt-1 truncate max-w-lg">{project.error}</p>
           )}
         </div>
+
+        {/* Primary actions */}
         <div className="flex gap-2 shrink-0">
-          <Link
-            href={`/projects/${project.id}/plan`}
-            className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
-          >
-            ◇ Plan
-          </Link>
-          <Link
-            href={`/projects/${project.id}/drift`}
-            className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
-          >
-            ⟲ Course-keeper
-          </Link>
-          <Link
-            href={`/projects/${project.id}/activity`}
-            className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
-          >
-            ☰ Activity
-          </Link>
-          <Link
-            href={`/projects/${project.id}/usage`}
-            className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
-          >
-            $ Usage
-          </Link>
-          <Link
-            href={`/projects/${project.id}/share`}
-            className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
-          >
-            ⇲ Share
-          </Link>
-          <Link
-            href={`/projects/${project.id}/memory`}
-            className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
-          >
-            ◆ Memory
-          </Link>
-          <Link
-            href={`/projects/${project.id}/ops`}
-            className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
-          >
-            ⚙ Ops
-          </Link>
           {project.github_repo_url && (
-            <a
-              href={project.github_repo_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
-            >
+            <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer"
+              className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors">
               GitHub →
             </a>
           )}
           {project.vercel_preview_url && (
-            <a
-              href={project.vercel_preview_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-green-500 hover:bg-green-400 text-black text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
-            >
+            <a href={project.vercel_preview_url} target="_blank" rel="noopener noreferrer"
+              className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">
               ↗ Live app
             </a>
           )}
         </div>
+      </div>
+
+      {/* Control-plane sub-nav — horizontally scrollable on mobile, no overflow */}
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {navItems.map((n) => (
+          <Link key={n.href} href={n.href}
+            className="shrink-0 whitespace-nowrap border border-white/10 hover:border-white/25 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors">
+            {n.label}
+          </Link>
+        ))}
       </div>
 
       {/* Auto-capture toggle */}

@@ -23,17 +23,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex flex-col">
       {/* Top nav */}
-      <header className="border-b border-white/10 px-6 py-3 flex items-center justify-between">
-        <Link href="/dashboard" className="font-bold text-sm">⚡ Vibe Launchpad</Link>
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-neutral-400">
+      <header className="border-b border-white/10 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <Link href="/dashboard" className="font-bold text-sm shrink-0">🚀 Launchpad</Link>
+        <div className="flex items-center gap-3 sm:gap-4 text-sm min-w-0">
+          <span className="hidden sm:inline text-neutral-400 truncate max-w-[180px]">
             {profile?.github_username ?? user.email}
           </span>
-          <span className="bg-white/10 text-white/60 text-xs px-2 py-0.5 rounded-full uppercase tracking-wide">
+          <span className="bg-white/10 text-white/60 text-xs px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0">
             {profile?.plan ?? "free"}
           </span>
           <form action={signOut}>
-            <button type="submit" className="text-neutral-500 hover:text-white transition-colors text-xs">
+            <button type="submit" className="text-neutral-500 hover:text-white transition-colors text-xs shrink-0">
               Sign out
             </button>
           </form>

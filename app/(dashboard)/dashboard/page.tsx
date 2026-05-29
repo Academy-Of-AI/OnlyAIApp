@@ -62,7 +62,7 @@ export default async function DashboardPage({
   }
 
   return (
-    <main className="max-w-4xl mx-auto px-6 py-10 space-y-10">
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8 sm:space-y-10">
       {/* Alerts */}
       {params.connected && (
         <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm px-4 py-3 rounded-lg">
@@ -221,7 +221,7 @@ export default async function DashboardPage({
       )}
 
       {/* Projects header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold">Your projects</h1>
         <div className="flex items-center gap-2">
           <NotificationsBell />

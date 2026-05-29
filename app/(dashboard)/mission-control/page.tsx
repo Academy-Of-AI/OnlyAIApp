@@ -76,8 +76,8 @@ export default async function MissionControlPage() {
   const broken = live.filter((x) => x.status?.state === "ERROR").length;
 
   return (
-    <main className="max-w-5xl mx-auto px-6 py-10 space-y-8">
-      <div className="flex items-end justify-between">
+    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Mission Control</h1>
           <p className="text-sm text-neutral-500 mt-1">
