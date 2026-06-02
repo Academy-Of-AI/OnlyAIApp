@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { getDodItems } from "@/lib/blueprints";
 
 type Project = {
   id: string;
@@ -375,6 +376,12 @@ function LaunchTab({ project }: { project: Project }) {
   const color = (s: Check["status"]) => (s === "pass" ? "text-green-400" : s === "fail" ? "text-red-400" : s === "warn" ? "text-amber-400" : "text-neutral-500");
   const remaining = checks?.filter((c) => c.status === "fail" || c.status === "warn").length ?? 0;
 
+  // Definition of Done (client-side certainty gate for v1)
+  const dodItems = getDodItems(project.template_id);
+  const [dod, setDod] = useState<Record<string, boolean>>({});
+  const allDod = dodItems.every((i) => dod[i.key]);
+  const canSubmit = checks !== null && remaining === 0 && allDod;
+
   // Submit to The Wall (when launch-ready)
   const [wTitle, setWTitle] = useState(project.name);
   const [wTagline, setWTagline] = useState("");
@@ -409,6 +416,25 @@ function LaunchTab({ project }: { project: Project }) {
         <p className="text-sm text-neutral-400">
           We check what separates &quot;it built&quot; from &quot;it&apos;s actually launched&quot; — then hand you the exact task to
           paste into your Claude Code for anything that isn&apos;t ready yet.
+        </p>
+      </div>
+
+      {/* Definition of Done — the certainty gate */}
+      <div className="border border-white/10 rounded-xl p-4 space-y-1">
+        <p className="text-sm font-semibold mb-1">Definition of done</p>
+        {dodItems.map((i) => (
+          <label key={i.key} className="flex items-center gap-3 text-sm cursor-pointer py-1.5">
+            <input
+              type="checkbox"
+              checked={!!dod[i.key]}
+              onChange={(e) => setDod((d) => ({ ...d, [i.key]: e.target.checked }))}
+              className="accent-violet-500 w-4 h-4 shrink-0"
+            />
+            <span className={dod[i.key] ? "text-neutral-500 line-through" : "text-neutral-300"}>{i.label}</span>
+          </label>
+        ))}
+        <p className="text-xs text-neutral-600 pt-1">
+          {allDod ? "✓ Done — now pass the launch checks below, then ship it to The Wall." : "Tick each as you finish it. All boxes + a clean launch check = ready to ship."}
         </p>
       </div>
 
@@ -455,7 +481,7 @@ function LaunchTab({ project }: { project: Project }) {
           </div>
           <p className="text-xs text-neutral-600">Paste a task into your Claude Code, let it fix it, push — then hit Re-check.</p>
 
-          {remaining === 0 && (
+          {canSubmit && (
             <div className="border border-violet-500/30 bg-violet-500/[0.05] rounded-xl p-4 space-y-3">
               {submitted ? (
                 <div className="text-sm">
