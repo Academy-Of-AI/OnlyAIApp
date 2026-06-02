@@ -1,5 +1,6 @@
 import { createRepoFromTemplate, deleteRepo, getGithubUser } from "@/lib/github";
 import {
+  configureAuthSmtp,
   createSupabaseProject,
   deleteSupabaseProject,
   getProjectKeys,
@@ -110,6 +111,25 @@ export async function provisionProject(
       resolvedSupabaseUrl = keys.projectUrl;
       resolvedAnonKey = keys.anonKey;
       onProgress({ step: "supabase_done", message: "Supabase database ready ✓", detail: keys.projectUrl });
+
+      // Managed email — point the new project's Auth at OnlyAIApp's Resend so
+      // signup/confirm/reset emails send for real, with zero member setup.
+      if (process.env.RESEND_API_KEY && process.env.RESEND_FROM_DOMAIN) {
+        try {
+          onProgress({ step: "email_start", message: "Wiring email…" });
+          await configureAuthSmtp(supabaseToken, ref, {
+            host: "smtp.resend.com",
+            port: 465,
+            user: "resend",
+            pass: process.env.RESEND_API_KEY,
+            senderName: projectName,
+            adminEmail: `noreply@${process.env.RESEND_FROM_DOMAIN}`,
+          });
+          onProgress({ step: "email_done", message: "Email ready ✓ — signups send automatically" });
+        } catch {
+          // Non-fatal: the project still works; the member can connect email later.
+        }
+      }
     }
 
     // Step 3: Vercel (optional — GitHub-only onramp skips this)

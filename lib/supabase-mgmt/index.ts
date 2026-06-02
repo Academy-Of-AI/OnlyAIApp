@@ -108,6 +108,34 @@ export async function getProjectKeys(
   };
 }
 
+/**
+ * Point a project's Auth emails (signup / confirm / magic-link / reset) at a
+ * custom SMTP provider, so the member's app sends real, branded email out of
+ * the box instead of Supabase's rate-limited default. Used for managed email.
+ */
+export async function configureAuthSmtp(
+  token: string,
+  ref: string,
+  opts: { host: string; port: number; user: string; pass: string; senderName: string; adminEmail: string },
+): Promise<void> {
+  const res = await fetch(`${BASE}/projects/${ref}/config/auth`, {
+    method: "PATCH",
+    headers: mgmtHeaders(token),
+    body: JSON.stringify({
+      smtp_host: opts.host,
+      smtp_port: String(opts.port),
+      smtp_user: opts.user,
+      smtp_pass: opts.pass,
+      smtp_sender_name: opts.senderName,
+      smtp_admin_email: opts.adminEmail,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Auth SMTP config failed: ${err}`);
+  }
+}
+
 export async function deleteSupabaseProject(
   token: string,
   ref: string,
