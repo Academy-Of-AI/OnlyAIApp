@@ -18,6 +18,7 @@ type Project = {
   created_at: string;
   deployed_at: string | null;
   build_prompt: string | null;
+  last_digest: { onTrack: boolean; note: string; scopeCreep?: string[] } | null;
 };
 
 const TABS = ["Build", "Launch", "Analytics", "CRM", "Settings"] as const;
@@ -27,10 +28,12 @@ export function ProjectTabs({
   project,
   buildCredits = 0,
   aiBuildEnabled = false,
+  memory = [],
 }: {
   project: Project;
   buildCredits?: number;
   aiBuildEnabled?: boolean;
+  memory?: Array<{ kind: string; content: string }>;
 }) {
   const [tab, setTab] = useState<Tab>("Build");
 
@@ -53,7 +56,7 @@ export function ProjectTabs({
         ))}
       </div>
 
-      {tab === "Build"     && <BuildTab project={project} buildCredits={buildCredits} aiBuildEnabled={aiBuildEnabled} />}
+      {tab === "Build"     && <BuildTab project={project} buildCredits={buildCredits} aiBuildEnabled={aiBuildEnabled} memory={memory} />}
       {tab === "Launch"    && <LaunchTab project={project} />}
       {tab === "Analytics" && <ComingSoonTab title="Analytics" desc="Once your app has real users, their activity will appear here — signups, active users, activation funnel, and revenue." icon="📊" />}
       {tab === "CRM"       && <ComingSoonTab title="CRM" desc="Every user who signs up to your app will appear here. See who they are, what they've done, and send them emails directly." icon="👥" />}
@@ -75,10 +78,12 @@ function BuildTab({
   project,
   buildCredits,
   aiBuildEnabled,
+  memory = [],
 }: {
   project: Project;
   buildCredits: number;
   aiBuildEnabled: boolean;
+  memory?: Array<{ kind: string; content: string }>;
 }) {
   const router = useRouter();
   const [copied, setCopied] = useState<string | null>(null);
@@ -315,15 +320,43 @@ function BuildTab({
       )}
       </div>
 
-      {/* Keep-on-track callout */}
+      {/* Course-keeper — inline, read-only, inferred from your pushes */}
+      {project.last_digest && (
+        <div className={`rounded-xl p-4 border ${project.last_digest.onTrack ? "border-green-500/25 bg-green-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
+          <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${project.last_digest.onTrack ? "text-green-400" : "text-amber-400"}`}>
+            {project.last_digest.onTrack ? "✓ On track" : "⟲ Course-keeper"}
+          </p>
+          <p className="text-sm text-neutral-300">{project.last_digest.note}</p>
+          {(project.last_digest.scopeCreep ?? []).length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {(project.last_digest.scopeCreep ?? []).map((s, i) => (
+                <li key={i} className="text-xs text-amber-300/90">• {s}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* What OnlyAIApp has learned — inferred, read-only, no forms */}
       <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
-        <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">OnlyAIApp keeps it on track</p>
-        <p className="text-sm text-neutral-400 leading-relaxed">
-          As you build, your{" "}
-          <Link href={`/projects/${project.id}/plan`} className="text-violet-300 hover:underline">Plan</Link>,{" "}
-          <Link href={`/projects/${project.id}/memory`} className="text-violet-300 hover:underline">Memory</Link>, and{" "}
-          <Link href={`/projects/${project.id}/drift`} className="text-violet-300 hover:underline">Course-keeper</Link>{" "}
-          update from your commits — so your agent stays anchored to your goal instead of wandering.
+        <div className="flex items-center justify-between mb-2 gap-2">
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">What OnlyAIApp has learned</p>
+          <span className="text-[10px] text-neutral-600 border border-white/10 rounded-full px-2 py-0.5 whitespace-nowrap">read-only · auto</span>
+        </div>
+        {memory.length > 0 ? (
+          <div className="divide-y divide-white/[0.06]">
+            {memory.map((mItem, i) => (
+              <div key={i} className="flex gap-2 py-2 text-sm">
+                <span className="text-[10px] text-neutral-500 bg-white/5 rounded px-1.5 py-0.5 h-fit whitespace-nowrap">{mItem.kind}</span>
+                <span className="text-neutral-300">{mItem.content}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-neutral-500">Nothing captured yet — it accrues automatically from your commits as you build. No forms to fill.</p>
+        )}
+        <p className="text-xs text-neutral-600 mt-3">
+          Inferred from your work and synced into <code className="text-neutral-400">CLAUDE.md</code> — so your agent never starts cold.
         </p>
       </div>
 

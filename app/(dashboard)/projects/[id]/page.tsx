@@ -35,6 +35,16 @@ export default async function ProjectPage({
   const buildCredits = (creditRow?.build_credits as number | null) ?? 0;
   const aiBuildEnabled = process.env.OWNER_FUNDED_BUILDS === "true";
 
+  // Inferred context (zero-forms) — shown read-only inside the Build loop
+  const { data: memoryRows } = await supabase
+    .from("project_memory")
+    .select("kind, content")
+    .eq("project_id", id)
+    .eq("user_id", user!.id)
+    .order("created_at", { ascending: false })
+    .limit(6);
+  const memory = (memoryRows as Array<{ kind: string; content: string }> | null) ?? [];
+
   // Forge-recedes cleanup: Activity / Usage / Ops removed from the builder view
   // (run-the-business tooling — VAB is the forge, not the factory). The routes
   // still exist; they're just no longer surfaced here.
@@ -104,7 +114,7 @@ export default async function ProjectPage({
       </div>
 
       {/* Tabs */}
-      <ProjectTabs project={project} buildCredits={buildCredits} aiBuildEnabled={aiBuildEnabled} />
+      <ProjectTabs project={project} buildCredits={buildCredits} aiBuildEnabled={aiBuildEnabled} memory={memory} />
     </main>
   );
 }
