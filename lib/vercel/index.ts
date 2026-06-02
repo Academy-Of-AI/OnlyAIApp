@@ -177,7 +177,7 @@ export async function triggerVercelDeployment({
   projectName: string;
   branch?: string;
   teamId?: string;
-}): Promise<void> {
+}): Promise<{ deploymentId: string | null; url: string | null; state: DeploymentState }> {
   const qs = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
   const res = await fetch(`${VERCEL_API}/v13/deployments${qs}`, {
     method: "POST",
@@ -191,6 +191,46 @@ export async function triggerVercelDeployment({
   if (!res.ok) {
     const err = await res.text();
     console.warn(`[vercel] triggerDeployment non-fatal: ${err}`);
+    return { deploymentId: null, url: null, state: "unknown" };
+  }
+  const data = await res.json() as { id?: string; url?: string; readyState?: string };
+  const raw = (data.readyState ?? "QUEUED").toUpperCase();
+  const state = (["READY", "BUILDING", "ERROR", "QUEUED", "CANCELED", "INITIALIZING"].includes(raw)
+    ? raw : "unknown") as DeploymentState;
+  return {
+    deploymentId: data.id ?? null,
+    url: data.url ? `https://${data.url}` : null,
+    state,
+  };
+}
+
+/**
+ * Poll a single deployment by id for its current build state. Used by the
+ * build pipeline to report a TRUTHFUL outcome (deployed vs build-failed)
+ * instead of claiming success the instant a deploy is triggered.
+ */
+export async function getDeploymentById({
+  token,
+  deploymentId,
+  teamId,
+}: {
+  token: string;
+  deploymentId: string;
+  teamId?: string;
+}): Promise<{ state: DeploymentState; url: string | null }> {
+  try {
+    const qs = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
+    const res = await fetch(`${VERCEL_API}/v13/deployments/${deploymentId}${qs}`, {
+      headers: vercelHeaders(token),
+    });
+    if (!res.ok) return { state: "unknown", url: null };
+    const d = await res.json() as { readyState?: string; state?: string; url?: string };
+    const raw = (d.readyState ?? d.state ?? "unknown").toUpperCase();
+    const state = (["READY", "BUILDING", "ERROR", "QUEUED", "CANCELED", "INITIALIZING"].includes(raw)
+      ? raw : "unknown") as DeploymentState;
+    return { state, url: d.url ? `https://${d.url}` : null };
+  } catch {
+    return { state: "unknown", url: null };
   }
 }
 

@@ -3,9 +3,15 @@ import { Octokit } from "@octokit/rest";
 import { NextResponse } from "next/server";
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
-import { triggerVercelDeployment } from "@/lib/vercel";
+import { triggerVercelDeployment, getDeploymentById, getDeploymentErrorLine, type DeploymentState } from "@/lib/vercel";
 
 export const maxDuration = 300;
+
+/* Build engine. Sonnet by default for the on-ramp economics (~5x cheaper than
+   Opus, ample quality for a first OS). Override with the BUILD_MODEL env var
+   (e.g. "claude-opus-4-5" for a premium tier) — no code change or redeploy of
+   logic needed. */
+const BUILD_MODEL = process.env.BUILD_MODEL ?? "claude-sonnet-4-5";
 
 /**
  * POST /api/projects/:id/build
@@ -403,7 +409,7 @@ export async function updateSession(request: NextRequest) {
         let designPlan = "";
         try {
           const planResponse = await anthropic.messages.create({
-            model: "claude-opus-4-5",
+            model: BUILD_MODEL,
             max_tokens: 5000,
             thinking: { type: "enabled", budget_tokens: 3000 },
             messages: [{
@@ -439,7 +445,7 @@ Under 400 words. This plan feeds the build step.`,
         send({ step: "generating", message: "Building your app…" });
         console.log("[build] phase 2: building");
         const buildResponse = await anthropic.messages.create({
-          model: "claude-opus-4-5",
+          model: BUILD_MODEL,
           max_tokens: 32000,
           tools: [writeFilesTool],
           tool_choice: { type: "any" },
@@ -495,7 +501,7 @@ Call write_files with the complete files. Rules:
               .map((f) => `=== ${f.path} ===\n${f.content}`)
               .join("\n\n");
             const refineResponse = await anthropic.messages.create({
-              model: "claude-opus-4-5",
+              model: BUILD_MODEL,
               max_tokens: 32000,
               tools: [writeFilesTool],
               tool_choice: { type: "any" },
@@ -592,24 +598,51 @@ Critique it hard against the principles, then call write_files with improved ver
         });
         console.log("[build] step 3 done: pushed single commit", newCommit.sha);
 
-        /* Step 4 — trigger Vercel deploy ─────────────────────────────── */
+        /* Step 4 — trigger Vercel deploy, then VERIFY the outcome ──────────
+           Critical: do NOT report success the instant a deploy is triggered.
+           The old behavior sent {step:"done"} immediately, so a build that
+           failed to compile on Vercel still showed all-green — and people
+           would proudly demo a broken URL. We now poll the deployment and
+           tell the truth: deployed, build-failed, or still-building. */
         console.log("[build] step 3 done: all files pushed");
         console.log("[build] step 4: triggering Vercel deployment");
-        send({ step: "deploying", message: "Triggering Vercel deployment…" });
+        send({ step: "deploying", message: "Deploying — verifying it actually builds…" });
 
-        // Explicitly trigger a Vercel deploy — don't rely solely on the GitHub webhook
+        let deployState: DeploymentState = "unknown";
+        let deployUrl: string | null = null;
+        let deploymentId: string | null = null;
+
         if (vercelToken && project.vercel_project_id) {
           try {
-            await triggerVercelDeployment({
+            const trig = await triggerVercelDeployment({
               token: vercelToken,
               projectId: project.vercel_project_id as string,
               projectName: project.name as string,
               teamId: vercelTeamId ?? undefined,
             });
-            console.log("[build] step 4: Vercel deployment triggered for project", project.vercel_project_id);
+            deploymentId = trig.deploymentId;
+            deployUrl = trig.url;
+            deployState = trig.state;
+            console.log("[build] step 4: deploy triggered", deploymentId, "state", deployState);
           } catch (vercelErr) {
-            // Non-fatal: GitHub webhook may still deploy on its own
             console.warn("[build] step 4: Vercel trigger failed (non-fatal):", vercelErr);
+          }
+
+          // Poll until the build resolves (bounded so we stay within maxDuration)
+          if (deploymentId) {
+            const deadline = Date.now() + 75000;
+            while (Date.now() < deadline) {
+              await new Promise((r) => setTimeout(r, 5000));
+              const s = await getDeploymentById({
+                token: vercelToken,
+                deploymentId,
+                teamId: vercelTeamId ?? undefined,
+              });
+              if (s.state !== "unknown") deployState = s.state;
+              if (s.url) deployUrl = s.url;
+              if (["READY", "ERROR", "CANCELED"].includes(deployState)) break;
+            }
+            console.log("[build] step 4: final deploy state", deployState);
           }
         } else {
           console.log("[build] step 4: no Vercel token/projectId — relying on GitHub webhook");
@@ -620,10 +653,37 @@ Critique it hard against the principles, then call write_files with improved ver
           .update({ status: "deployed", build_prompt: null })
           .eq("id", id);
 
-        // Brief pause so the client can show the deploying step
-        await new Promise((r) => setTimeout(r, 1500));
-
-        send({ step: "done", commitMessage: changes.commitMessage });
+        if (deployState === "ERROR") {
+          let why: string | null = null;
+          if (vercelToken && deploymentId) {
+            try {
+              why = await getDeploymentErrorLine({
+                token: vercelToken,
+                deploymentId,
+                teamId: vercelTeamId ?? undefined,
+              });
+            } catch { /* best-effort */ }
+          }
+          send({
+            step: "deploy_failed",
+            commitMessage: changes.commitMessage,
+            url: deployUrl,
+            message: why
+              ? `Your changes were committed, but the live deploy failed to build: ${why}`
+              : "Your changes were committed, but the live deploy failed to build. Open the project on Vercel to see why.",
+          });
+        } else if (deployState === "READY") {
+          send({ step: "done", deployed: true, url: deployUrl, commitMessage: changes.commitMessage });
+        } else {
+          // Triggered but still building (or no Vercel wired) — be honest, don't claim it's live yet
+          send({
+            step: "done",
+            deployed: false,
+            url: deployUrl,
+            commitMessage: changes.commitMessage,
+            message: "Changes committed. The deploy is still building — your live URL will update shortly.",
+          });
+        }
       } catch (err) {
         console.error("[build] pipeline error:", err);
         const message = err instanceof Error ? err.message : "Build failed";
