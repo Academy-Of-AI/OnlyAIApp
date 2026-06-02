@@ -24,7 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-screen bg-neutral-950 text-white flex flex-col">
       {/* Top nav */}
       <header className="border-b border-white/10 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-        <Link href="/dashboard" className="font-bold text-sm shrink-0">🚀 Launchpad</Link>
+        <Link href="/dashboard" className="font-bold text-sm shrink-0">OnlyAIApp</Link>
         <div className="flex items-center gap-3 sm:gap-4 text-sm min-w-0">
           {(profile?.plan ?? "free") !== "pro" && (
             <Link href="/upgrade"

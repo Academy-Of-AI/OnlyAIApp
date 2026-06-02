@@ -37,7 +37,7 @@ export default function SignInPage() {
     <main className="min-h-screen flex items-center justify-center px-4 bg-neutral-950">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
-          <Link href="/" className="text-white/50 text-sm hover:text-white">🚀 Launchpad</Link>
+          <Link href="/" className="text-white/50 text-sm hover:text-white">OnlyAIApp</Link>
           <h1 className="text-2xl font-bold text-white">Welcome back</h1>
         </div>
 

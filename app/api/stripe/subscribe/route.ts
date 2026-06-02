@@ -32,7 +32,7 @@ export async function POST(request: Request) {
         unit_amount: PRO_PRICE_CENTS,
         recurring: { interval: "month" },
         product_data: {
-          name: "Vibe Launchpad — Pro",
+          name: "OnlyAIApp — Pro",
           description: "Unlimited projects, plan-of-record, course-keeper, auto CLAUDE.md sync",
         },
       },

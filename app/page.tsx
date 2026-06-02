@@ -11,7 +11,7 @@ export default function LandingPage() {
     <main className="min-h-screen flex flex-col">
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <span className="font-bold text-lg tracking-tight">🚀 Launchpad</span>
+        <span className="font-bold text-lg tracking-tight">OnlyAIApp</span>
         <div className="flex gap-3">
           <Link href="/sign-in" className="text-sm text-neutral-400 hover:text-white transition-colors px-3 py-1.5">
             Sign in
@@ -71,7 +71,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 px-6 py-6 text-center text-xs text-neutral-600">
-        🚀 Launchpad — the on-ramp to agentic coding
+        OnlyAIApp — the on-ramp to agentic coding
       </footer>
     </main>
   );

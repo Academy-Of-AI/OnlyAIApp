@@ -315,7 +315,7 @@ function BuildTab({
 
       {/* Keep-on-track callout */}
       <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
-        <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Launchpad keeps it on track</p>
+        <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">OnlyAIApp keeps it on track</p>
         <p className="text-sm text-neutral-400 leading-relaxed">
           As you build, your{" "}
           <Link href={`/projects/${project.id}/plan`} className="text-violet-300 hover:underline">Plan</Link>,{" "}

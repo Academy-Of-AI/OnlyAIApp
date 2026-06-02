@@ -46,7 +46,7 @@ export async function POST(
   if (process.env.OWNER_FUNDED_BUILDS !== "true") {
     return NextResponse.json(
       {
-        error: "Build it with your own Claude Code — open the project locally and point your agent at it. Launchpad keeps it on track.",
+        error: "Build it with your own Claude Code — open the project locally and point your agent at it. OnlyAIApp keeps it on track.",
         code: "use_own_agent",
         guide: "/start",
       },
@@ -284,7 +284,7 @@ export async function POST(
           autoPatches["next.config.ts"] = `import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Auto-managed by Vibe Launchpad: AI-generated apps deploy even if the
+  // Auto-managed by OnlyAIApp: AI-generated apps deploy even if the
   // template has strict type/lint issues. Type errors are compile-time only.
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },

@@ -55,9 +55,9 @@ export default function SignUpPage() {
     <main className="min-h-screen flex items-center justify-center px-4 bg-neutral-950">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
-          <Link href="/" className="text-white/50 text-sm hover:text-white">🚀 Launchpad</Link>
+          <Link href="/" className="text-white/50 text-sm hover:text-white">OnlyAIApp</Link>
           <h1 className="text-2xl font-bold text-white">Create your account</h1>
-          <p className="text-neutral-500 text-sm">Free — 3 projects included</p>
+          <p className="text-neutral-500 text-sm">Free to start</p>
         </div>
 
         <button

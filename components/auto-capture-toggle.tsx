@@ -34,7 +34,7 @@ export function AutoCaptureToggle({ projectId, enabled }: { projectId: string; e
           {on && <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded">on</span>}
         </div>
         <p className="text-xs text-neutral-500 mt-1 max-w-md">
-          On each push, Launchpad reads your commits and auto-updates memory, milestones, and drift —
+          On each push, OnlyAIApp reads your commits and auto-updates memory, milestones, and drift —
           then re-syncs CLAUDE.md. No manual entry.
         </p>
         {err && <p className="text-xs text-red-400 mt-1">{err}</p>}

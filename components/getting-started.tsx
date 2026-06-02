@@ -35,7 +35,7 @@ export function GettingStarted({
         <h2 className="font-semibold text-lg">🎓 Training wheels are off</h2>
         <p className="text-sm text-neutral-400 mt-1">
           You&apos;ve shipped the full loop — set an objective, built with your agent, and your
-          memory is compounding. From here Launchpad just keeps you on course.{" "}
+          memory is compounding. From here OnlyAIApp just keeps you on course.{" "}
           <Link href="/mission-control" className="text-violet-300 hover:underline">Open Mission Control →</Link>
         </p>
       </section>

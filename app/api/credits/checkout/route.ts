@@ -37,7 +37,7 @@ export async function POST(request: Request) {
           currency: "usd",
           unit_amount: amountCents,
           product_data: {
-            name: `Vibe Launchpad — ${badge} pack`,
+            name: `OnlyAIApp — ${badge} pack`,
             description: `${label} · ${credits} AI builds`,
           },
         },

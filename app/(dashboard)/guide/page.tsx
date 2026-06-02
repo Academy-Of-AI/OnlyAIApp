@@ -33,7 +33,7 @@ export default function GuidePage() {
   return (
     <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
       <Link href="/dashboard" className="text-sm text-neutral-500 hover:text-white transition-colors">← Dashboard</Link>
-      <h1 className="text-3xl font-bold tracking-tight mt-4 mb-2">How Launchpad works</h1>
+      <h1 className="text-3xl font-bold tracking-tight mt-4 mb-2">How OnlyAIApp works</h1>
       <p className="text-neutral-400 mb-10">
         A control plane for AI-coded projects. You provision and track; Claude Code and Codex build.
         The connective tissue is <span className="font-mono text-neutral-300">CLAUDE.md</span> — the file
