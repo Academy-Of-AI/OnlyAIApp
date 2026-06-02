@@ -17,7 +17,7 @@ export default async function UpgradePage({
   const currentPlan = profile?.plan ?? "free";
 
   return (
-    <main className="max-w-4xl mx-auto px-6 py-12 space-y-10">
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-12 space-y-10">
       {params.upgraded && (
         <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm px-4 py-3 rounded-lg text-center">
           🎉 You&apos;re on Pro. Unlimited projects, the course-keeper, and auto memory are unlocked.

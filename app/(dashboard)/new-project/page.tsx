@@ -92,7 +92,7 @@ export default function NewProjectPage() {
   }
 
   return (
-    <main className="max-w-lg mx-auto px-6 py-12 space-y-8">
+    <main className="max-w-lg mx-auto px-4 sm:px-6 py-10 sm:py-12 space-y-8">
       <div>
         <Link href="/dashboard" className="text-neutral-500 text-sm hover:text-white">
           ← Dashboard

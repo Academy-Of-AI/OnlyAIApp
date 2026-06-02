@@ -29,7 +29,7 @@ export default async function PlanPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-10">
+    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
       <div className="flex items-center gap-2 text-sm text-neutral-500 mb-6">
         <Link href="/mission-control" className="hover:text-white transition-colors">Mission Control</Link>
         <span>/</span>

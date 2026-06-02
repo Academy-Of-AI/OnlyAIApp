@@ -24,7 +24,7 @@ export default async function SharedListPage() {
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-10">
+    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
       <h1 className="text-2xl font-bold tracking-tight mb-1">Shared with you</h1>
       <p className="text-sm text-neutral-500 mb-8">Read-only projects others have shared with you.</p>
 

@@ -30,7 +30,7 @@ export default async function HackathonDetailPage({
   }).length ?? 0;
 
   return (
-    <main className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
       <div>
         <Link href="/hackathons" className="text-neutral-500 text-sm hover:text-white">← Hackathons</Link>
         <div className="flex items-start justify-between mt-2 gap-4">

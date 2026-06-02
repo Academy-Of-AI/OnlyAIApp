@@ -31,7 +31,7 @@ export default function GuidePage() {
   ];
 
   return (
-    <main className="max-w-2xl mx-auto px-6 py-12">
+    <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
       <Link href="/dashboard" className="text-sm text-neutral-500 hover:text-white transition-colors">← Dashboard</Link>
       <h1 className="text-3xl font-bold tracking-tight mt-4 mb-2">How Launchpad works</h1>
       <p className="text-neutral-400 mb-10">
