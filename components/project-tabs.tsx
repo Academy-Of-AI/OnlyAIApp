@@ -19,7 +19,7 @@ type Project = {
   build_prompt: string | null;
 };
 
-const TABS = ["Build", "Analytics", "CRM", "Settings"] as const;
+const TABS = ["Build", "Launch", "Analytics", "CRM", "Settings"] as const;
 type Tab = (typeof TABS)[number];
 
 export function ProjectTabs({
@@ -53,6 +53,7 @@ export function ProjectTabs({
       </div>
 
       {tab === "Build"     && <BuildTab project={project} buildCredits={buildCredits} aiBuildEnabled={aiBuildEnabled} />}
+      {tab === "Launch"    && <LaunchTab project={project} />}
       {tab === "Analytics" && <ComingSoonTab title="Analytics" desc="Once your app has real users, their activity will appear here — signups, active users, activation funnel, and revenue." icon="📊" />}
       {tab === "CRM"       && <ComingSoonTab title="CRM" desc="Every user who signs up to your app will appear here. See who they are, what they've done, and send them emails directly." icon="👥" />}
       {tab === "Settings"  && <SettingsTab project={project} />}
@@ -340,6 +341,94 @@ function BuildTab({
           </a>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ── Launch tab — launch-readiness checks + Claude Code fix tasks ─────────── */
+function LaunchTab({ project }: { project: Project }) {
+  type Check = { id: string; label: string; status: "pass" | "fail" | "warn" | "unknown"; detail: string; claudeTask?: string };
+  const [checks, setChecks] = useState<Check[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  async function run() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/launch-check`);
+      const data = await res.json();
+      setChecks(Array.isArray(data.checks) ? data.checks : []);
+    } catch {
+      setChecks([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function copy(id: string, text: string) {
+    navigator.clipboard?.writeText(text);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 1500);
+  }
+
+  const icon = (s: Check["status"]) => (s === "pass" ? "✓" : s === "fail" ? "✕" : s === "warn" ? "!" : "○");
+  const color = (s: Check["status"]) => (s === "pass" ? "text-green-400" : s === "fail" ? "text-red-400" : s === "warn" ? "text-amber-400" : "text-neutral-500");
+  const remaining = checks?.filter((c) => c.status === "fail" || c.status === "warn").length ?? 0;
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div>
+        <h2 className="text-lg font-semibold mb-1">Launch readiness</h2>
+        <p className="text-sm text-neutral-400">
+          We check what separates &quot;it built&quot; from &quot;it&apos;s actually launched&quot; — then hand you the exact task to
+          paste into your Claude Code for anything that isn&apos;t ready yet.
+        </p>
+      </div>
+
+      {!checks && (
+        <button onClick={run} disabled={loading}
+          className="bg-violet-500 hover:bg-violet-400 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          {loading ? "Checking…" : "Check launch readiness"}
+        </button>
+      )}
+
+      {checks && (
+        <>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <p className="text-sm text-neutral-400">
+              {remaining === 0 ? "🎉 All clear — you're launch-ready." : `${remaining} thing${remaining === 1 ? "" : "s"} left before launch.`}
+            </p>
+            <button onClick={run} disabled={loading}
+              className="text-xs border border-white/10 hover:border-white/30 px-3 py-1.5 rounded-lg transition-colors">
+              {loading ? "…" : "Re-check"}
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {checks.map((c) => (
+              <div key={c.id} className="border border-white/10 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <span className={`${color(c.status)} font-bold w-4 text-center`}>{icon(c.status)}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{c.label}</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">{c.detail}</p>
+                    {c.claudeTask && (
+                      <div className="mt-3 flex items-start gap-2">
+                        <code className="flex-1 text-xs font-mono bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-violet-300 leading-relaxed">{c.claudeTask}</code>
+                        <button onClick={() => copy(c.id, c.claudeTask!)}
+                          className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">
+                          {copied === c.id ? "Copied" : "Copy task"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-neutral-600">Paste a task into your Claude Code, let it fix it, push — then hit Re-check.</p>
+        </>
+      )}
     </div>
   );
 }
