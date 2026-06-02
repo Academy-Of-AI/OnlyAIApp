@@ -79,3 +79,42 @@ export function constructWebhookEvent(payload: string, sig: string) {
     process.env.STRIPE_WEBHOOK_SECRET!,
   );
 }
+
+/* ── Connect (managed payments via hosted onboarding) ───────────────────── */
+
+/** Create a connected account matching the platform's controller config:
+ *  direct charges · full Stripe dashboard · Stripe-hosted onboarding. */
+export async function createConnectedAccount(): Promise<string> {
+  const account = await stripe.accounts.create({
+    controller: {
+      stripe_dashboard: { type: "full" },
+      fees: { payer: "account" },
+      losses: { payments: "stripe" },
+      requirement_collection: "stripe",
+    },
+  });
+  return account.id;
+}
+
+/** Hosted onboarding link for a connected account. */
+export async function createAccountLink(
+  accountId: string,
+  returnUrl: string,
+  refreshUrl: string,
+): Promise<string> {
+  const link = await stripe.accountLinks.create({
+    account: accountId,
+    return_url: returnUrl,
+    refresh_url: refreshUrl,
+    type: "account_onboarding",
+  });
+  return link.url;
+}
+
+/** Whether the connected account finished onboarding + can take payments. */
+export async function getAccountStatus(
+  accountId: string,
+): Promise<{ chargesEnabled: boolean; detailsSubmitted: boolean }> {
+  const a = await stripe.accounts.retrieve(accountId);
+  return { chargesEnabled: !!a.charges_enabled, detailsSubmitted: !!a.details_submitted };
+}

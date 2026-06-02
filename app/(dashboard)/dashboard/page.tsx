@@ -3,6 +3,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { ResendConnectForm } from "@/components/resend-connect-form";
 import { SupabaseConnectForm } from "@/components/supabase-connect-form";
 import { VercelConnectForm } from "@/components/vercel-connect-form";
+import { StripeConnectButton } from "@/components/stripe-connect-button";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
@@ -48,6 +49,7 @@ export default async function DashboardPage({
   const hasVercel   = connections?.some((c) => c.provider === "vercel");
   const hasSupabase = connections?.some((c) => c.provider === "supabase");
   const hasResend   = connections?.some((c) => c.provider === "resend");
+  const hasStripe   = connections?.some((c) => c.provider === "stripe");
   // Onramp: GitHub alone is enough to create a project. Vercel/Supabase come later.
   const canCreate = hasGitHub;
 
@@ -61,6 +63,7 @@ export default async function DashboardPage({
     if (provider === "vercel")   return "Vercel";
     if (provider === "supabase") return "Supabase";
     if (provider === "resend")   return "Resend";
+    if (provider === "stripe")   return "Stripe";
     return provider;
   }
 
@@ -103,7 +106,7 @@ export default async function DashboardPage({
       )}
 
       {/* Optional integrations — collapsed so they don't dominate once you're set up */}
-      {hasGitHub && (!hasVercel || !hasSupabase || !hasResend) && (
+      {hasGitHub && (!hasVercel || !hasSupabase || !hasResend || !hasStripe) && (
         <details className="border border-white/10 rounded-xl overflow-hidden group">
           <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none">
             <div className="min-w-0">
@@ -132,6 +135,13 @@ export default async function DashboardPage({
                 <div className="flex items-center gap-2"><span>✉</span><span className="font-medium text-sm">Resend</span></div>
                 <p className="text-xs text-neutral-500">Transactional email out of the box.</p>
                 <ResendConnectForm />
+              </div>
+            )}
+            {!hasStripe && (
+              <div className="rounded-xl border border-white/10 p-4 space-y-2">
+                <div className="flex items-center gap-2"><span>💳</span><span className="font-medium text-sm">Stripe</span></div>
+                <p className="text-xs text-neutral-500">Take payments — hosted onboarding, payouts to your bank.</p>
+                <StripeConnectButton />
               </div>
             )}
           </div>
