@@ -443,7 +443,7 @@ Under 400 words. This plan feeds the build step.`,
         /* Phase 2 — BUILD (32k tokens, multi-file) ────────────────────── */
         send({ step: "generating", message: "Building your app…" });
         console.log("[build] phase 2: building");
-        const buildResponse = await anthropic.messages.create({
+        const buildResponse = await anthropic.messages.stream({
           model: BUILD_MODEL,
           max_tokens: 32000,
           tools: [writeFilesTool],
@@ -466,7 +466,7 @@ Call write_files with the complete files. Rules:
 - Write COMPLETE file contents — no "// ..." placeholders, no TODOs.
 - Make it genuinely impressive: a customer should be impressed on first load.`,
           }],
-        });
+        }).finalMessage();
 
         const toolUse = buildResponse.content.find((c) => c.type === "tool_use");
         if (!toolUse || toolUse.type !== "tool_use") {
@@ -499,7 +499,7 @@ Call write_files with the complete files. Rules:
             const builtContext = changes.files
               .map((f) => `=== ${f.path} ===\n${f.content}`)
               .join("\n\n");
-            const refineResponse = await anthropic.messages.create({
+            const refineResponse = await anthropic.messages.stream({
               model: BUILD_MODEL,
               max_tokens: 32000,
               tools: [writeFilesTool],
@@ -514,7 +514,7 @@ ${DESIGN_SYSTEM}
 
 Critique it hard against the principles, then call write_files with improved versions of ONLY the files that need work. Fix: weak spacing, generic copy, missing sections, flat hierarchy, missing hover states, anything that looks like a template. If a file is already excellent, leave it out. Write COMPLETE file contents for any file you return.`,
               }],
-            });
+            }).finalMessage();
             const refineTool = refineResponse.content.find((c) => c.type === "tool_use");
             if (refineTool && refineTool.type === "tool_use") {
               const refineInput = refineTool.input as { files?: Array<{ path: string; content: string }> };
