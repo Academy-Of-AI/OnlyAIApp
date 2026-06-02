@@ -39,20 +39,12 @@ export async function POST(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   /* ── on-ramp economics ───────────────────────────────────────────────────
-     The owner-funded in-app generator is OFF by default. Newbies drive the
-     build with their OWN Claude Code (their subscription), so we never pay for
-     their tokens. Flip OWNER_FUNDED_BUILDS=true only for a controlled "quick
-     draft" experiment. */
-  if (process.env.OWNER_FUNDED_BUILDS !== "true") {
-    return NextResponse.json(
-      {
-        error: "Build it with your own Claude Code — open the project locally and point your agent at it. OnlyAIApp keeps it on track.",
-        code: "use_own_agent",
-        guide: "/start",
-      },
-      { status: 409 },
-    );
-  }
+     Credits ARE the gate ($10 = 3 builds). The in-app build runs on the
+     owner's key, paid for by the builder's credits. New users start with 0
+     credits → they hit the paywall below until they buy. OWNER_FUNDED_BUILDS=
+     "true" is an optional override that lets everyone build free (e.g. a
+     hackathon the owner is sponsoring) — off by default. */
+  const ownerFunded = process.env.OWNER_FUNDED_BUILDS === "true";
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_SECRET_KEY;
   if (!anthropicKey) {
@@ -69,9 +61,9 @@ export async function POST(
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.build_credits <= 0) {
+  if (!ownerFunded && (!profile || profile.build_credits <= 0)) {
     return NextResponse.json(
-      { error: "No build credits remaining — purchase more to continue.", code: "no_credits" },
+      { error: "You're out of builds — get 3 builds for $10 to keep building.", code: "no_credits" },
       { status: 402 },
     );
   }

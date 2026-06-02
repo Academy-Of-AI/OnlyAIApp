@@ -33,7 +33,10 @@ export default async function ProjectPage({
     .eq("id", user!.id)
     .single();
   const buildCredits = (creditRow?.build_credits as number | null) ?? 0;
-  const aiBuildEnabled = process.env.OWNER_FUNDED_BUILDS === "true";
+  // The in-app build card is always shown. It self-gates on credits: builders
+  // with credits get the prompt box; those at 0 get the "3 builds for $10"
+  // paywall. The build API enforces the same gate (credits ARE the gate).
+  const aiBuildEnabled = true;
 
   // Inferred context (zero-forms) — shown read-only inside the Build loop
   const { data: memoryRows } = await supabase
