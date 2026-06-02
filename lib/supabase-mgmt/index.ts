@@ -38,11 +38,10 @@ export async function createSupabaseProject(
     method: "POST",
     headers: mgmtHeaders(token),
     body: JSON.stringify({
-      org_id: orgId,
+      organization_id: orgId,
       name,
       db_pass: dbPass,
       region,
-      plan: "free",
     }),
   });
 
