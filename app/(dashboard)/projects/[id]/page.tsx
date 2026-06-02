@@ -35,14 +35,14 @@ export default async function ProjectPage({
   const buildCredits = (creditRow?.build_credits as number | null) ?? 0;
   const aiBuildEnabled = process.env.OWNER_FUNDED_BUILDS === "true";
 
+  // Forge-recedes cleanup: Activity / Usage / Ops removed from the builder view
+  // (run-the-business tooling — VAB is the forge, not the factory). The routes
+  // still exist; they're just no longer surfaced here.
   const navItems = [
     { href: `/projects/${project.id}/plan`,     label: "◇ Plan" },
     { href: `/projects/${project.id}/drift`,    label: "⟲ Course-keeper" },
     { href: `/projects/${project.id}/memory`,   label: "◆ Memory" },
-    { href: `/projects/${project.id}/activity`, label: "☰ Activity" },
-    { href: `/projects/${project.id}/usage`,    label: "$ Usage" },
     { href: `/projects/${project.id}/share`,    label: "⇲ Share" },
-    { href: `/projects/${project.id}/ops`,      label: "⚙ Ops" },
   ];
 
   return (
