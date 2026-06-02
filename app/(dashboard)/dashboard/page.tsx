@@ -86,6 +86,14 @@ export default async function DashboardPage({
             className="flex items-center justify-center gap-2 bg-white text-black text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-neutral-200 transition-colors w-full sm:w-auto">
             <GHIcon /> Connect GitHub →
           </a>
+          <p className="text-xs text-neutral-500">
+            No GitHub account?{" "}
+            <a href="https://github.com/signup" target="_blank" rel="noopener noreferrer"
+              className="text-neutral-300 hover:text-white underline underline-offset-2">
+              Create one free →
+            </a>{" "}
+            — it takes a minute, then come back and connect.
+          </p>
         </section>
       )}
 

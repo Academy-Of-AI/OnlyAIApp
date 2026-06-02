@@ -130,6 +130,14 @@ export function SupabaseConnectForm() {
 
       {/* Helper */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
+        <span>
+          No Supabase account?{" "}
+          <a href="https://supabase.com/dashboard/sign-up" target="_blank" rel="noopener noreferrer"
+            className="text-neutral-300 hover:text-white underline underline-offset-2">
+            Create one free →
+          </a>
+        </span>
+        <span>·</span>
         <button
           type="button"
           onClick={() => setShowSteps((s) => !s)}
