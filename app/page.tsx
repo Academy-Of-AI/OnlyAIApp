@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 const steps = [
-  { n: "01", title: "Bring your Claude", body: "Use your own Claude Pro/Max subscription with Claude Code or Codex. You drive the agent — we never charge you for tokens." },
-  { n: "02", title: "We set up a real project", body: "A live, deployed app + hosting, wired up for you. No git, no Vercel config, no blank-repo paralysis." },
-  { n: "03", title: "We keep the agent on track", body: "Plan, memory, and a course-keeper that stops your agent wandering — so you learn the real workflow by shipping." },
+  { n: "01", title: "We set up a real system", body: "A live, deployed project — database + hosting wired up for you. No blank page, no config, no setup." },
+  { n: "02", title: "Build it with your agent", body: "Describe what you want. Your AI agent builds it on a reliable, database-first foundation — and we keep it on track so it doesn't wander." },
+  { n: "03", title: "Own it — it runs without you", body: "A real system on your own infrastructure. The database-and-logic core keeps running even when the AI is off. Yours to keep." },
 ];
 
 export default function LandingPage() {
@@ -17,7 +17,7 @@ export default function LandingPage() {
             Sign in
           </Link>
           <Link href="/sign-up" className="text-sm bg-white text-black font-medium px-3 py-1.5 rounded-md hover:bg-neutral-200 transition-colors">
-            Start free
+            Start building
           </Link>
         </div>
       </nav>
@@ -26,25 +26,25 @@ export default function LandingPage() {
       <section className="flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-6 py-16 sm:py-24 gap-6">
         <div className="inline-flex items-center gap-2 bg-white/10 text-white/70 text-xs px-3 py-1 rounded-full border border-white/20">
           <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-          The on-ramp to agentic coding
+          Not a prompt. Not a course.
         </div>
 
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight max-w-3xl leading-[1.1]">
-          Build your first real app{" "}
+          Own a working AI system{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-300">
-            with Claude Code
+            built by you, in a day
           </span>
         </h1>
 
         <p className="text-neutral-400 text-lg max-w-xl">
-          Training wheels for AI coding agents. We handle the setup, the deployment, and
-          keeping the agent on track — so a beginner gets from idea to a live app, and
-          actually learns the real workflow instead of fighting it.
+          Not a prompt. Not a course. A real system you build on a reliable foundation —
+          one that runs without you. We handle the setup and keep your agent on track, so
+          you ship something real and own it.
         </p>
 
         <div className="flex gap-3 flex-wrap justify-center">
           <Link href="/sign-up" className="bg-violet-500 hover:bg-violet-400 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
-            Start your first app →
+            Start building →
           </Link>
           <Link href="/start" className="border border-white/15 hover:border-white/30 text-neutral-200 font-semibold px-6 py-3 rounded-lg transition-colors">
             How it works
@@ -52,7 +52,7 @@ export default function LandingPage() {
         </div>
 
         <p className="text-xs text-neutral-600 max-w-md">
-          Runs on your own Claude subscription — your agent, your key. We don&apos;t mark up tokens.
+          Database + coded logic first, AI on top — so your system keeps running even when the AI is off.
         </p>
       </section>
 
@@ -71,7 +71,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 px-6 py-6 text-center text-xs text-neutral-600">
-        OnlyAIApp — the on-ramp to agentic coding
+        OnlyAIApp — own a working AI system, built by you
       </footer>
     </main>
   );
