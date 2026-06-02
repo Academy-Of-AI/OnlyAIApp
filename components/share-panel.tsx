@@ -34,14 +34,14 @@ export function SharePanel({ projectId, initial }: { projectId: string; initial:
 
   return (
     <div className="space-y-5">
-      <form onSubmit={invite} className="flex gap-2">
+      <form onSubmit={invite} className="flex flex-col sm:flex-row gap-2">
         <input
           value={email} onChange={(e) => setEmail(e.target.value)} type="email"
           placeholder="teammate@email.com"
-          className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-white/30"
+          className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-white/30 min-w-0"
         />
         <button type="submit" disabled={busy || !email}
-          className="bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-neutral-200 disabled:opacity-40 transition-colors">
+          className="shrink-0 bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-neutral-200 disabled:opacity-40 transition-colors">
           {busy ? "…" : "Share (read-only)"}
         </button>
       </form>

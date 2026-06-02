@@ -37,7 +37,7 @@ export default function SignInPage() {
     <main className="min-h-screen flex items-center justify-center px-4 bg-neutral-950">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
-          <Link href="/" className="text-white/50 text-sm hover:text-white">⚡ Vibe Launchpad</Link>
+          <Link href="/" className="text-white/50 text-sm hover:text-white">🚀 Launchpad</Link>
           <h1 className="text-2xl font-bold text-white">Welcome back</h1>
         </div>
 
@@ -60,7 +60,7 @@ export default function SignInPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-green-500"
+            className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500"
           />
           <input
             type="password"
@@ -68,13 +68,13 @@ export default function SignInPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-green-500"
+            className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500"
           />
           {error && <p className="text-red-400 text-xs">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black font-semibold py-2.5 rounded-lg transition-colors"
+            className="w-full bg-violet-500 hover:bg-violet-400 disabled:opacity-50 text-black font-semibold py-2.5 rounded-lg transition-colors"
           >
             {loading ? "Signing in…" : "Sign in"}
           </button>
@@ -82,7 +82,7 @@ export default function SignInPage() {
 
         <p className="text-center text-sm text-neutral-500">
           No account?{" "}
-          <Link href="/sign-up" className="text-white hover:text-green-400">
+          <Link href="/sign-up" className="text-white hover:text-violet-400">
             Sign up free
           </Link>
         </p>

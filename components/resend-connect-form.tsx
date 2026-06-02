@@ -31,19 +31,19 @@ export function ResendConnectForm() {
 
   return (
     <div className="space-y-3 w-full">
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <input
           type="password"
           value={token}
           onChange={(e) => setToken(e.target.value)}
           placeholder="Paste your Resend API key…"
           required
-          className="bg-white/5 border border-white/10 text-white placeholder-neutral-500 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-green-500 flex-1 min-w-0"
+          className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-green-500 min-w-0"
         />
         <button
           type="submit"
           disabled={loading || !token}
-          className="bg-black border border-white/20 text-white text-sm px-4 py-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50 whitespace-nowrap"
+          className="w-full bg-black border border-white/20 text-white text-sm px-4 py-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50 whitespace-nowrap"
         >
           {loading ? "Connecting…" : "✉ Connect Resend"}
         </button>

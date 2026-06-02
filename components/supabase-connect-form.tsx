@@ -81,19 +81,19 @@ export function SupabaseConnectForm() {
   return (
     <div className="space-y-3 w-full">
       {stage === "token" ? (
-        <form onSubmit={handleTokenSubmit} className="flex gap-2">
+        <form onSubmit={handleTokenSubmit} className="flex flex-col gap-2">
           <input
             type="password"
             value={token}
             onChange={(e) => setToken(e.target.value)}
             placeholder="Paste your Supabase token here…"
             required
-            className="bg-white/5 border border-white/10 text-white placeholder-neutral-500 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#3ECF8E] flex-1 min-w-0"
+            className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#3ECF8E] min-w-0"
           />
           <button
             type="submit"
             disabled={loading || !token}
-            className="text-black text-sm px-4 py-2 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap font-semibold"
+            className="w-full text-black text-sm px-4 py-2 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap font-semibold"
             style={{ backgroundColor: "#3ECF8E" }}
           >
             {loading ? "Connecting…" : "⚡ Connect Supabase"}
@@ -102,11 +102,11 @@ export function SupabaseConnectForm() {
       ) : (
         <form onSubmit={handleOrgSubmit} className="space-y-2">
           <label className="text-xs text-neutral-400">Select your Supabase organization</label>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2">
             <select
               value={selectedOrgId}
               onChange={(e) => setSelectedOrgId(e.target.value)}
-              className="bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#3ECF8E] flex-1 min-w-0"
+              className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#3ECF8E] min-w-0"
             >
               {orgs.map((org) => (
                 <option key={org.id} value={org.id} className="bg-neutral-900">
@@ -117,7 +117,7 @@ export function SupabaseConnectForm() {
             <button
               type="submit"
               disabled={loading || !selectedOrgId}
-              className="text-black text-sm px-4 py-2 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap font-semibold"
+              className="w-full text-black text-sm px-4 py-2 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap font-semibold"
               style={{ backgroundColor: "#3ECF8E" }}
             >
               {loading ? "Saving…" : "Use this org →"}

@@ -5,7 +5,6 @@ import { SupabaseConnectForm } from "@/components/supabase-connect-form";
 import { VercelConnectForm } from "@/components/vercel-connect-form";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { UpdateConnectionButton } from "@/components/update-connection-button";
 
 const STATUS_STYLES: Record<string, string> = {
   deployed:     "bg-green-500/20 text-green-400",
@@ -49,7 +48,6 @@ export default async function DashboardPage({
   const hasVercel   = connections?.some((c) => c.provider === "vercel");
   const hasSupabase = connections?.some((c) => c.provider === "supabase");
   const hasResend   = connections?.some((c) => c.provider === "resend");
-  const allRequired = hasGitHub && hasVercel && hasSupabase;
   // Onramp: GitHub alone is enough to create a project. Vercel/Supabase come later.
   const canCreate = hasGitHub;
 
@@ -75,138 +73,56 @@ export default async function DashboardPage({
         </div>
       )}
 
-      {/* Connect integrations banner */}
-      {(!hasGitHub || !hasVercel || !hasSupabase || !hasResend) && (
-        <section className="border border-white/10 rounded-xl p-6 space-y-5">
+      {/* Required: connect GitHub (the only thing needed to start) */}
+      {!hasGitHub && (
+        <section className="border border-violet-500/30 bg-violet-500/5 rounded-xl p-5 sm:p-6 space-y-4">
           <div>
-            <h2 className="font-semibold text-lg">One-time setup — connect your accounts</h2>
+            <h2 className="font-semibold text-lg">Connect GitHub to start</h2>
             <p className="text-sm text-neutral-400 mt-1">
-              Connect your tools and every project gets GitHub, Vercel, Supabase, and email — all wired up automatically.
+              Your projects get a private repo, created automatically. It&apos;s the only thing you need to begin.
             </p>
           </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            {/* GitHub card */}
-            <div
-              className={`rounded-xl border p-4 space-y-3 ${
-                hasGitHub ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-white/3"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <GHIcon />
-                  <span className="font-medium text-sm">GitHub</span>
-                </div>
-                {hasGitHub && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-green-400 font-medium">✓ Connected</span>
-                    <UpdateConnectionButton provider="github" label="Update" />
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-neutral-400 leading-relaxed">
-                Every project gets its own <strong className="text-neutral-200">private GitHub repository</strong> created
-                automatically under your account. Your code is always yours — we just push the starter template in.
-              </p>
-              {!hasGitHub && (
-                <a
-                  href="/api/github/connect"
-                  className="flex items-center justify-center gap-2 bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-neutral-200 transition-colors w-full"
-                >
-                  <GHIcon /> Connect GitHub →
-                </a>
-              )}
-            </div>
-
-            {/* Vercel card */}
-            <div
-              className={`rounded-xl border p-4 space-y-3 ${
-                hasVercel ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-white/3"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">▲</span>
-                  <span className="font-medium text-sm">Vercel</span>
-                </div>
-                {hasVercel && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-green-400 font-medium">✓ Connected</span>
-                    <UpdateConnectionButton provider="vercel" label="Update" />
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-neutral-400 leading-relaxed">
-                Your project is deployed live to <strong className="text-neutral-200">Vercel&apos;s global network</strong> the
-                moment you click provision. You get a real public URL, CI/CD, and instant previews — for free on Vercel&apos;s Hobby plan.
-              </p>
-              {!hasVercel && <VercelConnectForm />}
-            </div>
-
-            {/* Supabase card */}
-            <div
-              className={`rounded-xl border p-4 space-y-3 ${
-                hasSupabase ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-white/3"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">⚡</span>
-                  <span className="font-medium text-sm">Supabase</span>
-                </div>
-                {hasSupabase && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-green-400 font-medium">✓ Connected</span>
-                    <UpdateConnectionButton provider="supabase" label="Update" />
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-neutral-400 leading-relaxed">
-                Every project gets its own <strong className="text-neutral-200">Supabase database</strong> — authentication,
-                tables, and storage — created automatically. No manual setup. No copy-pasting connection strings.
-              </p>
-              {!hasSupabase && <SupabaseConnectForm />}
-            </div>
-
-            {/* Resend card — optional */}
-            <div className={`rounded-xl border p-4 space-y-3 ${
-              hasResend ? "border-green-500/30 bg-green-500/5" : "border-white/10 bg-white/[0.03]"
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">✉</span>
-                  <span className="font-medium text-sm">Resend</span>
-                  {!hasResend && (
-                    <span className="text-xs text-neutral-600 border border-white/10 px-1.5 py-0.5 rounded-full">optional</span>
-                  )}
-                </div>
-                {hasResend && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-green-400 font-medium">✓ Connected</span>
-                    <UpdateConnectionButton provider="resend" label="Update" />
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-neutral-400 leading-relaxed">
-                Every project gets <strong className="text-neutral-200">transactional email</strong> working
-                out of the box — password resets, welcome emails, notifications. Uses your own Resend account so
-                your sender reputation stays yours.
-              </p>
-              {!hasResend && <ResendConnectForm />}
-            </div>
-          </div>
-
-          {allRequired && hasResend && (
-            <p className="text-xs text-green-400 text-center">
-              ✓ All accounts connected — you&apos;re ready to provision projects!
-            </p>
-          )}
-          {allRequired && !hasResend && (
-            <p className="text-xs text-neutral-500 text-center">
-              ✓ Required connections done — connect Resend above to enable email in your projects.
-            </p>
-          )}
+          <a href="/api/github/connect"
+            className="flex items-center justify-center gap-2 bg-white text-black text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-neutral-200 transition-colors w-full sm:w-auto">
+            <GHIcon /> Connect GitHub →
+          </a>
         </section>
+      )}
+
+      {/* Optional integrations — collapsed so they don't dominate once you're set up */}
+      {hasGitHub && (!hasVercel || !hasSupabase || !hasResend) && (
+        <details className="border border-white/10 rounded-xl overflow-hidden group">
+          <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none">
+            <div className="min-w-0">
+              <p className="font-medium text-sm">Optional integrations</p>
+              <p className="text-xs text-neutral-500 mt-0.5">Add deploy, database &amp; email — connect when you need them</p>
+            </div>
+            <span className="text-neutral-500 text-xs shrink-0 transition-transform group-open:rotate-180">▾</span>
+          </summary>
+          <div className="border-t border-white/10 p-4 grid sm:grid-cols-3 gap-3">
+            {!hasVercel && (
+              <div className="rounded-xl border border-white/10 p-4 space-y-2">
+                <div className="flex items-center gap-2"><span>▲</span><span className="font-medium text-sm">Vercel</span></div>
+                <p className="text-xs text-neutral-500">Deploy live with a public URL + CI/CD.</p>
+                <VercelConnectForm />
+              </div>
+            )}
+            {!hasSupabase && (
+              <div className="rounded-xl border border-white/10 p-4 space-y-2">
+                <div className="flex items-center gap-2"><span>⚡</span><span className="font-medium text-sm">Supabase</span></div>
+                <p className="text-xs text-neutral-500">Auth + database + storage, auto-created.</p>
+                <SupabaseConnectForm />
+              </div>
+            )}
+            {!hasResend && (
+              <div className="rounded-xl border border-white/10 p-4 space-y-2">
+                <div className="flex items-center gap-2"><span>✉</span><span className="font-medium text-sm">Resend</span></div>
+                <p className="text-xs text-neutral-500">Transactional email out of the box.</p>
+                <ResendConnectForm />
+              </div>
+            )}
+          </div>
+        </details>
       )}
 
       {/* Control-plane onboarding checklist */}
