@@ -543,6 +543,20 @@ function LaunchTab({ project }: { project: Project }) {
           )}
         </>
       )}
+
+      {/* When you ship — you own it; the forge recedes */}
+      <div className="border border-white/10 rounded-xl p-4">
+        <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">When you ship, you own it</p>
+        <p className="text-sm text-neutral-400 leading-relaxed">
+          It runs on your own infra — code in your GitHub, data in your Supabase. OnlyAIApp doesn&apos;t host or run it; the forge recedes. Come back to build the next one.
+        </p>
+      </div>
+      <div className="border border-dashed border-white/10 rounded-xl p-4 opacity-60">
+        <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Later · Groundstream</p>
+        <p className="text-sm text-neutral-500 leading-relaxed">
+          A future seam to plug your shipped OS into Groundstream&apos;s intelligence layer. Designed for — not available yet.
+        </p>
+      </div>
     </div>
   );
 }

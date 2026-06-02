@@ -173,6 +173,32 @@ export default function NewProjectPage() {
         </div>
       )}
 
+      {/* Scaffolded to the OS-as-SaaS doctrine */}
+      {!result && (
+        <div className="border border-white/10 rounded-xl p-5 space-y-3">
+          <p className="text-xs uppercase tracking-widest text-neutral-500 font-semibold">
+            Scaffolded the reliable way (by default)
+          </p>
+          <div className="space-y-2.5">
+            <div className="border-l-2 border-cyan-400/70 pl-3">
+              <p className="text-sm font-medium text-white">🗄 Database first</p>
+              <p className="text-xs text-neutral-400 mt-0.5">A real data model is laid before any behavior.</p>
+            </div>
+            <div className="border-l-2 border-green-400/70 pl-3">
+              <p className="text-sm font-medium text-white">⚙️ Coded logic second</p>
+              <p className="text-xs text-neutral-400 mt-0.5">Business rules in real, debuggable code — not trapped in prompts.</p>
+            </div>
+            <div className="border-l-2 border-amber-400/70 pl-3">
+              <p className="text-sm font-medium text-white">✨ Intelligence on top</p>
+              <p className="text-xs text-neutral-400 mt-0.5">The agent uses the database as truth — and the core runs without it.</p>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-600">
+            Your project starts <span className="text-neutral-400">reliable</span> — not blank, not agent-first.
+          </p>
+        </div>
+      )}
+
       {/* Success card */}
       {result && (
         <div className="border border-green-500/30 bg-green-500/5 rounded-xl p-6 space-y-4">
