@@ -151,53 +151,86 @@ export default function NewProjectPage() {
                 </p>
               </div>
             </div>
+            <div className="flex items-start gap-3">
+              <span className="flex-shrink-0 text-lg">✉️</span>
+              <div>
+                <p className="text-sm font-medium text-white">Email (Resend) <span className="text-xs text-neutral-500 font-normal">· add when you need it</span></p>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  Send signup confirmations &amp; transactional email. Connect Resend and the key is injected for you — no copy-pasting.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="flex-shrink-0 text-lg">💳</span>
+              <div>
+                <p className="text-sm font-medium text-white">Payments (Stripe) <span className="text-xs text-neutral-500 font-normal">· add when you charge</span></p>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  Take payments from your users when you&apos;re ready. The template is Stripe-ready — connect Stripe to start charging.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Success card */}
       {result && (
-        <div className="border border-green-500/30 bg-green-500/5 rounded-xl p-6 space-y-5">
+        <div className="border border-green-500/30 bg-green-500/5 rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🎉</span>
             <div>
               <p className="font-bold text-lg text-white">Your project is live!</p>
-              <p className="text-sm text-neutral-400">Everything was set up automatically.</p>
+              <p className="text-sm text-neutral-400">Set up automatically. Now just describe what you want — VAB builds it for you, right here.</p>
             </div>
           </div>
-          <div className="grid gap-3">
-            <a
-              href={result.vercelPreviewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-4 py-3 hover:border-green-500/50 transition-colors group"
-            >
-              <div>
-                <p className="text-sm font-medium text-white">🌐 Open live site</p>
-                <p className="text-xs text-neutral-500">{result.vercelPreviewUrl}</p>
-              </div>
-              <span className="text-neutral-500 group-hover:text-white">→</span>
-            </a>
-            <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 space-y-2">
-              <p className="text-sm font-medium text-white">📁 Open in Cursor / VS Code</p>
+
+          {/* Primary: build it in-app (no editor, no terminal) */}
+          <Link
+            href={`/projects/${result.id}`}
+            className="flex items-center justify-between bg-violet-500 hover:bg-violet-400 rounded-lg px-4 py-3 transition-colors"
+          >
+            <div>
+              <p className="text-sm font-bold text-white">✨ Build your first version</p>
+              <p className="text-xs text-white/80">Type what you want — VAB builds it. No setup, no code.</p>
+            </div>
+            <span className="text-white text-lg">→</span>
+          </Link>
+
+          {/* Secondary: see the live site */}
+          <a
+            href={result.vercelPreviewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-4 py-3 hover:border-green-500/50 transition-colors group"
+          >
+            <div>
+              <p className="text-sm font-medium text-white">🌐 Open live site</p>
+              <p className="text-xs text-neutral-500">{result.vercelPreviewUrl}</p>
+            </div>
+            <span className="text-neutral-500 group-hover:text-white">→</span>
+          </a>
+
+          {/* Demoted: take the wheel in your own editor (graduation path) */}
+          <details className="bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+            <summary className="text-sm font-medium text-white cursor-pointer list-none">Prefer your own editor? Take the wheel →</summary>
+            <div className="mt-3 space-y-2">
               <div className="flex items-center gap-2">
                 <code className="text-xs text-green-400 bg-black/30 px-2 py-1 rounded flex-1 truncate font-mono">
                   git clone {result.githubRepoUrl}
                 </code>
                 <button
-                  onClick={() =>
-                    navigator.clipboard.writeText(`git clone ${result.githubRepoUrl}`)
-                  }
+                  onClick={() => navigator.clipboard.writeText(`git clone ${result.githubRepoUrl}`)}
                   className="text-xs text-neutral-400 hover:text-white px-2 py-1 rounded border border-white/10 hover:border-white/30 transition-colors whitespace-nowrap"
                 >
                   Copy
                 </button>
               </div>
               <p className="text-xs text-neutral-600">
-                Then open the folder in Cursor and start vibe coding.
+                Open the folder in Claude Code / Cursor and keep building — your <code className="text-neutral-400">CLAUDE.md</code> is pre-loaded.
               </p>
             </div>
-          </div>
+          </details>
+
           <Link
             href="/dashboard"
             className="block text-center text-xs text-neutral-500 hover:text-white transition-colors"
