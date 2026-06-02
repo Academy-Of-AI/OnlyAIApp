@@ -375,6 +375,33 @@ function LaunchTab({ project }: { project: Project }) {
   const color = (s: Check["status"]) => (s === "pass" ? "text-green-400" : s === "fail" ? "text-red-400" : s === "warn" ? "text-amber-400" : "text-neutral-500");
   const remaining = checks?.filter((c) => c.status === "fail" || c.status === "warn").length ?? 0;
 
+  // Submit to The Wall (when launch-ready)
+  const [wTitle, setWTitle] = useState(project.name);
+  const [wTagline, setWTagline] = useState("");
+  const [wDemo, setWDemo] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitErr, setSubmitErr] = useState<string | null>(null);
+
+  async function submitToWall() {
+    if (!wTitle.trim() || !wDemo.trim() || submitting) return;
+    setSubmitting(true); setSubmitErr(null);
+    try {
+      const res = await fetch("/api/wall", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: project.id, title: wTitle.trim(), tagline: wTagline.trim(), demoUrl: wDemo.trim() }),
+      });
+      const d = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) setSubmitErr(d.error ?? "Couldn't submit.");
+      else setSubmitted(true);
+    } catch {
+      setSubmitErr("Couldn't submit.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -427,6 +454,34 @@ function LaunchTab({ project }: { project: Project }) {
             ))}
           </div>
           <p className="text-xs text-neutral-600">Paste a task into your Claude Code, let it fix it, push — then hit Re-check.</p>
+
+          {remaining === 0 && (
+            <div className="border border-violet-500/30 bg-violet-500/[0.05] rounded-xl p-4 space-y-3">
+              {submitted ? (
+                <div className="text-sm">
+                  <p className="text-green-400 font-medium">🎉 Submitted to The Wall!</p>
+                  <a href="/wall" target="_blank" rel="noopener noreferrer" className="text-violet-300 hover:underline text-sm">See it on The Wall →</a>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold">🧱 You&apos;re launch-ready — put it on The Wall</p>
+                  <input value={wTitle} onChange={(e) => setWTitle(e.target.value)} placeholder="Title"
+                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500" />
+                  <input value={wTagline} onChange={(e) => setWTagline(e.target.value)} placeholder="One line — what does it do?"
+                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500" />
+                  <input value={wDemo} onChange={(e) => setWDemo(e.target.value)} placeholder="Demo link (60-sec video or live URL)"
+                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500" />
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <button onClick={submitToWall} disabled={submitting || !wTitle.trim() || !wDemo.trim()}
+                      className="bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+                      {submitting ? "Submitting…" : "Submit to The Wall"}
+                    </button>
+                    {submitErr && <span className="text-xs text-red-400">{submitErr}</span>}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>
