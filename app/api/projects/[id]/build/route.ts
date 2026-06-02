@@ -398,7 +398,8 @@ export async function updateSession(request: NextRequest) {
 - Depth & polish: subtle gradients, soft shadows, rounded-xl/2xl corners, thin borders. Tasteful, not heavy.
 - Interactivity: every button/link has hover: + transition. Use group-hover where it adds life.
 - Responsive: mobile-first. Stack on small screens, grid on md/lg. Nothing overflows.
-- Accessibility: semantic HTML (header/nav/main/section/footer), alt text, strong contrast.`;
+- Accessibility: semantic HTML (header/nav/main/section/footer), alt text, strong contrast.
+- Tailwind v4 (CRITICAL): this project uses Tailwind v4. app/globals.css must contain ONLY \`@import "tailwindcss";\` — NEVER \`@tailwind base/components/utilities\` and NEVER \`@apply\` in globals.css (they break the v4 build). Put ALL styling in component className props, not global CSS.`;
 
         const genStart = Date.now();
 
@@ -541,6 +542,25 @@ Critique it hard against the principles, then call write_files with improved ver
            commit that has Claude's code but not yet the next.config fix will
            fail type-checking. Bundling everything into a single commit means
            there is exactly one deploy, and it always has next.config. */
+        /* Tailwind v4 guard — the #1 cause of AI-build deploy failures. The
+           template is Tailwind v4 (@tailwindcss/postcss, @import "tailwindcss").
+           Models routinely emit v3 syntax (@tailwind base/components/utilities
+           + @apply utilities in @layer base), which fails the v4 build with
+           "Cannot apply unknown utility class". Force a clean v4 entry on the
+           FINAL globals.css (AI's if it wrote one, else the template's). */
+        const aiCss = changes.files.find((f) => f.path === "app/globals.css");
+        const finalCss = aiCss?.content ?? files["app/globals.css"]?.content ?? "";
+        const cssBad =
+          finalCss.includes("@tailwind ") ||
+          (/@apply\b/.test(finalCss) && !finalCss.includes("@reference")) ||
+          !finalCss.includes('@import "tailwindcss"');
+        if (cssBad) {
+          const fixedCss = `@import "tailwindcss";\n`;
+          if (aiCss) aiCss.content = fixedCss;
+          else autoPatches["app/globals.css"] = fixedCss;
+          console.log("[build] auto-healed app/globals.css — forced Tailwind v4 entry");
+        }
+
         const patchedPaths = new Set(Object.keys(autoPatches));
         const allFilesToPush = [
           ...changes.files.filter(f => !patchedPaths.has(f.path)),
