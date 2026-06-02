@@ -441,17 +441,13 @@ Under 400 words. This plan feeds the build step.`,
           console.warn("[build] phase 1 plan failed (non-fatal), building without plan:", planErr);
         }
 
-        /* Phase 2 — BUILD (32k tokens, multi-file) ────────────────────── */
+        /* Phase 2 — BUILD (multi-file, up to 64k tokens). A full app can
+           overflow the token budget and truncate the tool call → zero
+           parseable files. Retry once with a tighter brief before giving up. */
         send({ step: "generating", message: "Building your app…" });
         console.log("[build] phase 2: building");
-        const buildResponse = await anthropic.messages.stream({
-          model: BUILD_MODEL,
-          max_tokens: 32000,
-          tools: [writeFilesTool],
-          tool_choice: { type: "any" },
-          messages: [{
-            role: "user",
-            content: `You are a world-class Next.js + Tailwind engineer. Build the app for this request to production, portfolio-quality standard.
+
+        const buildUserContent = (tighten: boolean) => `You are a world-class Next.js + Tailwind engineer. Build the app for this request to production, portfolio-quality standard.
 
 User request: "${buildPrompt}"
 ${designPlan ? `\nApproved design plan:\n${designPlan}\n` : ""}
@@ -462,33 +458,50 @@ ${DESIGN_SYSTEM}
 
 Call write_files with the complete files. Rules:
 - TypeScript + Tailwind only. Keep the existing stack and imports.
-- app/page.tsx is the main page. Extract reusable pieces into components/ (e.g. components/hero.tsx) when it improves clarity. 2-6 files total.
+- app/page.tsx is the main page. Extract reusable pieces into components/ (e.g. components/hero.tsx) when it improves clarity. ${tighten ? "Keep to 3-4 files" : "2-6 files total"}.
 - Only write files under app/ or components/. Never touch config, lib/, or middleware.
-- Write COMPLETE file contents — no "// ..." placeholders, no TODOs.
-- Make it genuinely impressive: a customer should be impressed on first load.`,
-          }],
-        }).finalMessage();
+- Write COMPLETE file contents — no "// ..." placeholders, no TODOs.${tighten ? "\n- IMPORTANT: the previous attempt was cut off before finishing. Return EVERYTHING in ONE write_files call and keep it compact enough to complete — fewer files, no oversized inline arrays/data." : ""}
+- Make it genuinely impressive: a customer should be impressed on first load.`;
 
-        const toolUse = buildResponse.content.find((c) => c.type === "tool_use");
-        if (!toolUse || toolUse.type !== "tool_use") {
-          throw new Error("AI did not generate file changes — please try again.");
+        let builtFiles: Array<{ path: string; content: string }> = [];
+        let commitMessage = "AI: build app";
+        for (let attempt = 1; attempt <= 2 && builtFiles.length === 0; attempt++) {
+          if (attempt > 1) {
+            send({ step: "generating", message: "Finishing the build…" });
+            console.log("[build] phase 2 retry (attempt", attempt, ")");
+          }
+          const buildResponse = await anthropic.messages.stream({
+            model: BUILD_MODEL,
+            max_tokens: 64000,
+            tools: [writeFilesTool],
+            tool_choice: { type: "any" },
+            messages: [{ role: "user", content: buildUserContent(attempt > 1) }],
+          }).finalMessage();
+
+          const toolUse = buildResponse.content.find((c) => c.type === "tool_use");
+          if (toolUse && toolUse.type === "tool_use") {
+            const rawInput = toolUse.input as {
+              files?: Array<{ path: string; content: string }>;
+              commitMessage?: string;
+            };
+            builtFiles = (Array.isArray(rawInput.files) ? rawInput.files : [])
+              .filter((f) => f && typeof f.path === "string" && typeof f.content === "string"
+                && f.content.length > 0 && isAllowedPath(f.path));
+            if (rawInput.commitMessage) commitMessage = rawInput.commitMessage;
+          }
+          if (buildResponse.stop_reason === "max_tokens") {
+            console.warn("[build] phase 2 stop_reason=max_tokens (attempt", attempt, ", parsed", builtFiles.length, "files)");
+          }
         }
-        const rawInput = toolUse.input as {
-          files?: Array<{ path: string; content: string }>;
-          commitMessage?: string;
-        };
 
-        const builtFiles = (Array.isArray(rawInput.files) ? rawInput.files : [])
-          .filter((f) => f && typeof f.path === "string" && typeof f.content === "string"
-            && f.content.length > 0 && isAllowedPath(f.path));
         if (builtFiles.length === 0) {
-          throw new Error("AI returned no valid app files — please try again.");
+          throw new Error("The build came back too large to finish in one pass — please try again, or describe a slightly simpler first version.");
         }
         console.log("[build] phase 2 done: built", builtFiles.length, "files:", builtFiles.map(f => f.path).join(", "));
 
         const changes = {
           files: builtFiles,
-          commitMessage: (rawInput.commitMessage ?? "AI: build app").slice(0, 72),
+          commitMessage: commitMessage.slice(0, 72),
         };
 
         /* Phase 3 — REFINE (best-effort; never blocks shipping phase 2) ── */
