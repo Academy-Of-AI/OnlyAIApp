@@ -175,8 +175,8 @@ function BuildTab({
       <div>
         <h2 className="text-lg font-semibold mb-1">Build it</h2>
         <p className="text-sm text-neutral-400">
-          Describe what you want and VAB builds it with the agent — kept on the reliable path.
-          As you level up, take the wheel and drive it yourself.
+          Describe what you want and we&apos;ll build it for you — kept on a reliable path.
+          As you get comfortable, you can take over and build it yourself.
         </p>
       </div>
 
@@ -184,7 +184,7 @@ function BuildTab({
       {aiBuildEnabled && (
         <div className="border border-violet-500/25 bg-violet-500/[0.04] rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <p className="text-sm font-semibold">✨ Let VAB build it for you</p>
+            <p className="text-sm font-semibold">✨ Let AI build it for you</p>
             <span className="text-xs text-neutral-400">{buildCredits} build{buildCredits === 1 ? "" : "s"} left</span>
           </div>
 
@@ -274,7 +274,7 @@ function BuildTab({
       {/* Graduation / drive-it-yourself (handoff) */}
       <div>
         <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
-          {aiBuildEnabled ? "Prefer to drive it yourself? (graduation)" : "Build it with your own Claude Code"}
+          {aiBuildEnabled ? "Prefer to build it yourself?" : "Build it with your own Claude Code"}
         </p>
 
       {!repo ? (
@@ -324,7 +324,7 @@ function BuildTab({
       {project.last_digest && (
         <div className={`rounded-xl p-4 border ${project.last_digest.onTrack ? "border-green-500/25 bg-green-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
           <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${project.last_digest.onTrack ? "text-green-400" : "text-amber-400"}`}>
-            {project.last_digest.onTrack ? "✓ On track" : "⟲ Course-keeper"}
+            {project.last_digest.onTrack ? "✓ On track" : "⟲ Heads up"}
           </p>
           <p className="text-sm text-neutral-300">{project.last_digest.note}</p>
           {(project.last_digest.scopeCreep ?? []).length > 0 && (
@@ -337,13 +337,10 @@ function BuildTab({
         </div>
       )}
 
-      {/* What OnlyAIApp has learned — inferred, read-only, no forms */}
-      <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
-        <div className="flex items-center justify-between mb-2 gap-2">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">What OnlyAIApp has learned</p>
-          <span className="text-[10px] text-neutral-600 border border-white/10 rounded-full px-2 py-0.5 whitespace-nowrap">read-only · auto</span>
-        </div>
-        {memory.length > 0 ? (
+      {/* What OnlyAIApp remembers — only appears once there's something real. */}
+      {memory.length > 0 && (
+        <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">What OnlyAIApp remembers about this project</p>
           <div className="divide-y divide-white/[0.06]">
             {memory.map((mItem, i) => (
               <div key={i} className="flex gap-2 py-2 text-sm">
@@ -352,13 +349,11 @@ function BuildTab({
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-sm text-neutral-500">Nothing captured yet — it accrues automatically from your commits as you build. No forms to fill.</p>
-        )}
-        <p className="text-xs text-neutral-600 mt-3">
-          Inferred from your work and synced into <code className="text-neutral-400">CLAUDE.md</code> — so your agent never starts cold.
-        </p>
-      </div>
+          <p className="text-xs text-neutral-600 mt-3">
+            Picked up automatically as you build — so the AI always knows your project. Nothing to fill in.
+          </p>
+        </div>
+      )}
 
       {/* Links */}
       <div className="flex gap-3 flex-wrap">

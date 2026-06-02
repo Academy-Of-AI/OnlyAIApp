@@ -48,14 +48,13 @@ export default async function ProjectPage({
     .limit(6);
   const memory = (memoryRows as Array<{ kind: string; content: string }> | null) ?? [];
 
-  // Forge-recedes cleanup: Activity / Usage / Ops removed from the builder view
-  // (run-the-business tooling — VAB is the forge, not the factory). The routes
-  // still exist; they're just no longer surfaced here.
-  const navItems = [
-    { href: `/projects/${project.id}/plan`,     label: "◇ Plan" },
-    { href: `/projects/${project.id}/drift`,    label: "⟲ Course-keeper" },
-    { href: `/projects/${project.id}/memory`,   label: "◆ Memory" },
-    { href: `/projects/${project.id}/share`,    label: "⇲ Share" },
+  // Builder-first: the page shows Build → result. The "track your project"
+  // tools live behind a quiet "Project details" disclosure (plain names, no
+  // jargon) so a first-timer isn't buried. Share stays visible up top.
+  const detailItems = [
+    { href: `/projects/${project.id}/plan`,   label: "◇ Plan" },
+    { href: `/projects/${project.id}/drift`,  label: "⟲ On track" },
+    { href: `/projects/${project.id}/memory`, label: "◆ What it knows" },
   ];
 
   return (
@@ -86,6 +85,10 @@ export default async function ProjectPage({
 
         {/* Primary actions */}
         <div className="flex gap-2 shrink-0">
+          <Link href={`/projects/${project.id}/share`}
+            className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors">
+            ⇲ Share
+          </Link>
           {project.github_repo_url && (
             <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer"
               className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors">
@@ -101,20 +104,25 @@ export default async function ProjectPage({
         </div>
       </div>
 
-      {/* Control-plane sub-nav — horizontally scrollable on mobile, no overflow */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        {navItems.map((n) => (
-          <Link key={n.href} href={n.href}
-            className="shrink-0 whitespace-nowrap border border-white/10 hover:border-white/25 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors">
-            {n.label}
-          </Link>
-        ))}
-      </div>
-
-      {/* Auto-capture toggle */}
-      <div className="mb-6">
-        <AutoCaptureToggle projectId={project.id} enabled={!!project.auto_capture} />
-      </div>
+      {/* Project details — tucked away so the builder view stays simple.
+          Plain names; the deeper "track your project" tools live in here. */}
+      <details className="group mb-6 border border-white/10 rounded-xl overflow-hidden">
+        <summary className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer list-none text-sm text-neutral-400 hover:text-white">
+          <span>Project details</span>
+          <span className="text-xs text-neutral-600 transition-transform group-open:rotate-180">▾</span>
+        </summary>
+        <div className="border-t border-white/10 p-4 space-y-4">
+          <div className="flex gap-2 flex-wrap">
+            {detailItems.map((n) => (
+              <Link key={n.href} href={n.href}
+                className="whitespace-nowrap border border-white/10 hover:border-white/25 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors">
+                {n.label}
+              </Link>
+            ))}
+          </div>
+          <AutoCaptureToggle projectId={project.id} enabled={!!project.auto_capture} />
+        </div>
+      </details>
 
       {/* Tabs */}
       <ProjectTabs project={project} buildCredits={buildCredits} aiBuildEnabled={aiBuildEnabled} memory={memory} />

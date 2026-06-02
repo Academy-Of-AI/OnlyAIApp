@@ -30,12 +30,12 @@ export function AutoCaptureToggle({ projectId, enabled }: { projectId: string; e
     <div className="border border-white/10 rounded-xl p-4 flex items-center justify-between gap-4">
       <div>
         <div className="text-sm font-medium flex items-center gap-2">
-          Auto-capture
+          Remember my work automatically
           {on && <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded">on</span>}
         </div>
         <p className="text-xs text-neutral-500 mt-1 max-w-md">
-          On each push, OnlyAIApp reads your commits and auto-updates memory, milestones, and drift —
-          then re-syncs CLAUDE.md. No manual entry.
+          As you build, OnlyAIApp quietly keeps track of what changed and why — so you never have to
+          write anything down, and the AI always knows your project.
         </p>
         {err && <p className="text-xs text-red-400 mt-1">{err}</p>}
       </div>
@@ -46,7 +46,7 @@ export function AutoCaptureToggle({ projectId, enabled }: { projectId: string; e
              : "bg-violet-500 hover:bg-violet-400 text-white"
         }`}
       >
-        {busy ? "…" : on ? "Turn off" : "Enable auto-capture"}
+        {busy ? "…" : on ? "Turn off" : "Turn on"}
       </button>
     </div>
   );
