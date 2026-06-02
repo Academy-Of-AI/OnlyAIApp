@@ -52,7 +52,7 @@ export async function runLaunchChecks(opts: {
   /* 2-5 — fetch the live page and inspect it */
   if (url) {
     try {
-      const res = await fetch(url, { redirect: "follow" });
+      const res = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(10000) });
       const html = await res.text();
 
       checks.push({
