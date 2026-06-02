@@ -51,6 +51,11 @@ export default async function DashboardPage({
   // Onramp: GitHub alone is enough to create a project. Vercel/Supabase come later.
   const canCreate = hasGitHub;
 
+  // Builder identity (Lock 2): inferred from real builds — no forms.
+  const total = projects?.length ?? 0;
+  const shipped = projects?.filter((p) => p.status === "deployed").length ?? 0;
+  const level = shipped;
+
   function connectedLabel(provider: string) {
     if (provider === "github")   return "GitHub";
     if (provider === "vercel")   return "Vercel";
@@ -142,6 +147,24 @@ export default async function DashboardPage({
           hasMemory={(memoryCount ?? 0) > 0}
           firstProjectId={projects?.[0]?.id ?? null}
         />
+      )}
+
+      {/* Builder identity — you're becoming an OS builder */}
+      {total > 0 && (
+        <section className="border border-white/10 rounded-xl p-5 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-11 h-11 rounded-full bg-violet-500/15 border border-violet-500/30 grid place-items-center text-violet-300 font-bold text-sm shrink-0">
+              L{level}
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold">OS Builder · Level {level}</p>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                {total} OS forged · {shipped} shipped{level === 0 ? " — ship your first to reach Level 1" : ""}
+              </p>
+            </div>
+          </div>
+          <Link href="/builder" className="text-sm text-violet-300 hover:underline shrink-0">What carries over →</Link>
+        </section>
       )}
 
       {/* Projects header */}
