@@ -26,7 +26,7 @@ export const PLANS = {
 
 /** One-time credit packs — sold via Stripe checkout with price_data */
 export const CREDIT_PACKS = {
-  starter:    { credits: 5,  amountCents: 500,  label: "5 builds",  badge: "Starter"    },
+  starter:    { credits: 3,  amountCents: 1000, label: "3 builds",  badge: "Starter"    },
   builder:    { credits: 15, amountCents: 1200, label: "15 builds", badge: "Builder"    },
   accelerate: { credits: 30, amountCents: 2000, label: "30 builds", badge: "Best value" },
 } as const;

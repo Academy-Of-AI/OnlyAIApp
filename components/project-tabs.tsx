@@ -24,8 +24,12 @@ type Tab = (typeof TABS)[number];
 
 export function ProjectTabs({
   project,
+  buildCredits = 0,
+  aiBuildEnabled = false,
 }: {
   project: Project;
+  buildCredits?: number;
+  aiBuildEnabled?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("Build");
 
@@ -48,7 +52,7 @@ export function ProjectTabs({
         ))}
       </div>
 
-      {tab === "Build"     && <BuildTab project={project} />}
+      {tab === "Build"     && <BuildTab project={project} buildCredits={buildCredits} aiBuildEnabled={aiBuildEnabled} />}
       {tab === "Analytics" && <ComingSoonTab title="Analytics" desc="Once your app has real users, their activity will appear here — signups, active users, activation funnel, and revenue." icon="📊" />}
       {tab === "CRM"       && <ComingSoonTab title="CRM" desc="Every user who signs up to your app will appear here. See who they are, what they've done, and send them emails directly." icon="👥" />}
       {tab === "Settings"  && <SettingsTab project={project} />}
@@ -57,11 +61,36 @@ export function ProjectTabs({
 }
 
 /* ── Build tab ─────────────────────────────────────────────────────────── */
-function BuildTab({ project }: { project: Project }) {
+const BUILD_STEPS = [
+  { key: "reading",    label: "Reading your app" },
+  { key: "generating", label: "Building it with the agent" },
+  { key: "pushing",    label: "Saving changes to GitHub" },
+  { key: "deploying",  label: "Deploying & verifying it builds" },
+] as const;
+const STEP_INDEX: Record<string, number> = { reading: 0, generating: 1, pushing: 2, deploying: 3 };
+
+function BuildTab({
+  project,
+  buildCredits,
+  aiBuildEnabled,
+}: {
+  project: Project;
+  buildCredits: number;
+  aiBuildEnabled: boolean;
+}) {
+  const router = useRouter();
   const [copied, setCopied] = useState<string | null>(null);
   const repo = project.github_repo_url;
   const cloneCmd = repo ? `git clone ${repo}` : "";
   const runCmd = `cd ${project.name} && claude`;
+
+  // VAB-drives generate flow
+  const [prompt, setPrompt] = useState("");
+  const [running, setRunning] = useState(false);
+  const [stepIdx, setStepIdx] = useState(-1);
+  const [result, setResult] = useState<{ ok: boolean; url: string | null; message?: string } | null>(null);
+  const [buildErr, setBuildErr] = useState<string | null>(null);
+  const [buying, setBuying] = useState(false);
 
   function copy(label: string, text: string) {
     navigator.clipboard?.writeText(text);
@@ -69,15 +98,177 @@ function BuildTab({ project }: { project: Project }) {
     setTimeout(() => setCopied(null), 1500);
   }
 
+  async function runBuild() {
+    if (!prompt.trim() || running || !repo) return;
+    setRunning(true); setResult(null); setBuildErr(null); setStepIdx(0);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/build`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({} as { error?: string }));
+        setBuildErr(data.error ?? "Build couldn't start.");
+        setRunning(false); setStepIdx(-1);
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const parts = buf.split("\n\n");
+        buf = parts.pop() ?? "";
+        for (const part of parts) {
+          const line = part.trim();
+          if (!line.startsWith("data:")) continue;
+          let evt: { step?: string; url?: string | null; message?: string; deployed?: boolean };
+          try { evt = JSON.parse(line.slice(5).trim()); } catch { continue; }
+          const s = evt.step ?? "";
+          if (s in STEP_INDEX) setStepIdx(STEP_INDEX[s]);
+          if (s === "done") {
+            setStepIdx(3);
+            setResult({ ok: true, url: evt.url ?? null, message: evt.deployed === false ? (evt.message ?? "Deploy still building.") : undefined });
+          } else if (s === "deploy_failed") {
+            setResult({ ok: false, url: evt.url ?? null, message: evt.message ?? "The deploy failed to build." });
+          } else if (s === "error") {
+            setBuildErr(evt.message ?? "Build failed.");
+          }
+        }
+      }
+    } catch (e) {
+      setBuildErr(e instanceof Error ? e.message : "Build failed.");
+    } finally {
+      setRunning(false);
+      router.refresh();
+    }
+  }
+
+  async function buyCredits() {
+    setBuying(true);
+    try {
+      const res = await fetch("/api/credits/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pack: "starter" }),
+      });
+      const data = await res.json().catch(() => ({} as { url?: string }));
+      if (data.url) { window.location.href = data.url; return; }
+      setBuying(false);
+    } catch { setBuying(false); }
+  }
+
+  const showProgress = running || result !== null || stepIdx >= 0;
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">Build it with your own Claude Code</h2>
+        <h2 className="text-lg font-semibold mb-1">Build it</h2>
         <p className="text-sm text-neutral-400">
-          Your project is set up and ready. Open it locally and let your AI agent build it —
-          Launchpad keeps it on course. You drive the real workflow; we hold the rails.
+          Describe what you want and VAB builds it with the agent — kept on the reliable path.
+          As you level up, take the wheel and drive it yourself.
         </p>
       </div>
+
+      {/* VAB-drives Generate flow (only when owner-funded AI builds are switched on) */}
+      {aiBuildEnabled && (
+        <div className="border border-violet-500/25 bg-violet-500/[0.04] rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-sm font-semibold">✨ Let VAB build it for you</p>
+            <span className="text-xs text-neutral-400">{buildCredits} build{buildCredits === 1 ? "" : "s"} left</span>
+          </div>
+
+          {buildCredits > 0 ? (
+            <>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                disabled={running || !repo}
+                rows={2}
+                placeholder="e.g. Add a gap-scoring report per department"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500 resize-none disabled:opacity-50"
+              />
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  onClick={runBuild}
+                  disabled={running || !prompt.trim() || !repo}
+                  className="bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
+                  {running ? "Building…" : "⬢ Build it (1 credit)"}
+                </button>
+                {!repo && <span className="text-xs text-amber-300">Finish provisioning first.</span>}
+              </div>
+            </>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-neutral-400">
+                You&apos;re out of builds. Get <b className="text-white">3 builds for $10</b> and VAB will build it for you.
+              </p>
+              <button
+                onClick={buyCredits}
+                disabled={buying}
+                className="bg-violet-500 hover:bg-violet-400 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                {buying ? "…" : "Get 3 builds for $10"}
+              </button>
+            </div>
+          )}
+
+          {/* Live progress */}
+          {showProgress && (
+            <div className="border-t border-white/10 pt-3 space-y-1.5">
+              {BUILD_STEPS.map((st, i) => {
+                const state =
+                  result && !result.ok && i === 3 ? "fail"
+                  : result?.ok || stepIdx > i ? "done"
+                  : stepIdx === i && running ? "now"
+                  : "todo";
+                const icon = state === "done" ? "✓" : state === "fail" ? "✕" : state === "now" ? "●" : "○";
+                const color =
+                  state === "done" ? "text-green-400"
+                  : state === "fail" ? "text-red-400"
+                  : state === "now" ? "text-violet-400"
+                  : "text-neutral-600";
+                return (
+                  <div key={st.key} className="flex items-center gap-2 text-sm">
+                    <span className={`${color} w-4 text-center`}>{icon}</span>
+                    <span className={state === "todo" ? "text-neutral-600" : "text-neutral-300"}>{st.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Outcome */}
+          {result?.ok && (
+            <div className="text-sm">
+              <p className="text-green-400 font-medium">{result.message ? "Committed ✓" : "Live ✓"}</p>
+              {result.message && <p className="text-xs text-neutral-400 mt-1">{result.message}</p>}
+              {result.url && (
+                <a href={result.url} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-violet-300 hover:underline">
+                  ↗ Open your app
+                </a>
+              )}
+            </div>
+          )}
+          {result && !result.ok && (
+            <div className="text-sm border border-red-500/30 bg-red-500/5 rounded-lg p-3">
+              <p className="text-red-400 font-medium">Deploy didn&apos;t build</p>
+              <p className="text-xs text-neutral-300 mt-1">{result.message}</p>
+            </div>
+          )}
+          {buildErr && <p className="text-xs text-red-400">{buildErr}</p>}
+        </div>
+      )}
+
+      {/* Graduation / drive-it-yourself (handoff) */}
+      <div>
+        <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
+          {aiBuildEnabled ? "Prefer to drive it yourself? (graduation)" : "Build it with your own Claude Code"}
+        </p>
 
       {!repo ? (
         <div className="border border-amber-500/25 bg-amber-500/5 rounded-xl p-4 text-sm text-amber-300">
@@ -120,6 +311,7 @@ function BuildTab({ project }: { project: Project }) {
           </li>
         </ol>
       )}
+      </div>
 
       {/* Keep-on-track callout */}
       <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">

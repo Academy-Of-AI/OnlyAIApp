@@ -26,6 +26,15 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
+  // Build credits + whether owner-funded AI builds are enabled (the cost switch)
+  const { data: creditRow } = await supabase
+    .from("profiles")
+    .select("build_credits")
+    .eq("id", user!.id)
+    .single();
+  const buildCredits = (creditRow?.build_credits as number | null) ?? 0;
+  const aiBuildEnabled = process.env.OWNER_FUNDED_BUILDS === "true";
+
   const navItems = [
     { href: `/projects/${project.id}/plan`,     label: "◇ Plan" },
     { href: `/projects/${project.id}/drift`,    label: "⟲ Course-keeper" },
@@ -95,7 +104,7 @@ export default async function ProjectPage({
       </div>
 
       {/* Tabs */}
-      <ProjectTabs project={project} />
+      <ProjectTabs project={project} buildCredits={buildCredits} aiBuildEnabled={aiBuildEnabled} />
     </main>
   );
 }

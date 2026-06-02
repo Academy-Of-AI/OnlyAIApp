@@ -20,10 +20,16 @@ const BUILD_MODEL = process.env.BUILD_MODEL ?? "claude-sonnet-4-5";
  * Streams SSE progress events to the client.
  */
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+
+  // The in-app "Build it" UI sends the request in the body. Fall back to the
+  // saved project.build_prompt for legacy / server-initiated builds.
+  const body = (await request.json().catch(() => ({}))) as { prompt?: string };
+  const promptOverride =
+    typeof body?.prompt === "string" && body.prompt.trim() ? body.prompt.trim() : null;
 
   /* ── auth ────────────────────────────────────────────────────────────── */
   const supabase = await createClient();
@@ -89,8 +95,9 @@ export async function POST(
     );
   }
 
-  if (!project.build_prompt)
-    return NextResponse.json({ error: "No build prompt saved" }, { status: 400 });
+  const buildPrompt = promptOverride ?? (project.build_prompt as string | null);
+  if (!buildPrompt)
+    return NextResponse.json({ error: "Describe what you want to build first." }, { status: 400 });
   if (!project.github_repo_url)
     return NextResponse.json({ error: "No GitHub repo linked to this project" }, { status: 400 });
 
@@ -416,7 +423,7 @@ export async function updateSession(request: NextRequest) {
               role: "user",
               content: `You are a senior product designer and Next.js engineer. PLAN (do not write code yet) the app for this request.
 
-User request: "${project.build_prompt}"
+User request: "${buildPrompt}"
 
 Current codebase (Next.js + TypeScript + Tailwind):
 ${fileContext}
@@ -453,7 +460,7 @@ Under 400 words. This plan feeds the build step.`,
             role: "user",
             content: `You are a world-class Next.js + Tailwind engineer. Build the app for this request to production, portfolio-quality standard.
 
-User request: "${project.build_prompt}"
+User request: "${buildPrompt}"
 ${designPlan ? `\nApproved design plan:\n${designPlan}\n` : ""}
 Current codebase:
 ${fileContext}
@@ -507,7 +514,7 @@ Call write_files with the complete files. Rules:
               tool_choice: { type: "any" },
               messages: [{
                 role: "user",
-                content: `You are a ruthless design reviewer. This app was just generated for: "${project.build_prompt}"
+                content: `You are a ruthless design reviewer. This app was just generated for: "${buildPrompt}"
 
 ${builtContext}
 
