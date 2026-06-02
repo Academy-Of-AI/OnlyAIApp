@@ -26,6 +26,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <header className="border-b border-white/10 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
         <Link href="/dashboard" className="font-bold text-sm shrink-0">🚀 Launchpad</Link>
         <div className="flex items-center gap-3 sm:gap-4 text-sm min-w-0">
+          {(profile?.plan ?? "free") !== "pro" && (
+            <Link href="/upgrade"
+              className="bg-violet-500 hover:bg-violet-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors shrink-0">
+              ✨ Upgrade
+            </Link>
+          )}
           <span className="hidden sm:inline text-neutral-400 truncate max-w-[180px]">
             {profile?.github_username ?? user.email}
           </span>
