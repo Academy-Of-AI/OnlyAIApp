@@ -111,7 +111,7 @@ function BuildTab({
       const res = await fetch(`/api/projects/${project.id}/build`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: prompt.trim() }),
+        body: JSON.stringify({ prompt: prompt.trim(), mock: true }),
       });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({} as { error?: string }));
@@ -185,7 +185,7 @@ function BuildTab({
       {aiBuildEnabled && (
         <div className="border border-violet-500/25 bg-violet-500/[0.04] rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <p className="text-sm font-semibold">✨ Or — a quick first draft (optional)</p>
+            <p className="text-sm font-semibold">✨ Or — see a quick mockup (optional)</p>
             <span className="text-xs text-neutral-400">{buildCredits} build{buildCredits === 1 ? "" : "s"} left</span>
           </div>
 
@@ -205,7 +205,7 @@ function BuildTab({
                   disabled={running || !prompt.trim() || !repo}
                   className="bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
                 >
-                  {running ? "Building…" : "⬢ Build it (1 credit)"}
+                  {running ? "Sketching…" : "⬢ Generate a mockup (1 credit)"}
                 </button>
                 {!repo && <span className="text-xs text-amber-300">Finish provisioning first.</span>}
               </div>
@@ -213,7 +213,7 @@ function BuildTab({
           ) : (
             <div className="space-y-3">
               <p className="text-sm text-neutral-400">
-                You&apos;re out of builds. Get <b className="text-white">3 builds for $10</b> and VAB will build it for you.
+                You&apos;re out of credits. Get <b className="text-white">3 for $10</b> to generate mockups and plan packs.
               </p>
               <button
                 onClick={buyCredits}

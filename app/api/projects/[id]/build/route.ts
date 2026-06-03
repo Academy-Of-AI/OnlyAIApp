@@ -27,9 +27,12 @@ export async function POST(
 
   // The in-app "Build it" UI sends the request in the body. Fall back to the
   // saved project.build_prompt for legacy / server-initiated builds.
-  const body = (await request.json().catch(() => ({}))) as { prompt?: string };
+  const body = (await request.json().catch(() => ({}))) as { prompt?: string; mock?: boolean };
   const promptOverride =
     typeof body?.prompt === "string" && body.prompt.trim() ? body.prompt.trim() : null;
+  // Mock mode: produce ONE static visual page (no backend) for a fast "see it"
+  // moment, instead of a full multi-file app. Skips the plan + refine phases.
+  const mockMode = body?.mock === true;
 
   /* ── auth ────────────────────────────────────────────────────────────── */
   const supabase = await createClient();
@@ -403,10 +406,11 @@ export async function updateSession(request: NextRequest) {
 
         const genStart = Date.now();
 
-        /* Phase 1 — PLAN (extended thinking) ──────────────────────────── */
+        /* Phase 1 — PLAN (extended thinking) — skipped for a quick mock ──── */
+        let designPlan = "";
+        if (!mockMode) {
         send({ step: "generating", message: "Designing your app…" });
         console.log("[build] phase 1: planning (thinking)");
-        let designPlan = "";
         try {
           const planResponse = await anthropic.messages.create({
             model: BUILD_MODEL,
@@ -440,6 +444,7 @@ Under 400 words. This plan feeds the build step.`,
         } catch (planErr) {
           console.warn("[build] phase 1 plan failed (non-fatal), building without plan:", planErr);
         }
+        } // end if (!mockMode)
 
         /* Phase 2 — BUILD (multi-file, up to 64k tokens). A full app can
            overflow the token budget and truncate the tool call → zero
@@ -447,7 +452,19 @@ Under 400 words. This plan feeds the build step.`,
         send({ step: "generating", message: "Building your app…" });
         console.log("[build] phase 2: building");
 
-        const buildUserContent = (tighten: boolean) => `You are a world-class Next.js + Tailwind engineer. Build the app for this request to production, portfolio-quality standard.
+        const buildUserContent = (tighten: boolean) => mockMode ? `You are a world-class Next.js + Tailwind designer. Produce a SINGLE static visual MOCK of this app's main screen — what it will look like, not a working app.
+
+User request: "${buildPrompt}"
+
+${DESIGN_SYSTEM}
+
+Call write_files with exactly ONE file: app/page.tsx. Rules:
+- A single static page with realistic placeholder content (names, numbers, copy) for THIS app.
+- NO backend: no Supabase, no data fetching, no forms that submit, no API calls, no auth. Pure visual.
+- TypeScript + Tailwind only; self-contained in app/page.tsx (small inline sub-components are fine).
+- Write COMPLETE file content — no "// ..." placeholders, no TODOs.
+- Make it genuinely impressive: a customer should be impressed on first load.`
+        : `You are a world-class Next.js + Tailwind engineer. Build the app for this request to production, portfolio-quality standard.
 
 User request: "${buildPrompt}"
 ${designPlan ? `\nApproved design plan:\n${designPlan}\n` : ""}
@@ -506,7 +523,7 @@ Call write_files with the complete files. Rules:
 
         /* Phase 3 — REFINE (best-effort; never blocks shipping phase 2) ── */
         const elapsed = Date.now() - genStart;
-        if (elapsed < 200000) {
+        if (!mockMode && elapsed < 200000) {
           try {
             send({ step: "generating", message: "Polishing the details…" });
             console.log("[build] phase 3: refine (elapsed", Math.round(elapsed / 1000), "s)");
