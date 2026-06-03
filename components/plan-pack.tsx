@@ -212,7 +212,7 @@ export function PlanPack({
               <div className="border-t border-white/10 pt-3 space-y-1.5">
                 {running && (
                   <p className="text-xs text-neutral-500 mb-1">
-                    ⏳ Generating… {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")} · this usually takes 1–3 minutes
+                    ⏳ Generating… {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")} · this usually takes 3–5 minutes
                   </p>
                 )}
                 {PROGRESS.map((st, i) => {
