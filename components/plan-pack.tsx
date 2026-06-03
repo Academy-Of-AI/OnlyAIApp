@@ -32,6 +32,10 @@ const PROGRESS_INDEX: Record<string, number> = { planning: 0, planning_done: 0, 
 const TABS = ["Describe", "Plan", "Sprints", "Hand off"] as const;
 type TabName = (typeof TABS)[number];
 
+// The grounding kickoff prompt — names the spec so the agent can't drift into a
+// marketing landing page. Matches the binding rules in the generated CLAUDE.md.
+const KICKOFF = "Read everything in /docs, confirm the plan in 3 lines, then build Sprint 1 from TASKS.md — database-first, the real working app, not a landing page.";
+
 export function PlanPack({
   project, initialPack = null, buildCredits = 0,
 }: {
@@ -291,8 +295,12 @@ export function PlanPack({
               <code className="flex-1 text-xs font-mono bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-violet-300 truncate">{cloneCmd}</code>
               <button onClick={() => copy(cloneCmd)} className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">{copied ? "Copied" : "Copy"}</button>
             </div>
-            <div className="bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-neutral-400">
-              <span className="text-neutral-500 font-mono">CLAUDE.md →</span> “Read /docs and build Sprint 1 only. Confirm the plan first. Don’t add anything outside the PRD.”
+            <div className="space-y-1.5">
+              <p className="text-xs text-neutral-500">Paste this as your first message (your CLAUDE.md enforces it too):</p>
+              <div className="flex items-start gap-2">
+                <code className="flex-1 text-xs font-mono bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-violet-300 leading-relaxed">{KICKOFF}</code>
+                <button onClick={() => copy(KICKOFF)} className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">{copied ? "Copied" : "Copy"}</button>
+              </div>
             </div>
             {result.repoUrl && (
               <a href={`${result.repoUrl.replace(/\.git$/, "")}/tree/main/docs`} target="_blank" rel="noopener noreferrer"

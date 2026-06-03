@@ -139,21 +139,26 @@ function claudeMd(projectName: string, summary: string, docPaths: string[]): str
 
 ${summary}
 
-## How to build this
-This project was planned with the **AI App Building OS** method. Before writing code,
-read the planning pack in \`/docs\`:
+## ⚠️ READ THIS BEFORE WRITING ANY CODE
+A complete, correct plan for this app is already committed in \`/docs\`. Do **not** start
+from the project name, the summary above, or your own assumptions — those will lead you to
+build the wrong thing (e.g. a marketing landing page). Open the plan and build from it:
 
 ${list}
 
-## Working rules (for the agent)
-- Read \`docs/PRD.md\`, \`docs/ARCHITECTURE.md\`, \`docs/DATA_MODEL.md\`, \`docs/TASKS.md\` first.
-- Build **Sprint 1 only**, then stop and let me review. Do not add anything outside the PRD.
-- Doctrine: database-first, then coded logic, then intelligence on top. The core must run
-  even with the AI switched off.
-- Follow the Definition of Done in \`docs/TASKS.md\` for every task.
-- Never expose secrets in frontend code. The agent inherits the user's permissions.
+## Build rules (binding — follow in order)
+1. **Read first:** open \`docs/PRD.md\`, \`docs/DATA_MODEL.md\`, \`docs/ARCHITECTURE.md\`, and
+   \`docs/TASKS.md\` before writing a single line.
+2. **Confirm the plan** back to me in 2–3 lines (objects, Sprint 1 scope) BEFORE coding.
+3. **Build Sprint 1 from \`docs/TASKS.md\` only**, then stop for review. Nothing outside the PRD.
+4. **Database-first:** create the data model + core CRUD before any styling/polish. The core
+   must work with the AI switched off.
+5. **This is the real working app** — dashboards, records, forms, the flows in the PRD.
+   Do **NOT** build a marketing/landing page or a front-end-only demo.
+6. Follow the **Definition of Done** in \`docs/TASKS.md\`. Never put secrets in frontend code.
 
-Kickoff: "Read /docs and build Sprint 1 from TASKS.md. Confirm the plan first."
+Kickoff prompt: "Read everything in /docs, confirm the plan in 3 lines, then build Sprint 1
+from TASKS.md — database-first, the real working app, not a landing page."
 `;
 }
 

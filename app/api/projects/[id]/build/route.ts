@@ -453,14 +453,14 @@ Under 400 words. This plan feeds the build step.`,
         send({ step: "generating", message: "Building your app…" });
         console.log("[build] phase 2: building");
 
-        const buildUserContent = (tighten: boolean) => mockMode ? `You are a world-class Next.js + Tailwind designer. Produce a SINGLE static visual MOCK of this app's main screen — what it will look like, not a working app.
+        const buildUserContent = (tighten: boolean) => mockMode ? `You are a world-class Next.js + Tailwind designer. Produce a SINGLE static visual MOCK of the app's MAIN WORKING SCREEN — the dashboard / list / records / form a real user sees once inside the app. This is NOT a marketing or landing page.
 
 User request: "${buildPrompt}"
 
 ${DESIGN_SYSTEM}
 
 Call write_files with exactly ONE file: app/page.tsx. Rules:
-- A single static page with realistic placeholder content (names, numbers, copy) for THIS app.
+- Show the actual in-app working screen for THIS request (e.g. a dashboard with realistic rows, metrics, and forms) — NOT a marketing hero or landing page. Realistic placeholder data.
 - NO backend: no Supabase, no data fetching, no forms that submit, no API calls, no auth. Pure visual.
 - TypeScript + Tailwind only; self-contained in app/page.tsx (small inline sub-components are fine).
 - Write COMPLETE file content — no "// ..." placeholders, no TODOs.
