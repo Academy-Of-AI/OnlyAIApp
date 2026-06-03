@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+type CookieEntry = { name: string; value: string; options?: Record<string, unknown> };
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
         // Read from the full incoming cookie store — includes the PKCE
         // code-verifier cookie set by the browser client during signInWithOAuth.
         getAll: () => cookieStore.getAll(),
-        setAll: (toSet) =>
+        setAll: (toSet: CookieEntry[]) =>
           toSet.forEach(({ name, value, options }) => {
             // Write to in-memory store so any read-after-write during the
             // exchange sees the new value.
