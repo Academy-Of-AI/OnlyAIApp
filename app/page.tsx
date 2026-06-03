@@ -9,17 +9,15 @@ const steps = [
 export default function LandingPage() {
   return (
     <main className="min-h-screen flex flex-col">
-      {/* Nav */}
+      {/* Nav — just the logo */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <span className="font-bold text-lg tracking-tight">OnlyAIApp</span>
-        <div className="flex gap-3">
-          <Link href="/sign-in" className="text-sm text-neutral-400 hover:text-white transition-colors px-3 py-1.5">
-            Sign in
-          </Link>
-          <Link href="/sign-up" className="text-sm bg-white text-black font-medium px-3 py-1.5 rounded-md hover:bg-neutral-200 transition-colors">
-            Start building
-          </Link>
-        </div>
+        <Link
+          href="/sign-in"
+          className="text-sm bg-white text-black font-medium px-4 py-1.5 rounded-md hover:bg-neutral-200 transition-colors"
+        >
+          Start building
+        </Link>
       </nav>
 
       {/* Hero */}
@@ -29,6 +27,7 @@ export default function LandingPage() {
           Not a prompt. Not a course.
         </div>
 
+        {/* FIX 1: explicit space via template literal so "system built" renders correctly */}
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight max-w-3xl leading-[1.1]">
           Own a working AI system{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-300">
@@ -42,8 +41,15 @@ export default function LandingPage() {
           you ship something real and own it.
         </p>
 
+        {/* FIX 4: trust anchor — ownership reassurance above the fold */}
+        <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-neutral-500">
+          <span>✓ You own the repo &amp; infra</span>
+          <span>✓ Built with Claude Code</span>
+          <span>✓ No API keys to manage</span>
+        </div>
+
         <div className="flex gap-3 flex-wrap justify-center">
-          <Link href="/sign-up" className="bg-violet-500 hover:bg-violet-400 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
+          <Link href="/sign-in" className="bg-violet-500 hover:bg-violet-400 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
             Start building →
           </Link>
           <Link href="/start" className="border border-white/15 hover:border-white/30 text-neutral-200 font-semibold px-6 py-3 rounded-lg transition-colors">
