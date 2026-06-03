@@ -51,8 +51,8 @@ export default async function ProjectPage({
   // Builder-first: the page shows Build → result. The "track your project"
   // tools live behind a quiet "Project details" disclosure (plain names, no
   // jargon) so a first-timer isn't buried. Share stays visible up top.
+  // ◇ Plan removed — the Plan Pack (Build tab) is the single source of the plan.
   const detailItems = [
-    { href: `/projects/${project.id}/plan`,   label: "◇ Plan" },
     { href: `/projects/${project.id}/drift`,  label: "⟲ On track" },
     { href: `/projects/${project.id}/memory`, label: "◆ What it knows" },
   ];

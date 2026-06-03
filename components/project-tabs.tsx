@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getDodItems } from "@/lib/blueprints";
@@ -85,24 +84,15 @@ function BuildTab({
   memory?: Array<{ kind: string; content: string }>;
 }) {
   const router = useRouter();
-  const [copied, setCopied] = useState<string | null>(null);
   const repo = project.github_repo_url;
-  const cloneCmd = repo ? `git clone ${repo}` : "";
-  const runCmd = `cd ${project.name} && claude`;
 
-  // VAB-drives generate flow
+  // Quick-mockup generate flow
   const [prompt, setPrompt] = useState("");
   const [running, setRunning] = useState(false);
   const [stepIdx, setStepIdx] = useState(-1);
   const [result, setResult] = useState<{ ok: boolean; url: string | null; message?: string } | null>(null);
   const [buildErr, setBuildErr] = useState<string | null>(null);
   const [buying, setBuying] = useState(false);
-
-  function copy(label: string, text: string) {
-    navigator.clipboard?.writeText(text);
-    setCopied(label);
-    setTimeout(() => setCopied(null), 1500);
-  }
 
   async function runBuild() {
     if (!prompt.trim() || running || !repo) return;
@@ -171,6 +161,13 @@ function BuildTab({
 
   return (
     <div className="space-y-6 max-w-2xl">
+      {/* The 3 Ps */}
+      <div className="grid grid-cols-3 gap-2 text-xs">
+        <div className="rounded-lg border border-white/10 px-3 py-2 flex items-center gap-2"><span className="text-green-400">①</span><span className="font-semibold">Provision</span><span className="ml-auto text-[10px] text-green-400">✓</span></div>
+        <div className="rounded-lg border border-violet-500/40 bg-violet-500/[0.06] px-3 py-2 flex items-center gap-2"><span className="text-violet-300">②</span><span className="font-semibold">Plan</span><span className="ml-auto text-[10px] text-violet-300 hidden sm:inline">here</span></div>
+        <div className="rounded-lg border border-white/10 px-3 py-2 flex items-center gap-2"><span className="text-neutral-400">③</span><span className="font-semibold">Pilot</span></div>
+      </div>
+
       <div>
         <h2 className="text-lg font-semibold mb-1">Plan it, then build it</h2>
         <p className="text-sm text-neutral-400">
@@ -272,54 +269,7 @@ function BuildTab({
         </div>
       )}
 
-      {/* Graduation / drive-it-yourself (handoff) */}
-      <div>
-        <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
-          {aiBuildEnabled ? "Prefer to build it yourself?" : "Build it with your own Claude Code"}
-        </p>
-
-      {!repo ? (
-        <div className="border border-amber-500/25 bg-amber-500/5 rounded-xl p-4 text-sm text-amber-300">
-          No GitHub repo is linked yet. Finish provisioning to get your code.
-        </div>
-      ) : (
-        <ol className="space-y-3">
-          {/* Step 1 — clone */}
-          <li className="border border-white/10 rounded-xl p-4">
-            <p className="text-sm font-medium mb-2"><span className="text-violet-400 mr-2">1</span>Get the code on your machine</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs font-mono bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-violet-300 truncate">{cloneCmd}</code>
-              <button onClick={() => copy("clone", cloneCmd)} className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">
-                {copied === "clone" ? "Copied" : "Copy"}
-              </button>
-            </div>
-          </li>
-
-          {/* Step 2 — open with Claude Code */}
-          <li className="border border-white/10 rounded-xl p-4">
-            <p className="text-sm font-medium mb-2"><span className="text-violet-400 mr-2">2</span>Open it with Claude Code</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs font-mono bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-violet-300 truncate">{runCmd}</code>
-              <button onClick={() => copy("run", runCmd)} className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">
-                {copied === "run" ? "Copied" : "Copy"}
-              </button>
-            </div>
-            <p className="text-xs text-neutral-500 mt-2">
-              New to Claude Code? <Link href="/start" className="text-violet-300 hover:underline">Start here →</Link>
-            </p>
-          </li>
-
-          {/* Step 3 — describe */}
-          <li className="border border-white/10 rounded-xl p-4">
-            <p className="text-sm font-medium mb-2"><span className="text-violet-400 mr-2">3</span>Tell it what you want</p>
-            <p className="text-sm text-neutral-400">
-              Just type your idea. We&apos;ve pre-loaded <code className="text-violet-300 text-xs">CLAUDE.md</code> with
-              your objective, plan, and decisions — so the agent starts already knowing your project.
-            </p>
-          </li>
-        </ol>
-      )}
-      </div>
+      {/* (Handoff lives in the Plan Pack's "Hand off" tab now — no duplicate here.) */}
 
       {/* Course-keeper — inline, read-only, inferred from your pushes */}
       {project.last_digest && (

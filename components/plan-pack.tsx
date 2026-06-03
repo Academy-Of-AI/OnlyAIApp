@@ -28,7 +28,7 @@ const PROGRESS = [
 ];
 const PROGRESS_INDEX: Record<string, number> = { planning: 0, planning_done: 0, committing: 1, done: 2 };
 
-const TABS = ["Describe", "Plan", "Docs", "Sprints", "Hand off"] as const;
+const TABS = ["Describe", "Plan", "Sprints", "Hand off"] as const;
 type TabName = (typeof TABS)[number];
 
 export function PlanPack({ project }: { project: Project }) {
@@ -102,7 +102,6 @@ export function PlanPack({ project }: { project: Project }) {
   }
 
   const unlocked = !!result;
-  const docs = result?.files.filter((f) => f.path.startsWith("docs/")) ?? [];
   const allFiles = result?.files ?? [];
   const shownFile = allFiles[activeDoc] ?? allFiles[0];
 
@@ -186,40 +185,39 @@ export function PlanPack({ project }: { project: Project }) {
           </div>
         )}
 
-        {/* PLAN */}
+        {/* PLAN — sequencing + the generated docs (consolidated) */}
         {tab === "Plan" && result && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {result.summary && <p className="text-sm text-neutral-300">{result.summary}</p>}
-            <p className="text-xs text-neutral-500 uppercase tracking-wider">Your build, sequenced</p>
-            <div className="grid sm:grid-cols-3 gap-3 text-sm">
-              <PlanColumn title="Now" badge="v1" tone="green" items={result.plan?.now} />
-              <PlanColumn title="Next" badge="soon" tone="amber" items={result.plan?.next} />
-              <PlanColumn title="Later" badge="when ready" tone="neutral" items={result.plan?.later} />
-            </div>
-            <p className="text-xs text-neutral-600">Built data-first, so the core keeps working reliably — even with the AI switched off.</p>
-          </div>
-        )}
-
-        {/* DOCS */}
-        {tab === "Docs" && result && (
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-1.5">
-              {allFiles.map((f, i) => (
-                <button
-                  key={f.path}
-                  onClick={() => setActiveDoc(i)}
-                  className={`text-[11px] font-mono rounded px-1.5 py-0.5 border transition-colors ${
-                    i === activeDoc ? "bg-violet-500/15 border-violet-500/50 text-violet-200"
-                    : "border-white/10 text-neutral-400 hover:text-neutral-200"
-                  }`}
-                >{f.path}</button>
-              ))}
-            </div>
-            {shownFile && (
-              <div className="bg-black/40 border border-white/10 rounded-lg p-3 max-h-[420px] overflow-auto">
-                <pre className="text-xs leading-relaxed text-neutral-300 whitespace-pre-wrap font-mono">{shownFile.content}</pre>
+            <div className="space-y-2">
+              <p className="text-xs text-neutral-500 uppercase tracking-wider">Your build, sequenced</p>
+              <div className="grid sm:grid-cols-3 gap-3 text-sm">
+                <PlanColumn title="Now" badge="v1" tone="green" items={result.plan?.now} />
+                <PlanColumn title="Next" badge="soon" tone="amber" items={result.plan?.next} />
+                <PlanColumn title="Later" badge="when ready" tone="neutral" items={result.plan?.later} />
               </div>
-            )}
+              <p className="text-xs text-neutral-600">Built data-first, so the core keeps working reliably — even with the AI switched off.</p>
+            </div>
+            <div className="space-y-2 border-t border-white/10 pt-3">
+              <p className="text-xs text-neutral-500 uppercase tracking-wider">The pack — committed to <span className="font-mono">/docs</span></p>
+              <div className="flex flex-wrap gap-1.5">
+                {allFiles.map((f, i) => (
+                  <button
+                    key={f.path}
+                    onClick={() => setActiveDoc(i)}
+                    className={`text-[11px] font-mono rounded px-1.5 py-0.5 border transition-colors ${
+                      i === activeDoc ? "bg-violet-500/15 border-violet-500/50 text-violet-200"
+                      : "border-white/10 text-neutral-400 hover:text-neutral-200"
+                    }`}
+                  >{f.path}</button>
+                ))}
+              </div>
+              {shownFile && (
+                <div className="bg-black/40 border border-white/10 rounded-lg p-3 max-h-[400px] overflow-auto">
+                  <pre className="text-xs leading-relaxed text-neutral-300 whitespace-pre-wrap font-mono">{shownFile.content}</pre>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -227,7 +225,7 @@ export function PlanPack({ project }: { project: Project }) {
         {tab === "Sprints" && result && (
           <div className="space-y-3">
             {result.sprints.length === 0 ? (
-              <p className="text-sm text-neutral-500">See <span className="font-mono">docs/TASKS.md</span> in the Docs tab for the sprint plan.</p>
+              <p className="text-sm text-neutral-500">See <span className="font-mono">docs/TASKS.md</span> in the Plan tab for the sprint plan.</p>
             ) : (
               result.sprints.map((s, i) => (
                 <div key={i} className="border border-white/10 rounded-lg p-3">
