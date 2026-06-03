@@ -5,6 +5,7 @@ import { useState } from "react";
 import { getDodItems } from "@/lib/blueprints";
 import { PlanPack, type Result as PlanPackResult } from "@/components/plan-pack";
 import { AutoCaptureToggle } from "@/components/auto-capture-toggle";
+import { DeleteProjectButton } from "@/components/delete-project-button";
 
 type Project = {
   id: string;
@@ -552,6 +553,16 @@ function SettingsTab({ project }: { project: Project }) {
         >
           ← Back to dashboard &amp; connections
         </a>
+      </div>
+
+      <div className="border border-red-500/20 rounded-xl p-5 space-y-3">
+        <h3 className="text-sm font-semibold text-red-400">Danger zone</h3>
+        <p className="text-xs text-neutral-500 leading-relaxed">
+          Permanently delete this project. This also deletes its Supabase database and Vercel
+          deployment — freeing a slot under your Supabase limit. Your GitHub repo is kept (delete it
+          on GitHub if you want it gone).
+        </p>
+        <DeleteProjectButton projectId={project.id} projectName={project.name} redirectTo="/dashboard" variant="button" />
       </div>
     </div>
   );

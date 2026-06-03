@@ -1,8 +1,50 @@
 import { decrypt } from "@/lib/crypto";
 import { renameRepo } from "@/lib/github";
 import { createClient } from "@/lib/supabase/server";
-import { renameVercelProject } from "@/lib/vercel";
+import { renameVercelProject, deleteVercelProject } from "@/lib/vercel";
+import { deleteSupabaseProject } from "@/lib/supabase-mgmt";
 import { NextResponse } from "next/server";
+
+/**
+ * DELETE /api/projects/:id — remove the project + free its cloud resources.
+ * Best-effort deletes the Vercel project and the Supabase project (so the slot
+ * is freed under your Supabase org limit), then removes the row. The GitHub
+ * repo is KEPT (your code) — delete it on GitHub if you want it gone.
+ */
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("vercel_project_id, supabase_project_ref")
+    .eq("id", id).eq("user_id", user.id).single();
+  if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+
+  const { data: conns } = await supabase
+    .from("oauth_connections").select("provider, access_token")
+    .eq("user_id", user.id).in("provider", ["vercel", "supabase"]);
+  const vercelTok = conns?.find((c) => c.provider === "vercel")?.access_token;
+  const supaTok = conns?.find((c) => c.provider === "supabase")?.access_token;
+
+  if (project.vercel_project_id && vercelTok) {
+    try { await deleteVercelProject({ token: await decrypt(vercelTok as string), projectId: project.vercel_project_id as string }); }
+    catch (e) { console.warn("[delete] vercel cleanup failed (non-fatal):", e); }
+  }
+  if (project.supabase_project_ref && supaTok) {
+    try { await deleteSupabaseProject(await decrypt(supaTok as string), project.supabase_project_ref as string); }
+    catch (e) { console.warn("[delete] supabase cleanup failed (non-fatal):", e); }
+  }
+
+  const { error } = await supabase.from("projects").delete().eq("id", id).eq("user_id", user.id);
+  if (error) return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
 
 /**
  * PATCH /api/projects/:id — update editable project fields.

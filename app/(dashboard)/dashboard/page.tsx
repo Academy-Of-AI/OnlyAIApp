@@ -3,6 +3,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { ResendConnectForm } from "@/components/resend-connect-form";
 import { SupabaseConnectForm } from "@/components/supabase-connect-form";
 import { VercelConnectForm } from "@/components/vercel-connect-form";
+import { DeleteProjectButton } from "@/components/delete-project-button";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
@@ -186,35 +187,37 @@ export default async function DashboardPage({
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {projects.map((p) => (
-            <Link
+            <div
               key={p.id}
-              href={`/projects/${p.id}`}
-              className="block border border-white/10 rounded-xl p-5 space-y-3 hover:border-white/25 hover:bg-white/[0.02] transition-all cursor-pointer"
+              className="border border-white/10 rounded-xl p-5 space-y-3 hover:border-white/25 hover:bg-white/[0.02] transition-all"
             >
-              <div className="flex items-start justify-between gap-2">
-                <span className="font-semibold truncate">{p.name}</span>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
-                    STATUS_STYLES[p.status] ?? STATUS_STYLES.pending
-                  }`}
-                >
-                  {p.status}
-                </span>
+              <Link href={`/projects/${p.id}`} className="block space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-semibold truncate">{p.name}</span>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
+                      STATUS_STYLES[p.status] ?? STATUS_STYLES.pending
+                    }`}
+                  >
+                    {p.status}
+                  </span>
+                </div>
+                <p className="text-xs text-neutral-500">{p.template_id}</p>
+                <div className="flex gap-3 text-xs">
+                  {p.github_repo_url && (
+                    <span className="text-neutral-400">GitHub →</span>
+                  )}
+                  {p.vercel_preview_url && (
+                    <span className="text-green-400">Live URL →</span>
+                  )}
+                </div>
+                {p.error && <p className="text-xs text-red-400 truncate">{p.error}</p>}
+              </Link>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-neutral-600">{new Date(p.created_at).toLocaleDateString()}</p>
+                <DeleteProjectButton projectId={p.id} projectName={p.name} />
               </div>
-              <p className="text-xs text-neutral-500">{p.template_id}</p>
-              <div className="flex gap-3 text-xs">
-                {p.github_repo_url && (
-                  <span className="text-neutral-400">GitHub →</span>
-                )}
-                {p.vercel_preview_url && (
-                  <span className="text-green-400">Live URL →</span>
-                )}
-              </div>
-              {p.error && <p className="text-xs text-red-400 truncate">{p.error}</p>}
-              <p className="text-xs text-neutral-600">
-                {new Date(p.created_at).toLocaleDateString()}
-              </p>
-            </Link>
+            </div>
           ))}
         </div>
       )}
