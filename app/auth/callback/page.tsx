@@ -7,12 +7,14 @@ import { createClient } from "@/lib/supabase/client";
 /**
  * OAuth callback — implicit flow.
  *
- * With flowType: "implicit", Supabase returns tokens directly in the URL hash
- * (#access_token=...&refresh_token=...) rather than a PKCE code. The browser
- * client (createBrowserClient) automatically detects these on page load via
- * detectSessionInUrl, stores them in its cookie storage, and fires SIGNED_IN
- * on the auth state listener. No code exchange, no code verifier — no storage
- * mismatch possible.
+ * Flow:
+ * 1. Supabase redirects here with #access_token=...&refresh_token=... in the URL hash.
+ * 2. The browser Supabase client detects the tokens (detectSessionInUrl: true default).
+ * 3. We read the session and POST it to /api/auth/set-session — a server route that
+ *    explicitly writes the cookies in the canonical server format onto its response.
+ * 4. The browser receives those Set-Cookie headers and stores them.
+ * 5. We redirect to /dashboard. All subsequent requests carry the server-format cookies
+ *    so the middleware validates the session correctly in every tab.
  */
 function CallbackHandler() {
   const router = useRouter();
@@ -22,23 +24,48 @@ function CallbackHandler() {
     const next = searchParams.get("next") ?? "/dashboard";
     const supabase = createClient();
 
-    // Fast path: session already available (e.g. page re-render).
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) { router.replace(next); return; }
-    });
+    async function handleSession() {
+      // Give the browser client a moment to parse the URL hash and set the session.
+      const { data: { session }, error } = await supabase.auth.getSession();
 
-    // Normal path: browser client detects tokens in URL hash and fires SIGNED_IN.
+      if (!session || error) {
+        console.error("[callback] no session detected", error?.message);
+        router.replace("/sign-in");
+        return;
+      }
+
+      // Ask the server to set cookies in the format its middleware expects,
+      // so the session persists across new tabs and refreshes.
+      try {
+        await fetch("/api/auth/set-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          }),
+        });
+      } catch (e) {
+        console.warn("[callback] set-session fetch failed:", e);
+        // Non-fatal: browser-client cookies might still work.
+      }
+
+      router.replace(next);
+    }
+
+    // The browser client fires SIGNED_IN when it detects the URL hash tokens.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === "SIGNED_IN" && session) {
-          router.replace(next);
+          handleSession();
         }
       },
     );
 
-    // Fallback: if nothing happens in 10 s, something went wrong.
-    const timeout = setTimeout(() => router.replace("/sign-in"), 10_000);
+    // Fast path: session already available synchronously.
+    handleSession();
 
+    const timeout = setTimeout(() => router.replace("/sign-in"), 12_000);
     return () => {
       subscription.unsubscribe();
       clearTimeout(timeout);
