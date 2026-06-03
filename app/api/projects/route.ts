@@ -165,7 +165,7 @@ export async function POST(request: Request) {
           })
           .eq("id", project.id);
 
-        // Anchor & Monitor: default-on auto-capture for new projects. Register
+        // Pilot (anchor & monitor): default-on auto-capture for new projects. Register
         // the push webhook + flip the flag so Plan / On-track / What-it-knows
         // start working automatically. Best-effort — never fail provisioning.
         try {
