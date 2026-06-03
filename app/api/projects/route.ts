@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Check plan limits (free = 3 projects)
+  // Check plan limits (free = 1 project)
   const { data: profile } = await supabase
     .from("profiles")
     .select("plan")
@@ -71,6 +71,21 @@ export async function POST(request: Request) {
         { status: 403 },
       );
     }
+  }
+
+  // Hard ceiling (all plans): every project provisions its OWN Supabase project,
+  // so cap the total to stay under the Supabase org limit. Tune with MAX_PROJECTS.
+  const MAX_PROJECTS = parseInt(process.env.MAX_PROJECTS ?? "8", 10);
+  const { count: totalProjects } = await supabase
+    .from("projects").select("*", { count: "exact", head: true }).eq("user_id", user.id);
+  if ((totalProjects ?? 0) >= MAX_PROJECTS) {
+    return NextResponse.json(
+      {
+        error: `You've reached the project limit (${MAX_PROJECTS}). Each project gets its own Supabase database, so this keeps you under your Supabase org's limit. Delete one you don't need, or raise MAX_PROJECTS after upgrading Supabase.`,
+        code: "project_limit",
+      },
+      { status: 403 },
+    );
   }
 
   // Load GitHub + Vercel + Supabase (optional) connections

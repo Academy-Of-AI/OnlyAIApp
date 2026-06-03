@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getDodItems } from "@/lib/blueprints";
 import { PlanPack, type Result as PlanPackResult } from "@/components/plan-pack";
+import { AutoCaptureToggle } from "@/components/auto-capture-toggle";
 
 type Project = {
   id: string;
@@ -21,8 +22,15 @@ type Project = {
   last_digest: { onTrack: boolean; note: string; scopeCreep?: string[] } | null;
 };
 
-const TABS = ["Build", "Launch", "Settings"] as const;
-type Tab = (typeof TABS)[number];
+const STATUS_STYLES: Record<string, string> = {
+  deployed:     "bg-green-500/20 text-green-400",
+  provisioning: "bg-yellow-500/20 text-yellow-400",
+  building:     "bg-blue-500/20 text-blue-400",
+  pending:      "bg-neutral-500/20 text-neutral-400",
+  failed:       "bg-red-500/20 text-red-400",
+};
+
+type View = "plan" | "pilot" | "settings";
 
 export function ProjectTabs({
   project,
@@ -30,62 +38,69 @@ export function ProjectTabs({
   memory = [],
   liveUrl = null,
   initialPack = null,
+  autoCapture = false,
 }: {
   project: Project;
   buildCredits?: number;
   memory?: Array<{ kind: string; content: string }>;
   liveUrl?: string | null;
   initialPack?: PlanPackResult | null;
+  autoCapture?: boolean;
 }) {
-  const [tab, setTab] = useState<Tab>("Build");
+  const [view, setView] = useState<View>("plan");
+  const pnav = (active: boolean) =>
+    `rounded-lg border px-3 py-2.5 flex items-center gap-2 transition-colors text-left ${
+      active ? "border-violet-500/50 bg-violet-500/[0.08] text-white" : "border-white/10 text-neutral-300 hover:border-white/25"
+    }`;
 
   return (
     <div>
-      {/* Tab bar */}
-      <div className="flex gap-1 mb-8 border-b border-white/10 pb-0">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors border-b-2 -mb-px ${
-              tab === t
-                ? "border-green-500 text-white"
-                : "border-transparent text-neutral-500 hover:text-neutral-300"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
+      {/* Header — name, status, Settings gear, GitHub / Live app */}
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight truncate">{project.name}</h1>
+            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${STATUS_STYLES[project.status] ?? STATUS_STYLES.pending}`}>{project.status}</span>
+            <button onClick={() => setView("settings")} title="Settings"
+              className={`text-lg leading-none transition-colors ${view === "settings" ? "text-violet-300" : "text-neutral-500 hover:text-white"}`}>⚙</button>
+          </div>
+          <p className="text-sm text-neutral-500 mt-1">Created {new Date(project.created_at).toLocaleDateString()}</p>
+          {project.error && <p className="text-xs text-red-400 mt-1 truncate max-w-lg">{project.error}</p>}
+        </div>
+        <div className="flex gap-2 shrink-0">
+          {project.github_repo_url && (
+            <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer"
+              className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors">GitHub →</a>
+          )}
+          {liveUrl && (
+            <a href={liveUrl} target="_blank" rel="noopener noreferrer"
+              className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">↗ Live app</a>
+          )}
+        </div>
       </div>
 
-      {tab === "Build"     && <BuildTab project={project} buildCredits={buildCredits} memory={memory} initialPack={initialPack} />}
-      {tab === "Launch"    && <LaunchTab project={project} liveUrl={liveUrl} />}
-      {tab === "Settings"  && <SettingsTab project={project} />}
+      {/* The 3 Ps — the only nav (no tab bar) */}
+      <div className="grid grid-cols-3 gap-2 text-sm mb-8">
+        <div className="rounded-lg border border-green-500/20 bg-green-500/[0.05] px-3 py-2.5 flex items-center gap-2"><span className="text-green-400">①</span><span className="font-semibold">Provision</span><span className="ml-auto text-xs text-green-400">✓</span></div>
+        <button onClick={() => setView("plan")} className={pnav(view === "plan")}><span className="text-violet-300">②</span><span className="font-semibold">Plan</span></button>
+        <button onClick={() => setView("pilot")} className={pnav(view === "pilot")}><span className="text-violet-300">③</span><span className="font-semibold">Pilot</span></button>
+      </div>
+
+      {view === "plan" && <PlanView project={project} buildCredits={buildCredits} initialPack={initialPack} />}
+      {view === "pilot" && <PilotView project={project} memory={memory} liveUrl={liveUrl} autoCapture={autoCapture} />}
+      {view === "settings" && <SettingsTab project={project} />}
     </div>
   );
 }
 
-/* ── Build tab ─────────────────────────────────────────────────────────── */
-function BuildTab({
-  project,
-  buildCredits,
-  memory = [],
-  initialPack = null,
+/* ── Plan view ─────────────────────────────────────────────────────────── */
+function PlanView({
+  project, buildCredits, initialPack = null,
 }: {
-  project: Project;
-  buildCredits: number;
-  memory?: Array<{ kind: string; content: string }>;
-  initialPack?: PlanPackResult | null;
+  project: Project; buildCredits: number; initialPack?: PlanPackResult | null;
 }) {
   return (
     <div className="space-y-6 max-w-2xl">
-      {/* The 3 Ps */}
-      <div className="grid grid-cols-3 gap-2 text-xs">
-        <div className="rounded-lg border border-white/10 px-3 py-2 flex items-center gap-2"><span className="text-green-400">①</span><span className="font-semibold">Provision</span><span className="ml-auto text-[10px] text-green-400">✓</span></div>
-        <div className="rounded-lg border border-violet-500/40 bg-violet-500/[0.06] px-3 py-2 flex items-center gap-2"><span className="text-violet-300">②</span><span className="font-semibold">Plan</span><span className="ml-auto text-[10px] text-violet-300 hidden sm:inline">here</span></div>
-        <a href={`/projects/${project.id}/drift`} className="rounded-lg border border-white/10 hover:border-white/25 px-3 py-2 flex items-center gap-2 transition-colors"><span className="text-neutral-400">③</span><span className="font-semibold">Pilot</span><span className="ml-auto text-[10px] text-neutral-500 hidden sm:inline">→</span></a>
-      </div>
-
       <div>
         <h2 className="text-lg font-semibold mb-1">Plan it, then build it</h2>
         <p className="text-sm text-neutral-400">
@@ -93,13 +108,26 @@ function BuildTab({
           repo. Then hand it to your agent (Claude Code) to build it, the reliable way.
         </p>
       </div>
-
       <PlanPack project={project} initialPack={initialPack} buildCredits={buildCredits} />
+    </div>
+  );
+}
 
-      {/* The mockup generator + handoff both live inside the Plan Pack's
-          "Hand off" tab now — the front of this tab is just the plan. */}
+/* ── Pilot view — keep it on course (auto-capture + drift + memory) & ship it ── */
+function PilotView({
+  project, memory = [], liveUrl = null, autoCapture = false,
+}: {
+  project: Project; memory?: Array<{ kind: string; content: string }>; liveUrl?: string | null; autoCapture?: boolean;
+}) {
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div>
+        <h2 className="text-lg font-semibold mb-1">Pilot — keep it on course &amp; ship it</h2>
+        <p className="text-sm text-neutral-400">As you build, Pilot tracks what changed, flags drift from your plan, and helps you launch.</p>
+      </div>
 
-      {/* Course-keeper — inline, read-only, inferred from your pushes */}
+      <AutoCaptureToggle projectId={project.id} enabled={autoCapture} />
+
       {project.last_digest && (
         <div className={`rounded-xl p-4 border ${project.last_digest.onTrack ? "border-green-500/25 bg-green-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
           <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${project.last_digest.onTrack ? "text-green-400" : "text-amber-400"}`}>
@@ -116,7 +144,6 @@ function BuildTab({
         </div>
       )}
 
-      {/* What OnlyAIApp remembers — only appears once there's something real. */}
       {memory.length > 0 && (
         <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
           <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">What OnlyAIApp remembers about this project</p>
@@ -128,12 +155,11 @@ function BuildTab({
               </div>
             ))}
           </div>
-          <p className="text-xs text-neutral-600 mt-3">
-            Picked up automatically as you build — so the AI always knows your project. Nothing to fill in.
-          </p>
+          <p className="text-xs text-neutral-600 mt-3">Picked up automatically as you build — so the AI always knows your project.</p>
         </div>
       )}
 
+      <LaunchTab project={project} liveUrl={liveUrl} />
     </div>
   );
 }
@@ -209,18 +235,6 @@ function LaunchTab({ project, liveUrl = null }: { project: Project; liveUrl?: st
           We check what separates &quot;it built&quot; from &quot;it&apos;s actually launched&quot; — then hand you the exact task to
           paste into your Claude Code for anything that isn&apos;t ready yet.
         </p>
-      </div>
-
-      {/* Quick links — repo + live app live here (off the Build front, to reduce distraction) */}
-      <div className="flex gap-3 flex-wrap">
-        {project.github_repo_url && (
-          <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer"
-            className="border border-white/10 hover:border-white/20 text-sm text-neutral-300 px-4 py-2 rounded-lg transition-colors">GitHub repo →</a>
-        )}
-        {liveUrl && (
-          <a href={liveUrl} target="_blank" rel="noopener noreferrer"
-            className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">↗ Open live app</a>
-        )}
       </div>
 
       {/* Definition of Done — the certainty gate */}
