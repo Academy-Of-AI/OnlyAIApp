@@ -1,7 +1,6 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
-import { cookies, headers } from "next/headers";
-import { cookieDomainFor } from "@/lib/supabase/cookie-domain";
+import { cookies } from "next/headers";
 
 type CookieEntry = { name: string; value: string; options?: Record<string, unknown> };
 
@@ -20,8 +19,6 @@ export async function createAdminClient() {
 
 export async function createClient() {
   const cookieStore = await cookies();
-  let domain: string | undefined;
-  try { domain = cookieDomainFor((await headers()).get("host")); } catch { /* headers() unavailable */ }
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,7 +28,7 @@ export async function createClient() {
         setAll: (toSet: CookieEntry[]) => {
           try {
             toSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, domain ? { ...options, domain } : options),
+              cookieStore.set(name, value, options),
             );
           } catch {}
         },
