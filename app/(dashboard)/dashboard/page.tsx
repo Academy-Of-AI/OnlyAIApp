@@ -50,6 +50,9 @@ export default async function DashboardPage({
   const hasResend   = connections?.some((c) => c.provider === "resend");
   // Onramp: GitHub alone is enough to create a project. Vercel/Supabase come later.
   const canCreate = hasGitHub;
+  // Hide the "first app" onboarding once they've shipped — beginner framing
+  // shouldn't follow an experienced builder around.
+  const hasShipped = projects?.some((p) => p.status === "deployed") ?? false;
 
   function connectedLabel(provider: string) {
     if (provider === "github")   return "GitHub";
@@ -134,8 +137,8 @@ export default async function DashboardPage({
         </details>
       )}
 
-      {/* Control-plane onboarding checklist */}
-      {!!projects?.length && (
+      {/* Onboarding checklist — only while still working toward the first ship */}
+      {!!projects?.length && !hasShipped && (
         <GettingStarted
           accountsConnected={!!canCreate}
           hasProject={!!projects?.length}
