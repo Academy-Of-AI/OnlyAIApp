@@ -5,39 +5,44 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * OAuth callback — handled CLIENT-SIDE.
+ * OAuth callback — implicit flow.
  *
- * Why client-side instead of a server Route Handler:
- * The browser's Supabase client (createBrowserClient) stores the PKCE code
- * verifier in its own cookie jar during signInWithOAuth. That same client must
- * be the one to call exchangeCodeForSession so it can read back the verifier
- * it stored. A server-side handler uses a different client (createServerClient)
- * that reads from next/headers cookies — there's a storage mismatch that causes
- * "code verifier not found" on every attempt. Letting the browser client handle
- * its own callback sidesteps this entirely.
+ * With flowType: "implicit", Supabase returns tokens directly in the URL hash
+ * (#access_token=...&refresh_token=...) rather than a PKCE code. The browser
+ * client (createBrowserClient) automatically detects these on page load via
+ * detectSessionInUrl, stores them in its cookie storage, and fires SIGNED_IN
+ * on the auth state listener. No code exchange, no code verifier — no storage
+ * mismatch possible.
  */
 function CallbackHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const code = searchParams.get("code");
     const next = searchParams.get("next") ?? "/dashboard";
-
-    if (!code) {
-      router.replace("/sign-in");
-      return;
-    }
-
     const supabase = createClient();
-    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      if (error) {
-        console.error("[callback] exchange failed:", error.message);
-        router.replace(`/sign-in?auth_error=${encodeURIComponent(error.message)}`);
-      } else {
-        router.replace(next);
-      }
+
+    // Fast path: session already available (e.g. page re-render).
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) { router.replace(next); return; }
     });
+
+    // Normal path: browser client detects tokens in URL hash and fires SIGNED_IN.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_IN" && session) {
+          router.replace(next);
+        }
+      },
+    );
+
+    // Fallback: if nothing happens in 10 s, something went wrong.
+    const timeout = setTimeout(() => router.replace("/sign-in"), 10_000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
