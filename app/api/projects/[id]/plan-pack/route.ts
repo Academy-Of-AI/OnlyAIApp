@@ -77,7 +77,11 @@ docs/SECURITY.md — Secret handling; permission model; approved-tools rule; aud
 docs/TASKS.md — Sprints 1..N. Each sprint: goal + a checklist of tasks + its Definition of
   Done. Order them so the DB + core CRUD come first, intelligence/agentic later. Include a
   simple text Gantt (which sprint each task lands in).
-docs/TEST_PLAN.md — Manual test steps for the v1 success scenario + empty/error cases.`;
+docs/TEST_PLAN.md — Manual test steps for the v1 success scenario + empty/error cases.
+
+ALSO fill (for the UI, de-branded, the app's own words):
+- plan: now / next / later — short bullets a non-technical owner understands.
+- sprints: the same sprints as docs/TASKS.md, as {title, items[]}, ordered.`;
 
 const WRITE_DOCS_TOOL: Anthropic.Tool = {
   name: "write_docs",
@@ -98,6 +102,27 @@ const WRITE_DOCS_TOOL: Anthropic.Tool = {
         },
       },
       summary: { type: "string", description: "One-line summary of the app for CLAUDE.md." },
+      plan: {
+        type: "object",
+        description: "Build sequencing in the app's OWN feature words (de-branded). Short bullet strings.",
+        properties: {
+          now: { type: "array", items: { type: "string" }, description: "What to build now (v1)." },
+          next: { type: "array", items: { type: "string" }, description: "What to add soon after v1." },
+          later: { type: "array", items: { type: "string" }, description: "What to add later." },
+        },
+      },
+      sprints: {
+        type: "array",
+        description: "Ordered sprints matching docs/TASKS.md. Each: a short title + a few task items.",
+        items: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            items: { type: "array", items: { type: "string" } },
+          },
+          required: ["title", "items"],
+        },
+      },
     },
     required: ["files"],
   },
@@ -207,6 +232,8 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
 
         let docs: Array<{ path: string; content: string }> = [];
         let summary = project.name as string;
+        let plan: { now?: string[]; next?: string[]; later?: string[] } | null = null;
+        let sprints: Array<{ title: string; items: string[] }> = [];
         for (let attempt = 1; attempt <= 2 && docs.length === 0; attempt++) {
           if (attempt > 1) send({ step: "planning", message: "Tightening the plan…" });
           const resp = await anthropic.messages.stream({
@@ -219,12 +246,19 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
 
           const toolUse = resp.content.find((c) => c.type === "tool_use");
           if (toolUse && toolUse.type === "tool_use") {
-            const input = toolUse.input as { files?: Array<{ path: string; content: string }>; summary?: string };
+            const input = toolUse.input as {
+              files?: Array<{ path: string; content: string }>;
+              summary?: string;
+              plan?: { now?: string[]; next?: string[]; later?: string[] };
+              sprints?: Array<{ title: string; items: string[] }>;
+            };
             docs = (Array.isArray(input.files) ? input.files : []).filter(
               (f) => f && typeof f.path === "string" && typeof f.content === "string"
                 && f.content.trim().length > 0 && f.path.startsWith("docs/") && f.path.endsWith(".md"),
             );
             if (input.summary) summary = input.summary;
+            if (input.plan) plan = input.plan;
+            if (Array.isArray(input.sprints)) sprints = input.sprints;
           }
           if (resp.stop_reason === "max_tokens") console.warn("[plan-pack] hit max_tokens, attempt", attempt);
         }
@@ -272,8 +306,11 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
         send({
           step: "done",
           message: "Plan pack committed ✓",
-          files: allFiles.map((f) => f.path),
-          repoUrl: `${project.github_repo_url}`,
+          files: allFiles.map((f) => ({ path: f.path, content: f.content })),
+          plan,
+          sprints,
+          summary,
+          repoUrl: project.github_repo_url,
         });
       } catch (err) {
         console.error("[plan-pack] error:", err);
