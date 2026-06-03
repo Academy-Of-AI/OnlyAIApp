@@ -2,6 +2,7 @@ import { SubscribeButton } from "@/components/subscribe-button";
 import { BuyCreditsButton } from "@/components/buy-credits-button";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export default async function UpgradePage({
   searchParams,
@@ -19,6 +20,11 @@ export default async function UpgradePage({
 
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-12 space-y-10">
+      {/* X close button — back to dashboard */}
+      <div className="flex justify-end">
+        <Link href="/dashboard" className="text-neutral-500 hover:text-white transition-colors text-xl leading-none" aria-label="Close">✕</Link>
+      </div>
+
       {params.upgraded && (
         <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm px-4 py-3 rounded-lg text-center">
           🎉 You&apos;re on Pro. Unlimited Plan Packs &amp; mockups + Pilot are unlocked.
