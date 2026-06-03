@@ -1,26 +1,17 @@
-"use client";
-import { createClient } from "@/lib/supabase/client";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { signInWithGitHub } from "./actions";
 
-function SignInInner() {
-  const params = useSearchParams();
-  const authError = params.get("auth_error");
-
-  async function signInWithGitHub() {
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: { redirectTo: `${location.origin}/auth/callback?next=/dashboard` },
-    });
-  }
+export default function SignInPage({
+  searchParams,
+}: {
+  searchParams: { auth_error?: string };
+}) {
+  const authError = searchParams?.auth_error;
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 bg-neutral-950">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
-          <Link href="/" className="text-white/50 text-sm hover:text-white">OnlyAIApp</Link>
+          <p className="text-white/50 text-sm">OnlyAIApp</p>
           <h1 className="text-2xl font-bold text-white">Welcome</h1>
           <p className="text-neutral-500 text-sm">Sign in or create an account</p>
         </div>
@@ -31,27 +22,22 @@ function SignInInner() {
           </div>
         )}
 
-        <button
-          onClick={signInWithGitHub}
-          className="w-full flex items-center justify-center gap-2 bg-white text-black font-medium py-3 rounded-lg hover:bg-neutral-200 transition-colors"
-        >
-          <GitHubIcon />
-          Continue with GitHub
-        </button>
+        {/* Server action form — no client JS needed, works without hydration */}
+        <form action={signInWithGitHub}>
+          <button
+            type="submit"
+            className="w-full flex items-center justify-center gap-2 bg-white text-black font-medium py-3 rounded-lg hover:bg-neutral-200 transition-colors"
+          >
+            <GitHubIcon />
+            Continue with GitHub
+          </button>
+        </form>
 
         <p className="text-center text-xs text-neutral-600">
           GitHub is required to build — it&apos;s where your project lives.
         </p>
       </div>
     </main>
-  );
-}
-
-export default function SignInPage() {
-  return (
-    <Suspense>
-      <SignInInner />
-    </Suspense>
   );
 }
 
