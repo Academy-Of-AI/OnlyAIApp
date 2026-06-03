@@ -57,6 +57,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </span>
           </Link>
 
+          {/* Settings */}
+          <Link href="/settings" title="Settings"
+            className="text-neutral-500 hover:text-white transition-colors text-base leading-none shrink-0">
+            ⚙
+          </Link>
+
           <form action={signOut}>
             <button type="submit" className="text-neutral-500 hover:text-white transition-colors text-xs shrink-0">
               Sign out

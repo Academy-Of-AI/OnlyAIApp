@@ -103,8 +103,10 @@ export default async function UpgradePage({
       <p className="text-center text-sm text-neutral-500">
         Not ready to subscribe? <BuyCreditsButton /> — no subscription, no Pilot.
       </p>
-      <p className="text-center text-xs text-neutral-600">
-        Cancel anytime. Your Claude Code subscription is separate — and yours. The 8-project cap keeps you under Supabase&apos;s limit.
+      <p className="text-center text-xs text-neutral-600 max-w-xl mx-auto">
+        Cancel anytime. Your Claude Code subscription is separate — and yours. Each project gets its
+        own Supabase database in <b className="text-neutral-500">your</b> account; running up to 8 needs
+        Supabase Pro ($25/mo) — the free tier allows 2.
       </p>
     </main>
   );

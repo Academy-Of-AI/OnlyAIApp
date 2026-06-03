@@ -4,7 +4,7 @@ import { useState } from "react";
 
 type Org = { id: string; name: string };
 
-export function SupabaseConnectForm() {
+export function SupabaseConnectForm({ redirectTo = "/dashboard" }: { redirectTo?: string }) {
   const [token, setToken] = useState("");
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState("");
@@ -66,7 +66,7 @@ export function SupabaseConnectForm() {
       });
 
       if (res.ok) {
-        window.location.href = "/dashboard?connected=supabase";
+        window.location.href = `${redirectTo}?connected=supabase`;
       } else {
         const data = await res.json() as { error?: string };
         setError(data.error ?? "Failed to save connection.");

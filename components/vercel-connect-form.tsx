@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export function VercelConnectForm() {
+export function VercelConnectForm({ redirectTo = "/dashboard" }: { redirectTo?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showSteps, setShowSteps] = useState(false);
@@ -19,7 +19,7 @@ export function VercelConnectForm() {
     });
     setLoading(false);
     if (res.ok) {
-      window.location.href = "/dashboard?connected=vercel";
+      window.location.href = `${redirectTo}?connected=vercel`;
     } else {
       const { error } = await res.json();
       setError(error ?? "Invalid token — please check and try again.");

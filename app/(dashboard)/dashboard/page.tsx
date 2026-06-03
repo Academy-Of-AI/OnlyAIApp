@@ -1,7 +1,4 @@
 import { GettingStarted } from "@/components/getting-started";
-import { ResendConnectForm } from "@/components/resend-connect-form";
-import { SupabaseConnectForm } from "@/components/supabase-connect-form";
-import { VercelConnectForm } from "@/components/vercel-connect-form";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -101,40 +98,16 @@ export default async function DashboardPage({
         </section>
       )}
 
-      {/* Optional integrations — collapsed so they don't dominate once you're set up */}
+      {/* Optional integrations live on the Settings page now (⚙ in the top nav). */}
       {hasGitHub && (!hasVercel || !hasSupabase || !hasResend) && (
-        <details className="border border-white/10 rounded-xl overflow-hidden group">
-          <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none">
-            <div className="min-w-0">
-              <p className="font-medium text-sm">Optional integrations</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Add deploy, database &amp; email — connect when you need them</p>
-            </div>
-            <span className="text-neutral-500 text-xs shrink-0 transition-transform group-open:rotate-180">▾</span>
-          </summary>
-          <div className="border-t border-white/10 p-4 grid sm:grid-cols-3 gap-3">
-            {!hasVercel && (
-              <div className="rounded-xl border border-white/10 p-4 space-y-2">
-                <div className="flex items-center gap-2"><span>▲</span><span className="font-medium text-sm">Vercel</span></div>
-                <p className="text-xs text-neutral-500">Deploy live with a public URL + CI/CD.</p>
-                <VercelConnectForm />
-              </div>
-            )}
-            {!hasSupabase && (
-              <div className="rounded-xl border border-white/10 p-4 space-y-2">
-                <div className="flex items-center gap-2"><span>⚡</span><span className="font-medium text-sm">Supabase</span></div>
-                <p className="text-xs text-neutral-500">Auth + database + storage, auto-created.</p>
-                <SupabaseConnectForm />
-              </div>
-            )}
-            {!hasResend && (
-              <div className="rounded-xl border border-white/10 p-4 space-y-2">
-                <div className="flex items-center gap-2"><span>✉</span><span className="font-medium text-sm">Resend</span></div>
-                <p className="text-xs text-neutral-500">Transactional email out of the box.</p>
-                <ResendConnectForm />
-              </div>
-            )}
+        <Link href="/settings"
+          className="flex items-center justify-between gap-3 border border-white/10 hover:border-white/25 rounded-xl px-5 py-4 transition-colors group">
+          <div className="min-w-0">
+            <p className="font-medium text-sm">Optional integrations</p>
+            <p className="text-xs text-neutral-500 mt-0.5">Add deploy, database &amp; email in Settings — connect once, reused everywhere</p>
           </div>
-        </details>
+          <span className="text-neutral-500 text-sm shrink-0 group-hover:translate-x-0.5 transition-transform">→</span>
+        </Link>
       )}
 
       {/* Onboarding checklist — only while still working toward the first ship */}

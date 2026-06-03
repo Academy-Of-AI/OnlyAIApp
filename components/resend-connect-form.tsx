@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export function ResendConnectForm() {
+export function ResendConnectForm({ redirectTo = "/dashboard" }: { redirectTo?: string }) {
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -22,7 +22,7 @@ export function ResendConnectForm() {
     setLoading(false);
 
     if (res.ok) {
-      window.location.href = "/dashboard?connected=resend";
+      window.location.href = `${redirectTo}?connected=resend`;
     } else {
       const data = await res.json() as { error?: string };
       setError(data.error ?? "Invalid API key — please check and try again.");
