@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getDodItems } from "@/lib/blueprints";
+import { PlanPack } from "@/components/plan-pack";
 
 type Project = {
   id: string;
@@ -171,18 +172,20 @@ function BuildTab({
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">Build it</h2>
+        <h2 className="text-lg font-semibold mb-1">Plan it, then build it</h2>
         <p className="text-sm text-neutral-400">
-          Describe what you want and we&apos;ll build it for you — kept on a reliable path.
-          As you get comfortable, you can take over and build it yourself.
+          Start with a Plan Pack — a PRD, architecture, data model and sprint plan committed to your
+          repo. Then hand it to your agent (Claude Code) to build it, the reliable way.
         </p>
       </div>
+
+      <PlanPack project={project} />
 
       {/* VAB-drives Generate flow (only when owner-funded AI builds are switched on) */}
       {aiBuildEnabled && (
         <div className="border border-violet-500/25 bg-violet-500/[0.04] rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <p className="text-sm font-semibold">✨ Let AI build it for you</p>
+            <p className="text-sm font-semibold">✨ Or — a quick first draft (optional)</p>
             <span className="text-xs text-neutral-400">{buildCredits} build{buildCredits === 1 ? "" : "s"} left</span>
           </div>
 
