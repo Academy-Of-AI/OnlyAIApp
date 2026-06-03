@@ -3,6 +3,7 @@ import { Octokit } from "@octokit/rest";
 import { NextResponse } from "next/server";
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyAiError } from "@/lib/ai-errors";
 
 export const maxDuration = 300;
 
@@ -315,7 +316,8 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
       } catch (err) {
         console.error("[plan-pack] error:", err);
         if (creditUsed) { try { await supabase.rpc("refund_build_credit", { p_user_id: user.id }); } catch {} }
-        try { send({ step: "error", message: err instanceof Error ? err.message : "Plan generation failed." }); } catch {}
+        const msg = friendlyAiError(err) ?? (err instanceof Error ? err.message : "Plan generation failed.");
+        try { send({ step: "error", message: msg }); } catch {}
       } finally {
         controller.close();
       }

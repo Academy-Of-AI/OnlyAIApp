@@ -3,6 +3,7 @@ import { Octokit } from "@octokit/rest";
 import { NextResponse } from "next/server";
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyAiError } from "@/lib/ai-errors";
 import { triggerVercelDeployment, getDeploymentById, getDeploymentErrorLine, type DeploymentState } from "@/lib/vercel";
 
 export const maxDuration = 300;
@@ -735,7 +736,7 @@ Critique it hard against the principles, then call write_files with improved ver
         }
       } catch (err) {
         console.error("[build] pipeline error:", err);
-        const message = err instanceof Error ? err.message : "Build failed";
+        const message = friendlyAiError(err) ?? (err instanceof Error ? err.message : "Build failed");
         // Best-effort cleanup — don't let these throw and swallow the real error
         try { await supabase.from("projects").update({ status: "deployed" }).eq("id", id); } catch {}
         try { await supabase.rpc("refund_build_credit", { p_user_id: user.id }); } catch {}
