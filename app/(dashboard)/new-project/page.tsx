@@ -23,7 +23,7 @@ type ProvisionResult = {
 
 export default function NewProjectPage() {
   const [name, setName] = useState("");
-  const [templateId, setTemplateId] = useState(TEMPLATES[0].id);
+  const [templateId] = useState(TEMPLATES[0].id); // single fixed stack
   const [loading, setLoading] = useState(false);
   const [steps, setSteps] = useState<StepEvent[]>([]);
   const [result, setResult] = useState<ProvisionResult | null>(null);
@@ -269,36 +269,8 @@ export default function NewProjectPage() {
       {/* Provision form (hidden once result arrives) */}
       {!result && (
         <form onSubmit={provision} className="space-y-5">
-          {/* Template gallery */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-300">Template</label>
-            <div className="grid gap-2">
-              {TEMPLATES.map((t) => {
-                const selected = t.id === templateId;
-                return (
-                  <button
-                    type="button" key={t.id} onClick={() => setTemplateId(t.id)}
-                    className={`text-left rounded-xl p-4 border transition-colors ${
-                      selected ? "border-green-500/50 bg-green-500/5" : "border-white/10 hover:border-white/25"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-sm">{t.name}</p>
-                      {selected
-                        ? <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Selected</span>
-                        : t.recommended && <span className="text-xs text-neutral-500">Recommended</span>}
-                    </div>
-                    <p className="text-xs text-neutral-400 mt-0.5">{t.description}</p>
-                    <div className="flex gap-1.5 mt-2">
-                      {t.tags.map((tag) => (
-                        <span key={tag} className="text-[10px] text-neutral-400 bg-white/5 px-1.5 py-0.5 rounded">{tag}</span>
-                      ))}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          {/* One fixed stack (Next.js + Supabase) — no template choice to make.
+              True 1-click: just name it and go. */}
 
           {/* Project name */}
           <div className="space-y-1.5">

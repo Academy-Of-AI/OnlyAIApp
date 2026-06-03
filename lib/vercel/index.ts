@@ -144,15 +144,20 @@ export async function getVercelProjectDomain({
   teamId?: string;
 }): Promise<string> {
   const qs = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
+  // The production *.vercel.app alias (e.g. "<name>-<scope>.vercel.app") is
+  // assigned at project-creation time, but it lives on the project's /domains
+  // sub-resource — NOT on the project object (whose `domains` field is absent).
+  // Reading the project object is why we used to fall back to the WRONG guess
+  // "<name>.vercel.app", which 404s (DEPLOYMENT_NOT_FOUND) on "Open live app".
   try {
-    const res = await fetch(`${VERCEL_API}/v9/projects/${projectId}${qs}`, {
+    const res = await fetch(`${VERCEL_API}/v9/projects/${projectId}/domains${qs}`, {
       headers: vercelHeaders(token),
     });
     if (res.ok) {
-      const data = await res.json() as { domains?: string[] };
-      // Pick the shortest non-git-branch domain (production alias)
+      const data = await res.json() as { domains?: Array<{ name?: string }> };
       const prod = (data.domains ?? [])
-        .filter((d) => !d.includes("-git-"))
+        .map((d) => d.name ?? "")
+        .filter((n) => n.endsWith(".vercel.app") && !n.includes("-git-"))
         .sort((a, b) => a.length - b.length)[0];
       if (prod) return `https://${prod}`;
     }
