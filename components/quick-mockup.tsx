@@ -15,10 +15,10 @@ const STEP_INDEX: Record<string, number> = { reading: 0, generating: 1, pushing:
 
 /** A quick, static visual mockup of the app — no backend. Lives in the Plan
  *  Pack's "Hand off" tab so the front of the Build tab stays just the plan. */
-export function QuickMockup({ project, buildCredits }: { project: Project; buildCredits: number }) {
+export function QuickMockup({ project, buildCredits, idea: ideaProp }: { project: Project; buildCredits: number; idea?: string }) {
   const router = useRouter();
   const repo = project.github_repo_url;
-  const idea = project.build_prompt ?? "";
+  const idea = (ideaProp && ideaProp.trim() ? ideaProp : project.build_prompt) ?? "";
   const [running, setRunning] = useState(false);
   const [stepIdx, setStepIdx] = useState(-1);
   const [result, setResult] = useState<{ ok: boolean; url: string | null; message?: string } | null>(null);

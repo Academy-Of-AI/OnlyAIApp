@@ -2,7 +2,7 @@ import { AutoCaptureToggle } from "@/components/auto-capture-toggle";
 import { ProjectTabs } from "@/components/project-tabs";
 import type { Result as PlanPackResult } from "@/components/plan-pack";
 import { decrypt } from "@/lib/crypto";
-import { getVercelProjectDomain } from "@/lib/vercel";
+import { getLatestDeploymentStatus } from "@/lib/vercel";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -56,22 +56,23 @@ export default async function ProjectPage({
     { href: `/projects/${project.id}/memory`, label: "◆ What it knows" },
   ];
 
-  // Self-heal the live URL: projects provisioned before the URL fix stored the
-  // wrong "<name>.vercel.app" (which 404s). Resolve the real production alias.
-  let liveUrl = (project.vercel_preview_url as string | null) ?? null;
+  // Live URL: only surface "Open live app" when there's an ACTUAL ready
+  // production deployment, and link straight to it — so it never 404s. (Stored
+  // <name>.vercel.app guesses don't resolve; an unbuilt project has no live app.)
+  let liveUrl: string | null = null;
   if (project.vercel_project_id) {
     try {
       const { data: vConn } = await supabase
         .from("oauth_connections").select("access_token")
         .eq("user_id", user!.id).eq("provider", "vercel").single();
       if (vConn?.access_token) {
-        liveUrl = await getVercelProjectDomain({
+        const latest = await getLatestDeploymentStatus({
           token: await decrypt(vConn.access_token as string),
           projectId: project.vercel_project_id as string,
-          projectName: project.name as string,
         });
+        if (latest.state === "READY" && latest.url) liveUrl = latest.url;
       }
-    } catch { /* keep the stored value */ }
+    } catch { /* no live link */ }
   }
 
   // Persisted plan pack (if the projects.plan_pack column exists) — lets the

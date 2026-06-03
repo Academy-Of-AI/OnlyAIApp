@@ -61,6 +61,21 @@ export function PlanPack({
     return () => clearInterval(t);
   }, [running]);
 
+  // Persist the pack locally so it survives tab switches AND refresh with no
+  // round-trip. A DB-provided pack (initialPack) takes priority when present.
+  useEffect(() => {
+    if (initialPack) return;
+    try {
+      const raw = localStorage.getItem(`planpack:${project.id}`);
+      if (raw) { setResult(JSON.parse(raw) as Result); setTab("Plan"); }
+    } catch { /* ignore */ }
+  }, [project.id, initialPack]);
+
+  useEffect(() => {
+    if (!result) return;
+    try { localStorage.setItem(`planpack:${project.id}`, JSON.stringify(result)); } catch { /* ignore */ }
+  }, [result, project.id]);
+
   async function generate() {
     if (!idea.trim() || running || !repo) return;
     setRunning(true); setErr(null); setResult(null); setStepIdx(0);
@@ -283,7 +298,7 @@ export function PlanPack({
               <a href={`${result.repoUrl.replace(/\.git$/, "")}/tree/main/docs`} target="_blank" rel="noopener noreferrer"
                 className="inline-block text-sm text-violet-300 hover:underline">View the pack on GitHub →</a>
             )}
-            <QuickMockup project={project} buildCredits={buildCredits} />
+            <QuickMockup project={project} buildCredits={buildCredits} idea={idea} />
           </div>
         )}
       </div>
