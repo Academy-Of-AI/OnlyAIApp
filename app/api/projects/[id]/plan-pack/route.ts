@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
 import { friendlyAiError } from "@/lib/ai-errors";
+import { runMigration } from "@/lib/supabase-mgmt";
 
 export const maxDuration = 300;
 
@@ -86,7 +87,10 @@ docs/TEST_PLAN.md — Manual test steps for the v1 success scenario + empty/erro
 
 ALSO fill (for the UI, de-branded, the app's own words):
 - plan: now / next / later — short bullets a non-technical owner understands.
-- sprints: the same sprints as docs/TASKS.md, as {title, items[]}, ordered.`;
+- sprints: the same sprints as docs/TASKS.md, as {title, items[]}, ordered.
+- migration_sql: the executable SQL for docs/DATA_MODEL.md (see the tool field for exact rules).
+  It will be applied to a live database, so it must create EVERY object in DATA_MODEL.md, with RLS
+  + owner policies, and be idempotent (safe to re-run). DATA_MODEL.md and migration_sql must agree.`;
 
 const WRITE_DOCS_TOOL: Anthropic.Tool = {
   name: "write_docs",
@@ -128,13 +132,49 @@ const WRITE_DOCS_TOOL: Anthropic.Tool = {
           required: ["title", "items"],
         },
       },
+      migration_sql: {
+        type: "string",
+        description:
+          "Executable Postgres/Supabase DDL that creates EXACTLY the schema in docs/DATA_MODEL.md " +
+          "for THIS app — nothing more. It will be applied to a live Supabase project, so it must run " +
+          "clean and be safe to re-run. Rules: (1) only this app's domain tables — do NOT create or " +
+          "alter auth.users, profiles, billing, or any platform tables. (2) Every table: `create table " +
+          "if not exists`, an `id uuid primary key default gen_random_uuid()`, an owner column `user_id " +
+          "uuid not null references auth.users(id) on delete cascade`, and `created_at timestamptz not " +
+          "null default now()`. (3) For any AI-generated field add value + `source text` + `confidence " +
+          "numeric` + `review_status text default 'unreviewed'` columns. (4) Enable RLS on every table " +
+          "(`alter table <t> enable row level security;`) and add owner-scoped policies using " +
+          "`auth.uid() = user_id`; make each policy idempotent by writing `drop policy if exists \"<name>\" " +
+          "on <table>;` immediately before its `create policy`. (5) No seed data, no comments, no " +
+          "BEGIN/COMMIT. Plain DDL only.",
+      },
     },
     required: ["files"],
   },
 };
 
-function claudeMd(projectName: string, summary: string, docPaths: string[]): string {
+function claudeMd(
+  projectName: string,
+  summary: string,
+  docPaths: string[],
+  schema: { hasMigration: boolean; applied: boolean },
+): string {
   const list = docPaths.map((p) => `- \`${p}\``).join("\n");
+
+  // The data bullet adapts to what actually happened to the database, so the
+  // agent never re-creates tables that already exist (or assumes none do).
+  const dataBullet = schema.applied
+    ? `- **Your database is already set up.** The schema from \`docs/DATA_MODEL.md\` has been applied to
+  this project's Supabase database and committed at \`supabase/migrations/0001_init.sql\`. Build on
+  the existing tables — **do not recreate them**. To change the schema, add a NEW migration file
+  (\`supabase/migrations/0002_*.sql\`) and apply it; never edit \`0001\`.`
+    : schema.hasMigration
+      ? `- **Database-first:** the schema is written at \`supabase/migrations/0001_init.sql\` but **not yet
+  applied**. Apply it to this project's Supabase database BEFORE building features (e.g. paste it into
+  the Supabase SQL editor, or \`supabase db push\`). Don't build local-only / in-memory.`
+      : `- **Database-first:** turn \`docs/DATA_MODEL.md\` into a Supabase migration and apply it BEFORE
+  building features. Do not build local-only / in-memory.`;
+
   return `# ${projectName}
 
 ${summary}
@@ -165,12 +205,11 @@ ${list}
   the next deploy.
 - **The Supabase database is already provisioned** and its keys are in this project's Vercel
   env. Pull them locally: \`vercel link\` then \`vercel env pull .env.local\`. Don't invent new ones.
-- **Database-first:** turn \`docs/DATA_MODEL.md\` into a Supabase migration and apply it BEFORE
-  building features. Do not build local-only / in-memory.
+${dataBullet}
 
 Kickoff prompt: "Read everything in /docs, confirm the plan in 3 lines, then build Sprint 1
-from TASKS.md — database-first (pull env with vercel env pull, apply the schema), commit + push
-to deploy, the real working app, not a landing page."
+from TASKS.md — the database schema is already applied (pull env with vercel env pull and build on
+the existing tables), commit + push to deploy, the real working app, not a landing page."
 `;
 }
 
@@ -257,6 +296,7 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
         let summary = project.name as string;
         let plan: { now?: string[]; next?: string[]; later?: string[] } | null = null;
         let sprints: Array<{ title: string; items: string[] }> = [];
+        let migrationSql = "";
         for (let attempt = 1; attempt <= 2 && docs.length === 0; attempt++) {
           if (attempt > 1) send({ step: "planning", message: "Tightening the plan…" });
           const resp = await anthropic.messages.stream({
@@ -276,6 +316,7 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
               summary?: string;
               plan?: { now?: string[]; next?: string[]; later?: string[] };
               sprints?: Array<{ title: string; items: string[] }>;
+              migration_sql?: string;
             };
             docs = (Array.isArray(input.files) ? input.files : []).filter(
               (f) => f && typeof f.path === "string" && typeof f.content === "string"
@@ -284,6 +325,8 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
             if (input.summary) summary = input.summary;
             if (input.plan) plan = input.plan;
             if (Array.isArray(input.sprints)) sprints = input.sprints;
+            if (typeof input.migration_sql === "string" && input.migration_sql.trim().length > 0)
+              migrationSql = input.migration_sql.trim();
           }
           if (resp.stop_reason === "max_tokens") console.warn("[plan-pack] hit max_tokens, attempt", attempt);
         }
@@ -291,10 +334,48 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
         if (docs.length === 0) throw new Error("The plan came back empty — please try again.");
         send({ step: "planning_done", message: `Drafted ${docs.length} planning docs ✓`, detail: docs.map((d) => d.path).join(", ") });
 
-        // Add the CLAUDE.md handoff file pointing at the pack.
+        // Wire the database: apply the generated schema to the project's already-
+        // provisioned Supabase so the app has real tables from day one (database-
+        // first, done for you). Best-effort — a failure here must NOT lose the pack.
+        const supabaseRef = (project.supabase_project_ref as string | null) ?? null;
+        let schemaApplied = false;
+        if (migrationSql) {
+          send({ step: "wiring", message: "Wiring your database (applying the schema)…" });
+          if (supabaseRef) {
+            try {
+              const { data: supaConn } = await supabase
+                .from("oauth_connections").select("access_token")
+                .eq("user_id", user.id).eq("provider", "supabase").single();
+              if (supaConn?.access_token) {
+                const supaToken = await decrypt(supaConn.access_token as string);
+                await runMigration(supaToken, supabaseRef, migrationSql);
+                schemaApplied = true;
+                send({ step: "wiring_done", message: "Database wired — your schema is live ✓" });
+              } else {
+                send({ step: "wiring_skip", message: "Schema saved to your repo (connect Supabase to auto-apply it)." });
+              }
+            } catch (e) {
+              console.warn("[plan-pack] schema apply failed:", e);
+              send({ step: "wiring_skip", message: "Schema saved to your repo — apply it from supabase/migrations if needed." });
+            }
+          } else {
+            send({ step: "wiring_skip", message: "Schema saved to your repo (no Supabase project linked yet)." });
+          }
+        }
+
+        // Add the SQL migration (so git is the source of truth + the agent can see
+        // it) and the CLAUDE.md handoff file. CLAUDE.md reflects whether the schema
+        // was actually applied, so the agent never recreates existing tables.
         const allFiles = [
           ...docs,
-          { path: "CLAUDE.md", content: claudeMd(project.name as string, summary, docs.map((d) => d.path)) },
+          ...(migrationSql ? [{ path: "supabase/migrations/0001_init.sql", content: migrationSql }] : []),
+          {
+            path: "CLAUDE.md",
+            content: claudeMd(project.name as string, summary, docs.map((d) => d.path), {
+              hasMigration: !!migrationSql,
+              applied: schemaApplied,
+            }),
+          },
         ];
 
         // Commit the whole pack in ONE atomic commit (Git Data API).
@@ -318,7 +399,9 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
         });
         const { data: newCommit } = await octokit.git.createCommit({
           owner, repo,
-          message: "docs: add AI-App-Building-OS plan pack (PRD, architecture, sprints)",
+          message: migrationSql
+            ? "docs: add plan pack (PRD, architecture, sprints) + database schema migration"
+            : "docs: add plan pack (PRD, architecture, sprints)",
           tree: newTree.sha, parents: [latestCommitSha],
         });
         await octokit.git.updateRef({ owner, repo, ref: `heads/${branch}`, sha: newCommit.sha });
@@ -338,12 +421,13 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
 
         send({
           step: "done",
-          message: "Plan pack committed ✓",
+          message: schemaApplied ? "Plan pack committed + database wired ✓" : "Plan pack committed ✓",
           files: allFiles.map((f) => ({ path: f.path, content: f.content })),
           plan,
           sprints,
           summary,
           repoUrl: project.github_repo_url,
+          schemaApplied,
         });
       } catch (err) {
         console.error("[plan-pack] error:", err);

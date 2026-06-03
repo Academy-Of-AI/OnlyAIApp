@@ -24,17 +24,22 @@ export type Result = {
 
 const PROGRESS = [
   { key: "planning", label: "Designing the plan (PRD, architecture, sprints)" },
+  { key: "wiring", label: "Wiring your database (applying the schema)" },
   { key: "committing", label: "Saving the pack to your repo" },
   { key: "done", label: "Ready to hand to your agent" },
 ];
-const PROGRESS_INDEX: Record<string, number> = { planning: 0, planning_done: 0, committing: 1, done: 2 };
+const PROGRESS_INDEX: Record<string, number> = {
+  planning: 0, planning_done: 0,
+  wiring: 1, wiring_done: 1, wiring_skip: 1,
+  committing: 2, done: 3,
+};
 
 const TABS = ["Describe", "Plan", "Sprints", "Hand off"] as const;
 type TabName = (typeof TABS)[number];
 
 // The grounding kickoff prompt — names the spec so the agent can't drift into a
 // marketing landing page. Matches the binding rules in the generated CLAUDE.md.
-const KICKOFF = "Read everything in /docs, confirm the plan in 3 lines, then build Sprint 1 from TASKS.md — database-first (run `vercel env pull .env.local`, apply the schema), commit + push to deploy, the real working app, not a landing page.";
+const KICKOFF = "Read everything in /docs, confirm the plan in 3 lines, then build Sprint 1 from TASKS.md — your database schema is already applied, so run `vercel env pull .env.local` and build on the existing tables, commit + push to deploy, the real working app, not a landing page.";
 
 export function PlanPack({
   project, initialPack = null, buildCredits = 0,
@@ -113,7 +118,7 @@ export function PlanPack({
           const s = evt.step ?? "";
           if (s in PROGRESS_INDEX) setStepIdx(PROGRESS_INDEX[s]);
           if (s === "done") {
-            setStepIdx(2);
+            setStepIdx(PROGRESS.length - 1);
             setResult({
               files: evt.files ?? [],
               plan: evt.plan ?? null,
