@@ -184,10 +184,11 @@ export async function POST(
   }
 
   const { data: profile } = await supabase
-    .from("profiles").select("build_credits").eq("id", user.id).single();
-  if (!ownerFunded && (!profile || profile.build_credits <= 0)) {
+    .from("profiles").select("build_credits, plan").eq("id", user.id).single();
+  const isPro = profile?.plan === "pro"; // Pro = unlimited Plan Packs (no credit gate)
+  if (!ownerFunded && !isPro && (!profile || profile.build_credits <= 0)) {
     return NextResponse.json(
-      { error: "You're out of credits — get 3 for $10 to generate your plan pack.", code: "no_credits" },
+      { error: "You're out of credits — get 3 for $10, or go Pro for unlimited.", code: "no_credits" },
       { status: 402 },
     );
   }
@@ -221,7 +222,7 @@ export async function POST(
 
       let creditUsed = false;
       try {
-        if (!ownerFunded) {
+        if (!ownerFunded && !isPro) {
           const { data: deducted } = await supabase.rpc("use_build_credit", { p_user_id: user.id });
           creditUsed = deducted !== false;
         }
