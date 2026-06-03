@@ -85,10 +85,6 @@ export default async function ProjectPage({
 
         {/* Primary actions */}
         <div className="flex gap-2 shrink-0">
-          <Link href={`/projects/${project.id}/share`}
-            className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors">
-            ⇲ Share
-          </Link>
           {project.github_repo_url && (
             <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer"
               className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors">

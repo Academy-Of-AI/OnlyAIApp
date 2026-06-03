@@ -21,7 +21,7 @@ type Project = {
   last_digest: { onTrack: boolean; note: string; scopeCreep?: string[] } | null;
 };
 
-const TABS = ["Build", "Launch", "Analytics", "CRM", "Settings"] as const;
+const TABS = ["Build", "Launch", "Settings"] as const;
 type Tab = (typeof TABS)[number];
 
 export function ProjectTabs({
@@ -58,8 +58,6 @@ export function ProjectTabs({
 
       {tab === "Build"     && <BuildTab project={project} buildCredits={buildCredits} aiBuildEnabled={aiBuildEnabled} memory={memory} />}
       {tab === "Launch"    && <LaunchTab project={project} />}
-      {tab === "Analytics" && <ComingSoonTab title="Analytics" desc="Once your app has real users, their activity will appear here — signups, active users, activation funnel, and revenue." icon="📊" />}
-      {tab === "CRM"       && <ComingSoonTab title="CRM" desc="Every user who signs up to your app will appear here. See who they are, what they've done, and send them emails directly." icon="👥" />}
       {tab === "Settings"  && <SettingsTab project={project} />}
     </div>
   );
@@ -551,22 +549,6 @@ function LaunchTab({ project }: { project: Project }) {
         <p className="text-sm text-neutral-500 leading-relaxed">
           A future seam to plug your shipped OS into Groundstream&apos;s intelligence layer. Designed for — not available yet.
         </p>
-      </div>
-    </div>
-  );
-}
-
-/* ── Coming soon placeholder ────────────────────────────────────────────── */
-function ComingSoonTab({ title, desc, icon }: { title: string; desc: string; icon: string }) {
-  return (
-    <div className="max-w-lg">
-      <div className="border border-white/10 rounded-xl p-8 text-center space-y-3">
-        <div className="text-4xl">{icon}</div>
-        <h2 className="font-semibold text-lg">{title}</h2>
-        <p className="text-sm text-neutral-400 leading-relaxed">{desc}</p>
-        <span className="inline-block text-xs bg-white/5 border border-white/10 text-neutral-500 px-3 py-1 rounded-full mt-2">
-          Coming in Module 2
-        </span>
       </div>
     </div>
   );

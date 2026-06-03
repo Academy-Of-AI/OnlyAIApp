@@ -13,9 +13,6 @@ export default function LandingPage() {
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <span className="font-bold text-lg tracking-tight">OnlyAIApp</span>
         <div className="flex gap-3">
-          <Link href="/wall" className="text-sm text-neutral-400 hover:text-white transition-colors px-3 py-1.5">
-            The Wall
-          </Link>
           <Link href="/sign-in" className="text-sm text-neutral-400 hover:text-white transition-colors px-3 py-1.5">
             Sign in
           </Link>
