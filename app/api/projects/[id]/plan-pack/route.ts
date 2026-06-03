@@ -49,16 +49,24 @@ no secrets exposed; writes correct data; has test steps; clear UI copy; document
 
 SCOPE NOTE: this is a personal/internal OS for the builder + their agent to deliver their
 own expertise — NOT a multi-tenant SaaS for resale, unless the idea explicitly says so.
-Keep v1 ruthlessly small. Put everything else in non-goals or later ladder rungs.`;
+Keep v1 ruthlessly small. Put everything else in non-goals or later phases.
+
+OUTPUT RULE (critical): use this thinking to STRUCTURE the docs, but NEVER name or quote the
+method in what you write. Do NOT use the phrases "Maturity Ladder", "Capture -> Structure ->
+Store -> Show -> Rank -> Act -> Learn", "runtime loop", "intelligence layer ladder", or
+"AI App Building OS", and do not refer to "the method / framework / doctrine". Show
+sequencing as Now / Next / Later in the app's own feature terms; describe data flow as plain
+concrete steps for THIS app. The method is our private engine — it must stay invisible in the
+delivered docs, which should simply read as an unusually clear, well-sequenced plan.`;
 
 const DOC_SPECS = `Produce these files (path -> required content). Be SPECIFIC to the idea — real object
 names, real fields, real copy. Concise but complete. No "TODO"/"Lorem"/"Feature 1".
 
 docs/PRD.md — Problem; Target user; Core objects; MVP (v1) as a checklist of must-haves;
   Non-goals (v1); Success criteria (one concrete end-to-end scenario).
-docs/ARCHITECTURE.md — Stack (Next.js + Supabase + Vercel); the maturity-ladder placement;
-  the runtime loop for the key action; layer plan (DB / logic / intelligence / agentic);
-  DB-first doctrine statement.
+docs/ARCHITECTURE.md — Stack (Next.js + Supabase + Vercel); what to build now vs later (in the
+  app's own feature terms); the step-by-step flow of the key user action; the layer plan
+  (data first, then app logic, then smart features); why the core runs without the AI.
 docs/DATA_MODEL.md — Each object: fields (name:type), relationships, RLS/permission notes.
   Note value+source+confidence+review_status for any AI fields.
 docs/INTELLIGENCE_LAYER.md — Messy inputs; auto-structure schema (JSON example); events to
