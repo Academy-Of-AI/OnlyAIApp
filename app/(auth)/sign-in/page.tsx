@@ -1,16 +1,8 @@
 "use client";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 export default function SignInPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
   async function signInWithGitHub() {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
@@ -19,72 +11,25 @@ export default function SignInPage() {
     });
   }
 
-  async function signInWithEmail(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      router.push("/dashboard");
-    }
-  }
-
   return (
     <main className="min-h-screen flex items-center justify-center px-4 bg-neutral-950">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
           <Link href="/" className="text-white/50 text-sm hover:text-white">OnlyAIApp</Link>
-          <h1 className="text-2xl font-bold text-white">Welcome back</h1>
+          <h1 className="text-2xl font-bold text-white">Welcome</h1>
+          <p className="text-neutral-500 text-sm">Sign in or create an account</p>
         </div>
 
         <button
           onClick={signInWithGitHub}
-          className="w-full flex items-center justify-center gap-2 bg-white text-black font-medium py-2.5 rounded-lg hover:bg-neutral-200 transition-colors"
+          className="w-full flex items-center justify-center gap-2 bg-white text-black font-medium py-3 rounded-lg hover:bg-neutral-200 transition-colors"
         >
           <GitHubIcon />
           Continue with GitHub
         </button>
 
-        <div className="flex items-center gap-3 text-neutral-600 text-xs">
-          <div className="flex-1 h-px bg-white/10" />or<div className="flex-1 h-px bg-white/10" />
-        </div>
-
-        <form onSubmit={signInWithEmail} className="space-y-3">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500"
-          />
-          {error && <p className="text-red-400 text-xs">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-violet-500 hover:bg-violet-400 disabled:opacity-50 text-black font-semibold py-2.5 rounded-lg transition-colors"
-          >
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-neutral-500">
-          No account?{" "}
-          <Link href="/sign-up" className="text-white hover:text-violet-400">
-            Sign up free
-          </Link>
+        <p className="text-center text-xs text-neutral-600">
+          GitHub is required to build — it&apos;s where your project lives.
         </p>
       </div>
     </main>
