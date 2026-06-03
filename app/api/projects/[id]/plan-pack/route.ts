@@ -61,7 +61,11 @@ concrete steps for THIS app. The method is our private engine — it must stay i
 delivered docs, which should simply read as an unusually clear, well-sequenced plan.`;
 
 const DOC_SPECS = `Produce these files (path -> required content). Be SPECIFIC to the idea — real object
-names, real fields, real copy. Concise but complete. No "TODO"/"Lorem"/"Feature 1".
+names, real fields, real copy. No "TODO"/"Lorem"/"Feature 1".
+
+BREVITY IS CRITICAL (this must finish fast): keep each doc TIGHT — PRD <= 300 words,
+every other doc <= 200 words. Terse bullets, not prose. The whole pack should be a sharp
+brief an agent can act on, not an essay.
 
 docs/PRD.md — Problem; Target user; Core objects; MVP (v1) as a checklist of must-haves;
   Non-goals (v1); Success criteria (one concrete end-to-end scenario).
@@ -239,7 +243,9 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
           if (attempt > 1) send({ step: "planning", message: "Tightening the plan…" });
           const resp = await anthropic.messages.stream({
             model: PLAN_MODEL,
-            max_tokens: 64000,
+            // Capped low on purpose: concise docs finish in ~1-2 min, safely under
+            // the 300s function limit. 64k let the model run ~13 min -> timeout.
+            max_tokens: 16000,
             tools: [WRITE_DOCS_TOOL],
             tool_choice: { type: "tool", name: "write_docs" },
             messages: [{ role: "user", content: userPrompt }],

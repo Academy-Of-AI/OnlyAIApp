@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 type Project = {
@@ -45,6 +45,14 @@ export function PlanPack({ project }: { project: Project }) {
   const [tab, setTab] = useState<TabName>("Describe");
   const [activeDoc, setActiveDoc] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+
+  // Live timer while generating (resets when it stops).
+  useEffect(() => {
+    if (!running) { setElapsed(0); return; }
+    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(t);
+  }, [running]);
 
   async function generate() {
     if (!idea.trim() || running || !repo) return;
@@ -62,6 +70,7 @@ export function PlanPack({ project }: { project: Project }) {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = "";
+      let gotTerminal = false;
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -88,11 +97,14 @@ export function PlanPack({ project }: { project: Project }) {
             });
             setActiveDoc(0);
             setTab("Plan");
+            gotTerminal = true;
           } else if (s === "error") {
             setErr(evt.message ?? "Plan generation failed.");
+            gotTerminal = true;
           }
         }
       }
+      if (!gotTerminal) setErr("This took longer than expected and may have timed out — try again, or shorten your idea a little.");
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Plan generation failed.");
     } finally {
@@ -167,6 +179,11 @@ export function PlanPack({ project }: { project: Project }) {
 
             {(running || (stepIdx >= 0 && !result)) && (
               <div className="border-t border-white/10 pt-3 space-y-1.5">
+                {running && (
+                  <p className="text-xs text-neutral-500 mb-1">
+                    ⏳ Generating… {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")} · this usually takes 1–3 minutes
+                  </p>
+                )}
                 {PROGRESS.map((st, i) => {
                   const state = stepIdx > i ? "done" : stepIdx === i && running ? "now" : stepIdx === i ? "done" : "todo";
                   const icon = state === "done" ? "✓" : state === "now" ? "●" : "○";
