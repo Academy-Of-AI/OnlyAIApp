@@ -1,11 +1,12 @@
 import { signInWithGitHub } from "./actions";
 
-export default function SignInPage({
+export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: { auth_error?: string };
+  searchParams: Promise<{ auth_error?: string }>;
 }) {
-  const authError = searchParams?.auth_error;
+  const params = await searchParams;
+  const authError = params?.auth_error;
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 bg-neutral-950">
