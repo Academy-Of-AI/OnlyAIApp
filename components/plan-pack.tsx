@@ -51,7 +51,9 @@ export function PlanPack({
   const router = useRouter();
   const repo = project.github_repo_url;
   const cleanRepo = repo ? repo.replace(/\.git$/, "") : "";
-  const cloneCmd = repo ? `git clone ${cleanRepo} && cd ${project.name} && claude` : "";
+  const repoDir = cleanRepo ? (cleanRepo.split("/").pop() || project.name) : project.name;
+  // One paste: clone, enter the folder, and launch the agent with the kickoff baked in.
+  const handoffCmd = repo ? `git clone ${cleanRepo} && cd ${repoDir} && claude '${KICKOFF}'` : "";
 
   const [idea, setIdea] = useState(project.build_prompt ?? "");
   const [running, setRunning] = useState(false);
@@ -157,7 +159,6 @@ export function PlanPack({
       {/* header */}
       <div className="px-4 sm:px-5 pt-4 pb-3 flex items-center justify-between gap-2 flex-wrap">
         <p className="text-sm font-semibold">📋 Your Plan Pack</p>
-        <span className="text-[11px] text-neutral-400">PRD · architecture · data model · sprints → your repo</span>
       </div>
 
       {/* tab bar */}
@@ -295,17 +296,10 @@ export function PlanPack({
         {/* HAND OFF */}
         {tab === "Hand off" && result && (
           <div className="space-y-3">
-            <p className="text-sm text-neutral-300">Open the repo in Claude Code / Codex — it already knows the plan.</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs font-mono bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-violet-300 truncate">{cloneCmd}</code>
-              <button onClick={() => copy(cloneCmd)} className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">{copied ? "Copied" : "Copy"}</button>
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-xs text-neutral-500">Paste this as your first message (your CLAUDE.md enforces it too):</p>
-              <div className="flex items-start gap-2">
-                <code className="flex-1 text-xs font-mono bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-violet-300 leading-relaxed">{KICKOFF}</code>
-                <button onClick={() => copy(KICKOFF)} className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">{copied ? "Copied" : "Copy"}</button>
-              </div>
+            <p className="text-sm text-neutral-300">One command — clone the repo and start your agent with the plan baked in. It already knows what to build (your CLAUDE.md enforces it).</p>
+            <div className="flex items-start gap-2">
+              <code className="flex-1 text-xs font-mono bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-violet-300 leading-relaxed break-words whitespace-pre-wrap">{handoffCmd}</code>
+              <button onClick={() => copy(handoffCmd)} className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">{copied ? "Copied" : "Copy"}</button>
             </div>
             {result.repoUrl && (
               <a href={`${result.repoUrl.replace(/\.git$/, "")}/tree/main/docs`} target="_blank" rel="noopener noreferrer"
