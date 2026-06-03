@@ -1,4 +1,5 @@
 import { decrypt } from "@/lib/crypto";
+import { registerPushWebhook } from "@/lib/github";
 import { provisionProject, type ProgressEvent } from "@/lib/provisioning";
 import { createClient } from "@/lib/supabase/server";
 import { getTemplate } from "@/lib/templates";
@@ -163,6 +164,26 @@ export async function POST(request: Request) {
             deployed_at: new Date().toISOString(),
           })
           .eq("id", project.id);
+
+        // Anchor & Monitor: default-on auto-capture for new projects. Register
+        // the push webhook + flip the flag so Plan / On-track / What-it-knows
+        // start working automatically. Best-effort — never fail provisioning.
+        try {
+          const repoMatch = result.githubRepoUrl.match(/github\.com\/([^/]+)\/([^/?#]+)/);
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? request.headers.get("origin") ?? "";
+          if (repoMatch && appUrl) {
+            await registerPushWebhook({
+              token: githubToken,
+              owner: repoMatch[1],
+              repo: repoMatch[2].replace(/\.git$/, ""),
+              callbackUrl: `${appUrl}/api/github/webhook`,
+              secret: process.env.GITHUB_WEBHOOK_SECRET,
+            });
+            await supabase.from("projects").update({ auto_capture: true }).eq("id", project.id);
+          }
+        } catch (e) {
+          console.warn("[provision] default-on auto-capture failed (non-fatal):", e);
+        }
 
         // Track event
         await supabase.from("events").insert({
