@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getDodItems } from "@/lib/blueprints";
-import { PlanPack } from "@/components/plan-pack";
+import { PlanPack, type Result as PlanPackResult } from "@/components/plan-pack";
 
 type Project = {
   id: string;
@@ -27,13 +27,15 @@ type Tab = (typeof TABS)[number];
 export function ProjectTabs({
   project,
   buildCredits = 0,
-  aiBuildEnabled = false,
   memory = [],
+  liveUrl = null,
+  initialPack = null,
 }: {
   project: Project;
   buildCredits?: number;
-  aiBuildEnabled?: boolean;
   memory?: Array<{ kind: string; content: string }>;
+  liveUrl?: string | null;
+  initialPack?: PlanPackResult | null;
 }) {
   const [tab, setTab] = useState<Tab>("Build");
 
@@ -56,116 +58,32 @@ export function ProjectTabs({
         ))}
       </div>
 
-      {tab === "Build"     && <BuildTab project={project} buildCredits={buildCredits} aiBuildEnabled={aiBuildEnabled} memory={memory} />}
-      {tab === "Launch"    && <LaunchTab project={project} />}
+      {tab === "Build"     && <BuildTab project={project} buildCredits={buildCredits} memory={memory} initialPack={initialPack} />}
+      {tab === "Launch"    && <LaunchTab project={project} liveUrl={liveUrl} />}
       {tab === "Settings"  && <SettingsTab project={project} />}
     </div>
   );
 }
 
 /* ── Build tab ─────────────────────────────────────────────────────────── */
-const BUILD_STEPS = [
-  { key: "reading",    label: "Reading your app" },
-  { key: "generating", label: "Building it with the agent" },
-  { key: "pushing",    label: "Saving changes to GitHub" },
-  { key: "deploying",  label: "Deploying & verifying it builds" },
-] as const;
-const STEP_INDEX: Record<string, number> = { reading: 0, generating: 1, pushing: 2, deploying: 3 };
-
 function BuildTab({
   project,
   buildCredits,
-  aiBuildEnabled,
   memory = [],
+  initialPack = null,
 }: {
   project: Project;
   buildCredits: number;
-  aiBuildEnabled: boolean;
   memory?: Array<{ kind: string; content: string }>;
+  initialPack?: PlanPackResult | null;
 }) {
-  const router = useRouter();
-  const repo = project.github_repo_url;
-
-  // Quick-mockup generate flow
-  const [prompt, setPrompt] = useState("");
-  const [running, setRunning] = useState(false);
-  const [stepIdx, setStepIdx] = useState(-1);
-  const [result, setResult] = useState<{ ok: boolean; url: string | null; message?: string } | null>(null);
-  const [buildErr, setBuildErr] = useState<string | null>(null);
-  const [buying, setBuying] = useState(false);
-
-  async function runBuild() {
-    if (!prompt.trim() || running || !repo) return;
-    setRunning(true); setResult(null); setBuildErr(null); setStepIdx(0);
-    try {
-      const res = await fetch(`/api/projects/${project.id}/build`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: prompt.trim(), mock: true }),
-      });
-      if (!res.ok || !res.body) {
-        const data = await res.json().catch(() => ({} as { error?: string }));
-        setBuildErr(data.error ?? "Build couldn't start.");
-        setRunning(false); setStepIdx(-1);
-        return;
-      }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const parts = buf.split("\n\n");
-        buf = parts.pop() ?? "";
-        for (const part of parts) {
-          const line = part.trim();
-          if (!line.startsWith("data:")) continue;
-          let evt: { step?: string; url?: string | null; message?: string; deployed?: boolean };
-          try { evt = JSON.parse(line.slice(5).trim()); } catch { continue; }
-          const s = evt.step ?? "";
-          if (s in STEP_INDEX) setStepIdx(STEP_INDEX[s]);
-          if (s === "done") {
-            setStepIdx(3);
-            setResult({ ok: true, url: evt.url ?? null, message: evt.deployed === false ? (evt.message ?? "Deploy still building.") : undefined });
-          } else if (s === "deploy_failed") {
-            setResult({ ok: false, url: evt.url ?? null, message: evt.message ?? "The deploy failed to build." });
-          } else if (s === "error") {
-            setBuildErr(evt.message ?? "Build failed.");
-          }
-        }
-      }
-    } catch (e) {
-      setBuildErr(e instanceof Error ? e.message : "Build failed.");
-    } finally {
-      setRunning(false);
-      router.refresh();
-    }
-  }
-
-  async function buyCredits() {
-    setBuying(true);
-    try {
-      const res = await fetch("/api/credits/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pack: "starter" }),
-      });
-      const data = await res.json().catch(() => ({} as { url?: string }));
-      if (data.url) { window.location.href = data.url; return; }
-      setBuying(false);
-    } catch { setBuying(false); }
-  }
-
-  const showProgress = running || result !== null || stepIdx >= 0;
-
   return (
     <div className="space-y-6 max-w-2xl">
       {/* The 3 Ps */}
       <div className="grid grid-cols-3 gap-2 text-xs">
         <div className="rounded-lg border border-white/10 px-3 py-2 flex items-center gap-2"><span className="text-green-400">①</span><span className="font-semibold">Provision</span><span className="ml-auto text-[10px] text-green-400">✓</span></div>
         <div className="rounded-lg border border-violet-500/40 bg-violet-500/[0.06] px-3 py-2 flex items-center gap-2"><span className="text-violet-300">②</span><span className="font-semibold">Plan</span><span className="ml-auto text-[10px] text-violet-300 hidden sm:inline">here</span></div>
-        <div className="rounded-lg border border-white/10 px-3 py-2 flex items-center gap-2"><span className="text-neutral-400">③</span><span className="font-semibold">Pilot</span></div>
+        <a href={`/projects/${project.id}/drift`} className="rounded-lg border border-white/10 hover:border-white/25 px-3 py-2 flex items-center gap-2 transition-colors"><span className="text-neutral-400">③</span><span className="font-semibold">Pilot</span><span className="ml-auto text-[10px] text-neutral-500 hidden sm:inline">→</span></a>
       </div>
 
       <div>
@@ -176,100 +94,10 @@ function BuildTab({
         </p>
       </div>
 
-      <PlanPack project={project} />
+      <PlanPack project={project} initialPack={initialPack} buildCredits={buildCredits} />
 
-      {/* VAB-drives Generate flow (only when owner-funded AI builds are switched on) */}
-      {aiBuildEnabled && (
-        <div className="border border-violet-500/25 bg-violet-500/[0.04] rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <p className="text-sm font-semibold">✨ Or — see a quick mockup (optional)</p>
-            <span className="text-xs text-neutral-400">{buildCredits} build{buildCredits === 1 ? "" : "s"} left</span>
-          </div>
-
-          {buildCredits > 0 ? (
-            <>
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                disabled={running || !repo}
-                rows={2}
-                placeholder="e.g. Add a gap-scoring report per department"
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500 resize-none disabled:opacity-50"
-              />
-              <div className="flex items-center gap-3 flex-wrap">
-                <button
-                  onClick={runBuild}
-                  disabled={running || !prompt.trim() || !repo}
-                  className="bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-                >
-                  {running ? "Sketching…" : "⬢ Generate a mockup (1 credit)"}
-                </button>
-                {!repo && <span className="text-xs text-amber-300">Finish provisioning first.</span>}
-              </div>
-            </>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-neutral-400">
-                You&apos;re out of credits. Get <b className="text-white">3 for $10</b> to generate mockups and plan packs.
-              </p>
-              <button
-                onClick={buyCredits}
-                disabled={buying}
-                className="bg-violet-500 hover:bg-violet-400 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-              >
-                {buying ? "…" : "Get 3 builds for $10"}
-              </button>
-            </div>
-          )}
-
-          {/* Live progress */}
-          {showProgress && (
-            <div className="border-t border-white/10 pt-3 space-y-1.5">
-              {BUILD_STEPS.map((st, i) => {
-                const state =
-                  result && !result.ok && i === 3 ? "fail"
-                  : result?.ok || stepIdx > i ? "done"
-                  : stepIdx === i && running ? "now"
-                  : "todo";
-                const icon = state === "done" ? "✓" : state === "fail" ? "✕" : state === "now" ? "●" : "○";
-                const color =
-                  state === "done" ? "text-green-400"
-                  : state === "fail" ? "text-red-400"
-                  : state === "now" ? "text-violet-400"
-                  : "text-neutral-600";
-                return (
-                  <div key={st.key} className="flex items-center gap-2 text-sm">
-                    <span className={`${color} w-4 text-center`}>{icon}</span>
-                    <span className={state === "todo" ? "text-neutral-600" : "text-neutral-300"}>{st.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Outcome */}
-          {result?.ok && (
-            <div className="text-sm">
-              <p className="text-green-400 font-medium">{result.message ? "Committed ✓" : "Live ✓"}</p>
-              {result.message && <p className="text-xs text-neutral-400 mt-1">{result.message}</p>}
-              {result.url && (
-                <a href={result.url} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-violet-300 hover:underline">
-                  ↗ Open your app
-                </a>
-              )}
-            </div>
-          )}
-          {result && !result.ok && (
-            <div className="text-sm border border-red-500/30 bg-red-500/5 rounded-lg p-3">
-              <p className="text-red-400 font-medium">Deploy didn&apos;t build</p>
-              <p className="text-xs text-neutral-300 mt-1">{result.message}</p>
-            </div>
-          )}
-          {buildErr && <p className="text-xs text-red-400">{buildErr}</p>}
-        </div>
-      )}
-
-      {/* (Handoff lives in the Plan Pack's "Hand off" tab now — no duplicate here.) */}
+      {/* The mockup generator + handoff both live inside the Plan Pack's
+          "Hand off" tab now — the front of this tab is just the plan. */}
 
       {/* Course-keeper — inline, read-only, inferred from your pushes */}
       {project.last_digest && (
@@ -306,27 +134,12 @@ function BuildTab({
         </div>
       )}
 
-      {/* Links */}
-      <div className="flex gap-3 flex-wrap">
-        {repo && (
-          <a href={repo} target="_blank" rel="noopener noreferrer"
-            className="border border-white/10 hover:border-white/20 text-sm text-neutral-300 px-4 py-2 rounded-lg transition-colors">
-            GitHub repo →
-          </a>
-        )}
-        {project.vercel_preview_url && (
-          <a href={project.vercel_preview_url} target="_blank" rel="noopener noreferrer"
-            className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors">
-            ↗ Open live app
-          </a>
-        )}
-      </div>
     </div>
   );
 }
 
 /* ── Launch tab — launch-readiness checks + Claude Code fix tasks ─────────── */
-function LaunchTab({ project }: { project: Project }) {
+function LaunchTab({ project, liveUrl = null }: { project: Project; liveUrl?: string | null }) {
   type Check = { id: string; label: string; status: "pass" | "fail" | "warn" | "unknown"; detail: string; claudeTask?: string };
   const [checks, setChecks] = useState<Check[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -396,6 +209,18 @@ function LaunchTab({ project }: { project: Project }) {
           We check what separates &quot;it built&quot; from &quot;it&apos;s actually launched&quot; — then hand you the exact task to
           paste into your Claude Code for anything that isn&apos;t ready yet.
         </p>
+      </div>
+
+      {/* Quick links — repo + live app live here (off the Build front, to reduce distraction) */}
+      <div className="flex gap-3 flex-wrap">
+        {project.github_repo_url && (
+          <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer"
+            className="border border-white/10 hover:border-white/20 text-sm text-neutral-300 px-4 py-2 rounded-lg transition-colors">GitHub repo →</a>
+        )}
+        {liveUrl && (
+          <a href={liveUrl} target="_blank" rel="noopener noreferrer"
+            className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">↗ Open live app</a>
+        )}
       </div>
 
       {/* Definition of Done — the certainty gate */}

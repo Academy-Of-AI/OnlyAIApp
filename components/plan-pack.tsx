@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { QuickMockup } from "@/components/quick-mockup";
 
 type Project = {
   id: string;
@@ -13,7 +14,7 @@ type Project = {
 type Plan = { now?: string[]; next?: string[]; later?: string[] };
 type Sprint = { title: string; items: string[] };
 type DocFile = { path: string; content: string };
-type Result = {
+export type Result = {
   files: DocFile[];
   plan: Plan | null;
   sprints: Sprint[];
@@ -31,7 +32,13 @@ const PROGRESS_INDEX: Record<string, number> = { planning: 0, planning_done: 0, 
 const TABS = ["Describe", "Plan", "Sprints", "Hand off"] as const;
 type TabName = (typeof TABS)[number];
 
-export function PlanPack({ project }: { project: Project }) {
+export function PlanPack({
+  project, initialPack = null, buildCredits = 0,
+}: {
+  project: Project;
+  initialPack?: Result | null;
+  buildCredits?: number;
+}) {
   const router = useRouter();
   const repo = project.github_repo_url;
   const cleanRepo = repo ? repo.replace(/\.git$/, "") : "";
@@ -40,9 +47,9 @@ export function PlanPack({ project }: { project: Project }) {
   const [idea, setIdea] = useState(project.build_prompt ?? "");
   const [running, setRunning] = useState(false);
   const [stepIdx, setStepIdx] = useState(-1);
-  const [result, setResult] = useState<Result | null>(null);
+  const [result, setResult] = useState<Result | null>(initialPack);
   const [err, setErr] = useState<string | null>(null);
-  const [tab, setTab] = useState<TabName>("Describe");
+  const [tab, setTab] = useState<TabName>(initialPack ? "Plan" : "Describe");
   const [activeDoc, setActiveDoc] = useState(0);
   const [copied, setCopied] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -172,7 +179,7 @@ export function PlanPack({ project }: { project: Project }) {
                 disabled={running || !idea.trim() || !repo}
                 className="bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
               >
-                {running ? "Generating…" : result ? "✦ Regenerate the Plan Pack" : "✦ Generate the Plan Pack"}
+                {running ? "Generating…" : result ? "✦ Change the plan" : "✦ Generate the Plan Pack"}
               </button>
               {!repo && <span className="text-xs text-amber-300">Finish provisioning first.</span>}
             </div>
@@ -276,6 +283,7 @@ export function PlanPack({ project }: { project: Project }) {
               <a href={`${result.repoUrl.replace(/\.git$/, "")}/tree/main/docs`} target="_blank" rel="noopener noreferrer"
                 className="inline-block text-sm text-violet-300 hover:underline">View the pack on GitHub →</a>
             )}
+            <QuickMockup project={project} buildCredits={buildCredits} />
           </div>
         )}
       </div>

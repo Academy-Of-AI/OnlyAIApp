@@ -1,5 +1,8 @@
 import { AutoCaptureToggle } from "@/components/auto-capture-toggle";
 import { ProjectTabs } from "@/components/project-tabs";
+import type { Result as PlanPackResult } from "@/components/plan-pack";
+import { decrypt } from "@/lib/crypto";
+import { getVercelProjectDomain } from "@/lib/vercel";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -33,10 +36,6 @@ export default async function ProjectPage({
     .eq("id", user!.id)
     .single();
   const buildCredits = (creditRow?.build_credits as number | null) ?? 0;
-  // The in-app build card is always shown. It self-gates on credits: builders
-  // with credits get the prompt box; those at 0 get the "3 builds for $10"
-  // paywall. The build API enforces the same gate (credits ARE the gate).
-  const aiBuildEnabled = true;
 
   // Inferred context (zero-forms) — shown read-only inside the Build loop
   const { data: memoryRows } = await supabase
@@ -56,6 +55,28 @@ export default async function ProjectPage({
     { href: `/projects/${project.id}/drift`,  label: "⟲ On track" },
     { href: `/projects/${project.id}/memory`, label: "◆ What it knows" },
   ];
+
+  // Self-heal the live URL: projects provisioned before the URL fix stored the
+  // wrong "<name>.vercel.app" (which 404s). Resolve the real production alias.
+  let liveUrl = (project.vercel_preview_url as string | null) ?? null;
+  if (project.vercel_project_id) {
+    try {
+      const { data: vConn } = await supabase
+        .from("oauth_connections").select("access_token")
+        .eq("user_id", user!.id).eq("provider", "vercel").single();
+      if (vConn?.access_token) {
+        liveUrl = await getVercelProjectDomain({
+          token: await decrypt(vConn.access_token as string),
+          projectId: project.vercel_project_id as string,
+          projectName: project.name as string,
+        });
+      }
+    } catch { /* keep the stored value */ }
+  }
+
+  // Persisted plan pack (if the projects.plan_pack column exists) — lets the
+  // Plan Pack survive refresh / tab changes without regenerating.
+  const initialPack = (project.plan_pack as PlanPackResult | null) ?? null;
 
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
@@ -91,8 +112,8 @@ export default async function ProjectPage({
               GitHub →
             </a>
           )}
-          {project.vercel_preview_url && (
-            <a href={project.vercel_preview_url} target="_blank" rel="noopener noreferrer"
+          {liveUrl && (
+            <a href={liveUrl} target="_blank" rel="noopener noreferrer"
               className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">
               ↗ Live app
             </a>
@@ -121,7 +142,7 @@ export default async function ProjectPage({
       </details>
 
       {/* Tabs */}
-      <ProjectTabs project={project} buildCredits={buildCredits} aiBuildEnabled={aiBuildEnabled} memory={memory} />
+      <ProjectTabs project={project} buildCredits={buildCredits} memory={memory} liveUrl={liveUrl} initialPack={initialPack} />
     </main>
   );
 }

@@ -305,10 +305,18 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
         });
         await octokit.git.updateRef({ owner, repo, ref: `heads/${branch}`, sha: newCommit.sha });
 
-        // Persist a pointer so the project page can show the pack exists.
+        // Persist the whole pack so it survives refresh / tab changes (no
+        // regenerate needed). Requires the projects.plan_pack jsonb column;
+        // non-fatal if it doesn't exist yet.
+        const packJson = {
+          files: allFiles.map((f) => ({ path: f.path, content: f.content })),
+          plan, sprints, summary, repoUrl: project.github_repo_url,
+        };
         try {
-          await supabase.from("projects").update({ build_prompt: idea }).eq("id", id);
-        } catch { /* non-fatal */ }
+          await supabase.from("projects").update({ build_prompt: idea, plan_pack: packJson }).eq("id", id);
+        } catch {
+          try { await supabase.from("projects").update({ build_prompt: idea }).eq("id", id); } catch { /* non-fatal */ }
+        }
 
         send({
           step: "done",
