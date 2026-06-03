@@ -30,13 +30,10 @@ export function AutoCaptureToggle({ projectId, enabled }: { projectId: string; e
     <div className="border border-white/10 rounded-xl p-4 flex items-center justify-between gap-4">
       <div>
         <div className="text-sm font-medium flex items-center gap-2">
-          🛫 Pilot — keep my build on course
+          🛫 Auto-capture
           {on && <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded">on</span>}
         </div>
-        <p className="text-xs text-neutral-500 mt-1 max-w-md">
-          As you build, Pilot quietly tracks what changed and why and flags any drift from your plan —
-          so you never write anything down, and the AI always knows your project.
-        </p>
+        <p className="text-xs text-neutral-500 mt-1">Updates Pilot on every push to GitHub.</p>
         {err && <p className="text-xs text-red-400 mt-1">{err}</p>}
       </div>
       <button

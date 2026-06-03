@@ -100,7 +100,7 @@ function PlanView({
   project: Project; buildCredits: number; initialPack?: PlanPackResult | null;
 }) {
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold mb-1">Plan it, then build it</h2>
         <p className="text-sm text-neutral-400">
@@ -120,10 +120,13 @@ function PilotView({
   project: Project; memory?: Array<{ kind: string; content: string }>; liveUrl?: string | null; autoCapture?: boolean;
 }) {
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold mb-1">Pilot — keep it on course &amp; ship it</h2>
-        <p className="text-sm text-neutral-400">As you build, Pilot tracks what changed, flags drift from your plan, and helps you launch.</p>
+        <p className="text-sm text-neutral-400">
+          As you build, Pilot quietly tracks what changed and why, flags drift from your plan, and helps
+          you launch — so you never write anything down, and the AI always knows your project.
+        </p>
       </div>
 
       <AutoCaptureToggle projectId={project.id} enabled={autoCapture} />
@@ -225,7 +228,7 @@ function LaunchTab({ project, liveUrl = null }: { project: Project; liveUrl?: st
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold mb-1">Launch readiness</h2>
         <p className="text-sm text-neutral-400">
