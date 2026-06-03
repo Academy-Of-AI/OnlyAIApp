@@ -1,8 +1,13 @@
 "use client";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function SignInPage() {
+function SignInInner() {
+  const params = useSearchParams();
+  const authError = params.get("auth_error");
+
   async function signInWithGitHub() {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
@@ -20,6 +25,12 @@ export default function SignInPage() {
           <p className="text-neutral-500 text-sm">Sign in or create an account</p>
         </div>
 
+        {authError && (
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs px-3 py-2 rounded-lg break-words">
+            {authError}
+          </div>
+        )}
+
         <button
           onClick={signInWithGitHub}
           className="w-full flex items-center justify-center gap-2 bg-white text-black font-medium py-3 rounded-lg hover:bg-neutral-200 transition-colors"
@@ -33,6 +44,14 @@ export default function SignInPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense>
+      <SignInInner />
+    </Suspense>
   );
 }
 

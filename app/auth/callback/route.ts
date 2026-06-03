@@ -51,8 +51,11 @@ export async function GET(request: Request) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    console.error("[auth/callback] exchangeCodeForSession failed:", error.message);
-    return NextResponse.redirect(`${origin}/sign-in`);
+    console.error("[auth/callback] exchangeCodeForSession failed:", error.message, error.code);
+    // Surface the exact error in the URL so it's visible for diagnosis.
+    return NextResponse.redirect(
+      `${origin}/sign-in?auth_error=${encodeURIComponent(error.message)}`
+    );
   }
 
   return redirectResponse;
