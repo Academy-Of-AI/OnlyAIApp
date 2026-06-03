@@ -157,8 +157,20 @@ ${list}
    Do **NOT** build a marketing/landing page or a front-end-only demo.
 6. Follow the **Definition of Done** in \`docs/TASKS.md\`. Never put secrets in frontend code.
 
+## Deploy & data (binding — this stack is already provisioned)
+- **Deploy by git, never by CLI.** \`git add -A && git commit -m "…" && git push\` to \`main\`;
+  Vercel auto-deploys from GitHub. Do NOT run \`vercel deploy\` / \`vercel --prod\` with local
+  files — it desyncs git, and the next push silently overwrites your live app.
+- **Commit + push every change.** Git is the source of truth; uncommitted work is lost on
+  the next deploy.
+- **The Supabase database is already provisioned** and its keys are in this project's Vercel
+  env. Pull them locally: \`vercel link\` then \`vercel env pull .env.local\`. Don't invent new ones.
+- **Database-first:** turn \`docs/DATA_MODEL.md\` into a Supabase migration and apply it BEFORE
+  building features. Do not build local-only / in-memory.
+
 Kickoff prompt: "Read everything in /docs, confirm the plan in 3 lines, then build Sprint 1
-from TASKS.md — database-first, the real working app, not a landing page."
+from TASKS.md — database-first (pull env with vercel env pull, apply the schema), commit + push
+to deploy, the real working app, not a landing page."
 `;
 }
 

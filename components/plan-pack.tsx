@@ -34,7 +34,7 @@ type TabName = (typeof TABS)[number];
 
 // The grounding kickoff prompt — names the spec so the agent can't drift into a
 // marketing landing page. Matches the binding rules in the generated CLAUDE.md.
-const KICKOFF = "Read everything in /docs, confirm the plan in 3 lines, then build Sprint 1 from TASKS.md — database-first, the real working app, not a landing page.";
+const KICKOFF = "Read everything in /docs, confirm the plan in 3 lines, then build Sprint 1 from TASKS.md — database-first (run `vercel env pull .env.local`, apply the schema), commit + push to deploy, the real working app, not a landing page.";
 
 export function PlanPack({
   project, initialPack = null, buildCredits = 0,
