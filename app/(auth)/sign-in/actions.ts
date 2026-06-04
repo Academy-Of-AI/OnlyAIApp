@@ -27,7 +27,9 @@ export async function signInWithGitHub() {
   const headerStore = await headers();
   // Prefer the forwarded host so it works on both onlyaiapp.com and previews.
   const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "onlyaiapp.com";
-  const proto = headerStore.get("x-forwarded-proto") ?? "https";
+  // localhost is plain http in dev; everything else is https.
+  const isLocal = host.startsWith("localhost") || host.startsWith("127.");
+  const proto = headerStore.get("x-forwarded-proto") ?? (isLocal ? "http" : "https");
   const origin = `${proto}://${host}`;
 
   const supabase = await createClient();
