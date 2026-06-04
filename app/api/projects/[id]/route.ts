@@ -20,6 +20,15 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Free users can't delete (anti-recycle); Core/Pro can.
+  const { data: planRow } = await supabase.from("profiles").select("plan").eq("id", user.id).single();
+  if (planRow?.plan !== "pro" && planRow?.plan !== "core") {
+    return NextResponse.json(
+      { error: "Free projects can't be deleted — upgrade to Core to delete and recreate projects.", code: "delete_locked" },
+      { status: 403 },
+    );
+  }
+
   const { data: project } = await supabase
     .from("projects")
     .select("vercel_project_id, supabase_project_ref")

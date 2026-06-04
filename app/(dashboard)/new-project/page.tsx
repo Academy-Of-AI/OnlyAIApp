@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import { OptInForm } from "@/components/optin-form";
 
 // Client-safe template list (owner/repo resolved server-side from the registry)
 const TEMPLATES = [
@@ -30,6 +31,7 @@ export default function NewProjectPage() {
   const [steps, setSteps] = useState<StepEvent[]>([]);
   const [result, setResult] = useState<ProvisionResult | null>(null);
   const [error, setError] = useState("");
+  const [limitWall, setLimitWall] = useState<string | null>(null);
 
   // The clone command bakes in the git identity (when known) so Claude Code's
   // first local commit is authored by an email on the user's GitHub account —
@@ -47,6 +49,7 @@ export default function NewProjectPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setLimitWall(null);
     setSteps([]);
     setResult(null);
 
@@ -62,10 +65,11 @@ export default function NewProjectPage() {
       return;
     }
 
-    // Non-streaming error (auth failures, validation errors, etc.)
+    // Non-streaming error (auth failures, validation errors, plan limits, etc.)
     if (!response.ok && response.headers.get("Content-Type")?.includes("application/json")) {
-      const { error: msg } = await response.json() as { error?: string };
-      setError(msg ?? "Provisioning failed");
+      const j = await response.json() as { error?: string; code?: string };
+      if (j.code === "plan_limit") setLimitWall(j.error ?? "You've reached your project limit.");
+      else setError(j.error ?? "Provisioning failed");
       setLoading(false);
       return;
     }
@@ -137,8 +141,23 @@ export default function NewProjectPage() {
         </p>
       </div>
 
+      {/* Project limit wall — data opt-in (free +1) or upgrade */}
+      {!result && limitWall && (
+        <div className="panel p-5 space-y-4 border-brand-border" style={{ background: "var(--color-brand-container)" }}>
+          <div>
+            <p className="eyebrow">Project limit</p>
+            <p className="text-sm text-on-surface mt-1">{limitWall}</p>
+          </div>
+          <OptInForm cta="Unlock my 2nd free project" onDone={() => setLimitWall(null)} />
+          <p className="text-xs text-on-surface-variant">
+            Want up to 8 projects and the ability to delete &amp; recreate?{" "}
+            <Link href="/upgrade" className="text-brand hover:underline">Upgrade to Core ($8/mo)</Link>.
+          </p>
+        </div>
+      )}
+
       {/* What you'll get */}
-      {!result && (
+      {!result && !limitWall && (
         <div className="panel p-5 space-y-4">
           <p className="eyebrow">
             What gets created for you

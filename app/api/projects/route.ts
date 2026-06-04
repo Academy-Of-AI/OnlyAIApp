@@ -1,8 +1,9 @@
 import { decrypt } from "@/lib/crypto";
-import { registerPushWebhook, getCommitIdentity } from "@/lib/github";
+import { registerPushWebhook, getCommitIdentity, getGithubUser } from "@/lib/github";
 import { provisionProject, type ProgressEvent } from "@/lib/provisioning";
 import { createClient } from "@/lib/supabase/server";
 import { getTemplate } from "@/lib/templates";
+import { projectLimit, normalizePlan, hasOptInBonus } from "@/lib/plan";
 import { NextResponse } from "next/server";
 
 export const maxDuration = 300;
@@ -53,18 +54,20 @@ export async function POST(request: Request) {
     );
   }
 
-  // Free plan = 1 project; Pro lifts it (up to the hard cap below).
+  // Per-tier project limit (free = 1, +1 with the data opt-in; core/pro = 8).
   const { data: planRow } = await supabase
-    .from("profiles").select("plan").eq("id", user.id).single();
-  if (planRow?.plan === "free") {
-    const { count } = await supabase
-      .from("projects").select("*", { count: "exact", head: true }).eq("user_id", user.id);
-    if ((count ?? 0) >= 1) {
-      return NextResponse.json(
-        { error: "Free plan includes 1 project. Upgrade to Pro for more.", code: "plan_limit" },
-        { status: 403 },
-      );
-    }
+    .from("profiles").select("plan, phone, marketing_consent, github_id").eq("id", user.id).single();
+  const { count: ownedCount } = await supabase
+    .from("projects").select("*", { count: "exact", head: true }).eq("user_id", user.id);
+  const limit = projectLimit(planRow?.plan, hasOptInBonus(planRow));
+  if ((ownedCount ?? 0) >= limit) {
+    const tier = normalizePlan(planRow?.plan);
+    return NextResponse.json(
+      tier === "free"
+        ? { error: "Free includes 1 project. Add your WhatsApp + a quick intro to unlock a 2nd free one, or upgrade to Core.", code: "plan_limit" }
+        : { error: `Your plan includes ${limit} projects. Delete one you don't need to free a slot.`, code: "plan_limit" },
+      { status: 403 },
+    );
   }
 
   // Hard ceiling (all plans): every project provisions its OWN Supabase project,
@@ -101,6 +104,27 @@ export async function POST(request: Request) {
 
   const githubToken = await decrypt(githubConn.access_token as string);
   const vercelToken = vercelConn ? await decrypt(vercelConn.access_token as string) : undefined;
+
+  // Anti-burner: bind this GitHub identity to this workspace (one GitHub → one workspace).
+  try {
+    const gh = await getGithubUser(githubToken);
+    if (gh?.id) {
+      if (!planRow?.github_id) {
+        const { error: bindErr } = await supabase.from("profiles").update({ github_id: gh.id }).eq("id", user.id);
+        if (bindErr) {
+          return NextResponse.json(
+            { error: "This GitHub account is already linked to another OnlyAIApp workspace.", code: "github_taken" },
+            { status: 403 },
+          );
+        }
+      } else if (planRow.github_id !== gh.id) {
+        return NextResponse.json(
+          { error: "This workspace is bound to a different GitHub account.", code: "github_mismatch" },
+          { status: 403 },
+        );
+      }
+    }
+  } catch { /* non-fatal — don't block provisioning on the identity lookup */ }
 
   const resendConn   = connections?.find((c) => c.provider === "resend");
 

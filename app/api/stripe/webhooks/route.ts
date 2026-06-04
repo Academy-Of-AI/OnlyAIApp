@@ -69,9 +69,11 @@ export async function POST(request: Request) {
           updated_at: new Date().toISOString(),
         });
         if (sub.status === "active" || sub.status === "trialing") {
-          // Flip the user onto Pro so gated features unlock
-          await supabase.from("profiles").update({ plan: "pro" }).eq("id", userId);
+          // Flip the user onto the purchased tier (core/pro) so gated features unlock
+          const tier = sub.metadata?.plan === "core" ? "core" : "pro";
+          await supabase.from("profiles").update({ plan: tier }).eq("id", userId);
           await track("plan_upgraded", userId, {
+            plan: tier,
             price_id: sub.items.data[0]?.price.id,
             subscription_id: sub.id,
           });

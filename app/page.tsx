@@ -88,7 +88,11 @@ export default function LandingPage() {
         <a href="https://goacademyai.com" target="_blank" rel="noopener noreferrer"
           className="text-outline hover:text-on-surface transition-colors">
           An Academy of AI (AOAI) product
-        </a>
+        </a>{" "}
+        <span className="text-outline">·</span>{" "}
+        <Link href="/privacy" className="text-outline hover:text-on-surface transition-colors">
+          Privacy
+        </Link>
       </footer>
     </main>
   );

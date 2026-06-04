@@ -56,8 +56,14 @@ human-only (delete/refund/legal). Recommendation -> Draft -> Approval -> Action 
 SECURITY: never expose secrets in frontend; agent inherits the user's permissions;
 approved named tools only (never raw run_any/send_any); log every meaningful action.
 
-DEFINITION OF DONE: works in preview; handles empty/error/loading; follows permissions;
-no secrets exposed; writes correct data; has test steps; clear UI copy; documented; committed.
+DEFINITION OF DONE: works in preview; the core ACTIONS actually work — every button/form persists to the
+database and the UI reflects it (NO dead buttons, NO seed-data-only screens; seeded rows are demo placeholders
+the user can also create/edit/delete); handles empty/error/loading; follows permissions; no secrets exposed;
+writes correct data; has test steps; clear UI copy; documented; committed.
+
+CORE ENGINE FIRST: every app has ONE core engine/verb — its main action (e.g. create a proposal, run the
+quote/simulation, log a change and act on it). Sprint 1 must deliver that engine working end-to-end against
+the database, BEFORE breadth. A polished read-only dashboard of seeded data is NOT a working app.
 
 SCOPE NOTE: this is a personal/internal OS for the builder + their agent to deliver their
 own expertise — NOT a multi-tenant SaaS for resale, unless the idea explicitly says so.
@@ -269,11 +275,14 @@ ${list}
 ## Build rules (binding — follow in order)
 1. ${rule1}
 2. **Confirm the plan** back to me in 2–3 lines (the core objects + the one main workflow) BEFORE coding.
-3. **Build straight through the sprints until the app actually WORKS end-to-end.** Do NOT stop
-   after auth + an empty or "Connected" status dashboard — that is NOT done. Keep going through the
-   data model, the core CRUD, AND the main user workflow from the PRD so a real person can do the
-   core job (create, see, and act on the core objects). Commit + push after each sprint so progress
-   deploys; only pause for review once the core workflow is genuinely usable.
+3. **Build the ONE core engine/verb FIRST, working end-to-end.** Every app has a main action —
+   create a proposal, run the quote/simulation, log a change and act on it. Build THAT against the
+   real database in Sprint 1, then breadth. Then build straight through the sprints until the app
+   actually WORKS end-to-end. Do NOT stop after auth + an empty or "Connected" status dashboard, and
+   do NOT ship read-only screens of seeded data — **every button and form must persist to the
+   database and the UI must reflect it. NO dead buttons. Seeded rows are demo placeholders the user
+   can also create/edit/delete.** Commit + push after each sprint; pause for review only once a real
+   person can actually perform the core job.
 4. **Database-first, but don't stop at the database:** lay the data model + core CRUD first (the
    core must work with the AI switched off), then build the real screens that make it usable.
 5. **This is the real working app** — real forms, lists, detail views, and the end-to-end flow from

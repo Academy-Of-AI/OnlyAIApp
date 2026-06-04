@@ -1,6 +1,8 @@
 import { GettingStarted } from "@/components/getting-started";
 import { DeleteProjectButton } from "@/components/delete-project-button";
+import { OptInNudge } from "@/components/optin-nudge";
 import { createClient } from "@/lib/supabase/server";
+import { normalizePlan, hasOptInBonus } from "@/lib/plan";
 import Link from "next/link";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -22,7 +24,7 @@ export default async function DashboardPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: projects }, { data: connections }, { count: planCount }, { count: memoryCount }] = await Promise.all([
+  const [{ data: projects }, { data: connections }, { count: planCount }, { count: memoryCount }, { data: profile }] = await Promise.all([
     supabase
       .from("projects")
       .select("*")
@@ -40,7 +42,15 @@ export default async function DashboardPage({
       .from("project_memory")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user!.id),
+    supabase
+      .from("profiles")
+      .select("plan, phone, marketing_consent")
+      .eq("id", user!.id)
+      .single(),
   ]);
+
+  // Free users who haven't done the data opt-in see a "+1 project" nudge.
+  const showOptInNudge = normalizePlan(profile?.plan) === "free" && !hasOptInBonus(profile);
 
   const hasGitHub   = connections?.some((c) => c.provider === "github");
   // Onramp: GitHub alone is enough to create a project. Vercel/Supabase come later.
@@ -98,6 +108,9 @@ export default async function DashboardPage({
 
       {/* Optional integrations live on the Settings page (⚙ in the top nav)
           and inside each project's own Settings tab. */}
+
+      {/* Free-tier data opt-in nudge → +1 project */}
+      {hasGitHub && showOptInNudge && <OptInNudge />}
 
       {/* Onboarding checklist — only while still working toward the first ship */}
       {!!projects?.length && !hasShipped && (

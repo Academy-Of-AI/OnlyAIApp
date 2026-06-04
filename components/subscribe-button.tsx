@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 
-/** Starts a Pro subscription checkout. */
+/** Starts a Core/Pro subscription checkout. */
 export function SubscribeButton({
-  label = "Upgrade to Pro", interval = "month", variant = "solid",
+  label = "Upgrade", interval = "month", plan = "pro", variant = "solid",
 }: {
-  label?: string; interval?: "month" | "year"; variant?: "solid" | "outline";
+  label?: string; interval?: "month" | "year"; plan?: "core" | "pro"; variant?: "solid" | "outline";
 }) {
   const [loading, setLoading] = useState(false);
   async function go() {
@@ -15,7 +15,7 @@ export function SubscribeButton({
       const res = await fetch("/api/stripe/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ interval }),
+        body: JSON.stringify({ interval, plan }),
       });
       const { url, error } = await res.json();
       if (error) { alert(error); return; }
