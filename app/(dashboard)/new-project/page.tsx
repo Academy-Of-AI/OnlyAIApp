@@ -72,8 +72,21 @@ export default function NewProjectPage() {
             | StepEvent;
 
           if (event.step === "done") {
-            setResult((event as { step: "done"; result: ProvisionResult }).result);
+            const res = (event as { step: "done"; result: ProvisionResult }).result;
+            setResult(res);
             setLoading(false);
+            // If we came from "Start here" (Scope), seed the Plan with the brief.
+            try {
+              const brief = sessionStorage.getItem("scopeBrief");
+              if (brief && res.id) {
+                sessionStorage.removeItem("scopeBrief");
+                fetch(`/api/projects/${res.id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ build_prompt: brief }),
+                }).catch(() => {});
+              }
+            } catch { /* ignore */ }
           } else if (event.step === "error") {
             setError((event as { step: "error"; message: string }).message);
             setLoading(false);

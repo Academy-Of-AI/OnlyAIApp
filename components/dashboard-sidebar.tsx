@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const WORKSPACE = [
+  { href: "/scope", label: "Start here", icon: "✦" },
   { href: "/dashboard", label: "Projects", icon: "▦" },
+  { href: "/pilot", label: "Pilot", icon: "🛫" },
   { href: "/directory", label: "Directory", icon: "🏛" },
-  { href: "/mission-control", label: "Mission Control", icon: "🛰" },
 ];
 const ACCOUNT = [
-  { href: "/guide", label: "How it works", icon: "✦" },
+  { href: "/guide", label: "How it works", icon: "?" },
   { href: "/settings", label: "Settings", icon: "⚙" },
 ];
 
