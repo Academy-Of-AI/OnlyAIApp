@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { DashboardSidebar, MobileNav } from "@/components/dashboard-sidebar";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -21,56 +22,43 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/");
   }
 
-  const isPro = (profile?.plan ?? "free") === "pro";
+  const plan = profile?.plan ?? "free";
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white flex flex-col">
-      {/* Top nav */}
-      <header className="border-b border-white/10 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-        {/* Logo → dashboard */}
-        <Link href="/dashboard" className="font-bold text-sm shrink-0 hover:text-neutral-300 transition-colors">
-          OnlyAIApp
-        </Link>
+    <div className="min-h-screen bg-neutral-950 text-white">
+      <DashboardSidebar plan={plan} />
 
-        <div className="flex items-center gap-2 sm:gap-3 text-sm min-w-0">
-          {!isPro && (
-            <Link href="/upgrade"
-              className="bg-violet-500 hover:bg-violet-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors shrink-0">
-              ✨ Upgrade
+      {/* Main column, offset by the sidebar width on desktop */}
+      <div className="md:pl-56 flex flex-col min-h-screen">
+        {/* Slim top bar */}
+        <header className="h-14 border-b border-white/10 px-4 sm:px-6 flex items-center justify-between gap-3 sticky top-0 bg-neutral-950/90 backdrop-blur z-10">
+          {/* Mobile logo (desktop logo is in the sidebar) */}
+          <Link href="/dashboard" className="font-bold text-sm md:hidden">OnlyAIApp</Link>
+          <div className="hidden md:block" />
+
+          <div className="flex items-center gap-3 shrink-0">
+            <NotificationsBell />
+            <Link href="/upgrade" title="Account & billing"
+              className="hidden sm:flex items-center gap-1.5 hover:text-white transition-colors min-w-0">
+              <span className="text-neutral-400 truncate max-w-[140px] text-xs">
+                {profile?.github_username ?? user.email}
+              </span>
+              <span className="bg-white/10 text-white/60 text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+                {plan}
+              </span>
             </Link>
-          )}
+            <form action={signOut}>
+              <button type="submit" className="text-neutral-500 hover:text-white transition-colors text-xs">
+                Sign out
+              </button>
+            </form>
+          </div>
+        </header>
 
-          {/* Notification bell — beside username */}
-          <NotificationsBell />
+        <MobileNav />
 
-          {/* Username → billing/upgrade */}
-          <Link
-            href="/upgrade"
-            className="hidden sm:flex items-center gap-1.5 hover:text-white transition-colors shrink-0 min-w-0"
-            title="Account & billing"
-          >
-            <span className="text-neutral-400 truncate max-w-[140px] text-xs">
-              {profile?.github_username ?? user.email}
-            </span>
-            <span className="bg-white/10 text-white/60 text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide">
-              {profile?.plan ?? "free"}
-            </span>
-          </Link>
-
-          {/* Settings */}
-          <Link href="/settings" title="Settings"
-            className="text-neutral-500 hover:text-white transition-colors text-base leading-none shrink-0">
-            ⚙
-          </Link>
-
-          <form action={signOut}>
-            <button type="submit" className="text-neutral-500 hover:text-white transition-colors text-xs shrink-0">
-              Sign out
-            </button>
-          </form>
-        </div>
-      </header>
-      <div className="flex-1">{children}</div>
+        <div className="flex-1">{children}</div>
+      </div>
     </div>
   );
 }

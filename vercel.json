@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/retro",
       "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/cron/directory-health",
+      "schedule": "0 3 * * *"
     }
   ]
 }
