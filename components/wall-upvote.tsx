@@ -24,10 +24,10 @@ export function WallUpvote({ id, initial }: { id: string; initial: number }) {
       onClick={up}
       disabled={voted}
       className={`flex items-center gap-1.5 text-sm border rounded-lg px-3 py-1.5 transition-colors shrink-0 ${
-        voted ? "border-violet-500/40 text-violet-300" : "border-white/10 hover:border-white/30 text-neutral-300"
+        voted ? "border-brand-border bg-brand-container text-brand-dim" : "border-outline-variant hover:border-outline text-on-surface-variant"
       }`}
     >
-      ▲ {count}
+      ▲ <span className="tabnum">{count}</span>
     </button>
   );
 }

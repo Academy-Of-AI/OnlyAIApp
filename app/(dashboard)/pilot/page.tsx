@@ -6,13 +6,13 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 const STATE_UI: Record<DeploymentState, { label: string; dot: string; chip: string }> = {
-  READY:        { label: "Live",     dot: "bg-green-500",  chip: "border-green-500/30 text-green-400" },
-  BUILDING:     { label: "Building", dot: "bg-amber-500",  chip: "border-amber-500/30 text-amber-400" },
-  INITIALIZING: { label: "Building", dot: "bg-amber-500",  chip: "border-amber-500/30 text-amber-400" },
-  QUEUED:       { label: "Queued",   dot: "bg-amber-500",  chip: "border-amber-500/30 text-amber-400" },
-  ERROR:        { label: "Broken",   dot: "bg-red-500",    chip: "border-red-500/35 text-red-400" },
-  CANCELED:     { label: "Canceled", dot: "bg-neutral-500", chip: "border-white/15 text-neutral-400" },
-  unknown:      { label: "No deploy", dot: "bg-neutral-600", chip: "border-white/15 text-neutral-500" },
+  READY:        { label: "Live",     dot: "bg-success",  chip: "chip chip-success" },
+  BUILDING:     { label: "Building", dot: "bg-warn-dim",  chip: "chip chip-warn" },
+  INITIALIZING: { label: "Building", dot: "bg-warn-dim",  chip: "chip chip-warn" },
+  QUEUED:       { label: "Queued",   dot: "bg-warn-dim",  chip: "chip chip-warn" },
+  ERROR:        { label: "Broken",   dot: "bg-danger",    chip: "chip chip-danger" },
+  CANCELED:     { label: "Canceled", dot: "bg-outline", chip: "chip chip-neutral" },
+  unknown:      { label: "No deploy", dot: "bg-outline", chip: "chip chip-neutral" },
 };
 
 function timeAgo(ms: number | null): string {
@@ -85,25 +85,25 @@ export default async function PilotPage() {
     const d = p.last_digest as { onTrack?: boolean; note?: string } | null;
     return (
       <Link href={`/projects/${p.id}`}
-        className="block border border-white/10 rounded-xl p-4 hover:border-white/25 hover:bg-white/[0.02] transition-all">
+        className="block panel p-4 hover:bg-surface-high transition-all">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ui.dot}`} />
+            <span className={`dot shrink-0 ${ui.dot}`} />
             <div className="min-w-0">
-              <p className="font-semibold truncate flex items-center gap-2">
+              <p className="font-semibold text-on-surface truncate flex items-center gap-2">
                 {p.name}
-                <span className={`text-[10px] border px-1.5 py-0.5 rounded-full ${ui.chip}`}>{ui.label}</span>
+                <span className={ui.chip}>{ui.label}</span>
               </p>
-              {r.status?.commitMessage && <p className="text-xs text-neutral-500 truncate mt-0.5">{r.status.commitMessage}</p>}
+              {r.status?.commitMessage && <p className="text-xs text-outline truncate mt-0.5">{r.status.commitMessage}</p>}
             </div>
           </div>
-          {r.status?.createdAt && <span className="text-[11px] text-neutral-600 shrink-0">{timeAgo(r.status.createdAt)}</span>}
+          {r.status?.createdAt && <span className="text-[11px] text-outline shrink-0">{timeAgo(r.status.createdAt)}</span>}
         </div>
         {r.status?.state === "ERROR" && (
-          <p className="mt-2 text-xs text-neutral-400"><span className="text-red-400">⚠</span> {r.errorLine ?? "Deploy failed — open to see the build log."}</p>
+          <p className="mt-2 text-xs text-on-surface-variant"><span className="text-danger">⚠</span> {r.errorLine ?? "Deploy failed — open to see the build log."}</p>
         )}
         {d?.onTrack === false && (
-          <p className="mt-2 text-xs text-neutral-400"><span className="text-amber-400">⟲</span> Drifting{d.note ? `: ${d.note}` : ""}</p>
+          <p className="mt-2 text-xs text-on-surface-variant"><span className="text-warn">⟲</span> Drifting{d.note ? `: ${d.note}` : ""}</p>
         )}
       </Link>
     );
@@ -113,36 +113,51 @@ export default async function PilotPage() {
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Pilot — every OS, on course</h1>
-          <p className="text-sm text-neutral-500 mt-1">Live health + drift across all your projects.</p>
+          <p className="eyebrow">Mission Control</p>
+          <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — every OS, on course</h1>
+          <p className="text-sm text-on-surface-variant mt-1">Live health + drift across all your projects.</p>
         </div>
         <Link href="/new-project"
-          className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          className="btn-brand text-sm px-4 py-2">
           ＋ New project
         </Link>
       </div>
 
       {/* summary strip */}
-      <div className="border border-white/10 rounded-xl px-4 py-3 flex items-center gap-x-6 gap-y-1 flex-wrap text-sm text-neutral-300">
-        <span><b className="text-neutral-100">{rows.length}</b> <span className="text-neutral-500">OSes</span></span>
-        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />{onTrack.length} on track</span>
-        {building > 0 && <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{building} building</span>}
-        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />{broken} broken</span>
-        {!vercelToken && <span className="text-neutral-600 ml-auto text-xs">Connect Vercel for live status</span>}
+      <div className="flex items-stretch gap-3 flex-wrap">
+        <div className="tile flex-1 min-w-[120px]">
+          <p className="tile-label">OSes</p>
+          <p className="tile-value text-on-surface">{rows.length}</p>
+        </div>
+        <div className="tile flex-1 min-w-[120px]">
+          <p className="tile-label flex items-center gap-1.5"><span className="dot bg-success" />On track</p>
+          <p className="tile-value text-on-surface">{onTrack.length}</p>
+        </div>
+        {building > 0 && (
+          <div className="tile flex-1 min-w-[120px]">
+            <p className="tile-label flex items-center gap-1.5"><span className="dot bg-warn-dim" />Building</p>
+            <p className="tile-value text-on-surface">{building}</p>
+          </div>
+        )}
+        <div className="tile flex-1 min-w-[120px]">
+          <p className="tile-label flex items-center gap-1.5"><span className="dot bg-danger" />Broken</p>
+          <p className="tile-value text-on-surface">{broken}</p>
+        </div>
+        {!vercelToken && <span className="text-outline self-center ml-auto text-xs">Connect Vercel for live status</span>}
       </div>
 
       {rows.length === 0 ? (
-        <div className="text-center py-24 text-neutral-500 space-y-2 border border-white/10 rounded-2xl"><p className="text-3xl">🛫</p><p>No projects yet.</p></div>
+        <div className="text-center py-24 text-on-surface-variant space-y-2 panel"><p className="text-3xl">🛫</p><p>No projects yet.</p></div>
       ) : (
         <div className="space-y-6">
           {needsAttention.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Needs attention</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Needs attention</p>
               <div className="grid sm:grid-cols-2 gap-3">{needsAttention.map((r) => <Card key={r.project.id} r={r} />)}</div>
             </div>
           )}
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">On track</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">On track</p>
             <div className="grid sm:grid-cols-2 gap-3">{onTrack.map((r) => <Card key={r.project.id} r={r} />)}</div>
           </div>
         </div>

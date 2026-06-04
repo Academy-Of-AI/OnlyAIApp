@@ -23,15 +23,15 @@ export default async function HackathonsPage() {
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold">Hackathons</h1>
-          <p className="text-neutral-400 text-sm mt-0.5">
+          <h1 className="text-xl font-bold font-display tracking-tight text-on-surface">Hackathons</h1>
+          <p className="text-on-surface-variant text-sm mt-0.5">
             Run events where participants get provisioned environments instantly.
           </p>
         </div>
         {isOrg && (
           <Link
             href="/hackathons/new"
-            className="bg-green-500 hover:bg-green-400 text-black text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+            className="btn-brand text-sm px-4 py-2 transition-colors"
           >
             + New hackathon
           </Link>
@@ -39,16 +39,16 @@ export default async function HackathonsPage() {
       </div>
 
       {!isOrg && (
-        <div className="border border-white/10 rounded-xl p-8 text-center space-y-4">
+        <div className="panel p-8 text-center space-y-4">
           <p className="text-3xl">🏆</p>
-          <h2 className="font-semibold">Hackathon mode is an Org plan feature</h2>
-          <p className="text-neutral-400 text-sm max-w-sm mx-auto">
+          <h2 className="font-semibold text-on-surface">Hackathon mode is an Org plan feature</h2>
+          <p className="text-on-surface-variant text-sm max-w-sm mx-auto">
             Run events with 200+ participants. Each gets a full-stack environment in
             under 2 minutes via a single invite link.
           </p>
           <Link
             href="/upgrade"
-            className="inline-block bg-green-500 hover:bg-green-400 text-black font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm"
+            className="inline-block btn-brand px-6 py-2.5 transition-colors text-sm"
           >
             Upgrade to Org — $99/mo
           </Link>
@@ -56,10 +56,10 @@ export default async function HackathonsPage() {
       )}
 
       {isOrg && hackathons?.length === 0 && (
-        <div className="text-center py-16 text-neutral-500 space-y-2">
+        <div className="text-center py-16 text-on-surface-variant space-y-2">
           <p className="text-3xl">🏁</p>
           <p>No hackathons yet.</p>
-          <Link href="/hackathons/new" className="text-green-400 hover:underline text-sm">
+          <Link href="/hackathons/new" className="text-brand hover:underline text-sm">
             Create your first event →
           </Link>
         </div>
@@ -73,23 +73,23 @@ export default async function HackathonsPage() {
               <Link
                 key={h.id}
                 href={`/hackathons/${h.id}`}
-                className="flex items-center justify-between border border-white/10 hover:border-white/20 rounded-xl px-5 py-4 transition-colors group"
+                className="flex items-center justify-between panel hover:border-outline rounded-xl px-5 py-4 transition-colors group"
               >
                 <div className="space-y-1">
-                  <p className="font-medium group-hover:text-green-400 transition-colors">{h.name}</p>
-                  <p className="text-xs text-neutral-500 font-mono">
-                    Invite: <span className="text-white">{h.invite_code}</span>
+                  <p className="font-medium text-on-surface group-hover:text-brand transition-colors">{h.name}</p>
+                  <p className="text-xs text-on-surface-variant font-mono">
+                    Invite: <span className="text-on-surface">{h.invite_code}</span>
                     {" · "}
                     vibelaunchpad.com/join/{h.invite_code}
                   </p>
                 </div>
                 <div className="text-right space-y-1">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    h.status === "active" ? "bg-green-500/20 text-green-400" : "bg-neutral-500/20 text-neutral-400"
+                  <span className={`chip ${
+                    h.status === "active" ? "chip-success" : "chip-neutral"
                   }`}>
                     {h.status}
                   </span>
-                  <p className="text-xs text-neutral-500">{count} / {h.max_participants} participants</p>
+                  <p className="text-xs text-on-surface-variant tabnum">{count} / {h.max_participants} participants</p>
                 </div>
               </Link>
             );

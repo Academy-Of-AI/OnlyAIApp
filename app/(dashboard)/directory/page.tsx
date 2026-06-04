@@ -65,8 +65,9 @@ export default async function DirectoryPage() {
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Directory</h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <p className="eyebrow">Showcase</p>
+          <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Directory</h1>
+          <p className="text-sm text-on-surface-variant mt-1">
             Real, working AI systems shipped through OnlyAIApp — proof, not prompts.
           </p>
         </div>
@@ -74,7 +75,7 @@ export default async function DirectoryPage() {
       </div>
 
       {entries.length === 0 ? (
-        <div className="text-center py-24 text-neutral-500 space-y-3 border border-white/10 rounded-2xl">
+        <div className="text-center py-24 text-on-surface-variant space-y-3 panel">
           <p className="text-4xl">🏛</p>
           <p>No apps in the Directory yet.</p>
           {myProjects.length > 0
@@ -87,27 +88,27 @@ export default async function DirectoryPage() {
             const src = shotSrc(e);
             const visit = e.live_url || e.demo_url || null;
             return (
-              <div key={e.id} className="border border-white/10 rounded-xl overflow-hidden flex flex-col hover:border-white/25 transition-colors group">
+              <div key={e.id} className="panel overflow-hidden flex flex-col hover:bg-surface-high transition-colors group">
                 {/* Screenshot */}
-                <div className="aspect-[16/10] bg-white/[0.03] border-b border-white/10 overflow-hidden">
+                <div className="aspect-[16/10] bg-surface-high border-b border-outline-variant overflow-hidden">
                   {src ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={src} alt={e.title} loading="lazy"
                       className="w-full h-full object-cover object-top group-hover:scale-[1.02] transition-transform" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-neutral-700 text-3xl">🖥</div>
+                    <div className="w-full h-full flex items-center justify-center text-outline text-3xl">🖥</div>
                   )}
                 </div>
                 <div className="p-4 flex flex-col gap-1.5 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-semibold truncate">{e.title}</h3>
+                    <h3 className="font-semibold text-on-surface truncate">{e.title}</h3>
                   </div>
-                  {e.tagline && <p className="text-xs text-neutral-400 line-clamp-2">{e.tagline}</p>}
+                  {e.tagline && <p className="text-xs text-on-surface-variant line-clamp-2">{e.tagline}</p>}
                   <div className="flex items-center justify-between gap-2 mt-auto pt-2">
-                    <span className="text-[11px] text-neutral-600 truncate">by {e.builder_name ?? "a builder"}</span>
+                    <span className="text-[11px] text-outline truncate">by {e.builder_name ?? "a builder"}</span>
                     {visit && (
                       <a href={visit} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-violet-300 hover:text-violet-200 shrink-0">Visit →</a>
+                        className="text-xs text-brand hover:text-brand-dim shrink-0">Visit →</a>
                     )}
                   </div>
                 </div>
@@ -117,7 +118,7 @@ export default async function DirectoryPage() {
         </div>
       )}
 
-      <p className="text-center text-xs text-neutral-600">
+      <p className="text-center text-xs text-outline">
         Apps are checked for uptime; ones that go down are hidden automatically.
       </p>
     </main>

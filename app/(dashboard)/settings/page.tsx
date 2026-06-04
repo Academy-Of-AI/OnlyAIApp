@@ -39,37 +39,37 @@ export default async function SettingsPage({
       {/* Header + close */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <h1 className="text-2xl font-bold tracking-tight font-display text-on-surface">Settings</h1>
+          <p className="text-sm text-on-surface-variant mt-1">
             Connect a service once — every new project reuses it automatically.
           </p>
         </div>
-        <Link href="/dashboard" className="text-neutral-500 hover:text-white transition-colors text-xl leading-none shrink-0" aria-label="Close">✕</Link>
+        <Link href="/dashboard" className="text-outline hover:text-on-surface transition-colors text-xl leading-none shrink-0" aria-label="Close">✕</Link>
       </div>
 
       {params.connected && (
-        <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm px-4 py-3 rounded-lg">
+        <div className="bg-success/10 border border-success/30 text-success text-sm px-4 py-3 rounded-lg">
           ✓ {LABELS[params.connected] ?? params.connected} connected.
         </div>
       )}
       {params.error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
+        <div className="bg-danger/10 border border-danger/30 text-danger text-sm px-4 py-3 rounded-lg">
           Connection failed. Please try again.
         </div>
       )}
 
       {/* Account */}
-      <section className="border border-white/10 rounded-xl p-5 space-y-3">
-        <h2 className="font-semibold">Account</h2>
+      <section className="panel p-5 space-y-3">
+        <h2 className="font-semibold text-on-surface">Account</h2>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-neutral-400">Signed in as</span>
-          <span className="text-neutral-200">{profile?.github_username ?? user.email}</span>
+          <span className="text-on-surface-variant">Signed in as</span>
+          <span className="text-on-surface">{profile?.github_username ?? user.email}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-neutral-400">Plan</span>
+          <span className="text-on-surface-variant">Plan</span>
           <span className="flex items-center gap-2">
-            <span className="bg-white/10 text-white/70 text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide">{plan}</span>
-            <Link href="/upgrade" className="text-violet-300 hover:underline text-xs">Manage billing →</Link>
+            <span className="chip chip-neutral">{plan}</span>
+            <Link href="/upgrade" className="text-brand hover:underline text-xs">Manage billing →</Link>
           </span>
         </div>
       </section>
@@ -77,8 +77,8 @@ export default async function SettingsPage({
       {/* Integrations */}
       <section className="space-y-4">
         <div>
-          <h2 className="font-semibold">Integrations</h2>
-          <p className="text-sm text-neutral-500 mt-1">
+          <h2 className="font-semibold text-on-surface">Integrations</h2>
+          <p className="text-sm text-on-surface-variant mt-1">
             These power what your provisioned projects can do. GitHub is required; the rest are optional.
           </p>
         </div>
@@ -90,7 +90,7 @@ export default async function SettingsPage({
             ? <ConnectedNote text="Connected — new projects get a repo automatically." />
             : (
               <a href="/api/github/connect"
-                className="inline-flex items-center justify-center gap-2 bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-neutral-200 transition-colors">
+                className="btn-brand inline-flex items-center justify-center gap-2 text-sm px-4 py-2 transition-colors">
                 Connect GitHub →
               </a>
             )}
@@ -110,11 +110,11 @@ export default async function SettingsPage({
           {hasSupabase
             ? <ConnectedNote text="Connected — new projects get their own database." />
             : <SupabaseConnectForm redirectTo="/settings" />}
-          <div className="mt-3 bg-amber-500/[0.06] border border-amber-500/20 rounded-lg px-3 py-2 text-xs text-amber-200/90 leading-relaxed">
+          <div className="mt-3 bg-warn/10 border border-warn/30 rounded-lg px-3 py-2 text-xs text-warn leading-relaxed">
             Each project creates its <b>own</b> Supabase project in your org. Supabase&apos;s free tier
             allows <b>2</b> active projects — to run up to <b>8</b> you&apos;ll need{" "}
             <a href="https://supabase.com/dashboard/org/_/billing" target="_blank" rel="noopener noreferrer"
-              className="text-amber-200 underline underline-offset-2">Supabase Pro ($25/mo)</a>.
+              className="text-warn underline underline-offset-2">Supabase Pro ($25/mo)</a>.
           </div>
         </IntegrationCard>
 
@@ -136,22 +136,22 @@ function IntegrationCard({
   icon: string; name: string; connected: boolean; desc: string; children: React.ReactNode;
 }) {
   return (
-    <div className="border border-white/10 rounded-xl p-5 space-y-3">
+    <div className="panel p-5 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          {icon && <span className="text-neutral-400">{icon}</span>}
-          <span className="font-medium">{name}</span>
+          {icon && <span className="text-on-surface-variant">{icon}</span>}
+          <span className="font-medium text-on-surface">{name}</span>
         </div>
         {connected
-          ? <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0">Connected</span>
-          : <span className="text-[10px] text-neutral-500 bg-white/5 px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0">Not connected</span>}
+          ? <span className="chip chip-success shrink-0">Connected</span>
+          : <span className="chip chip-neutral shrink-0">Not connected</span>}
       </div>
-      <p className="text-xs text-neutral-500">{desc}</p>
+      <p className="text-xs text-on-surface-variant">{desc}</p>
       {children}
     </div>
   );
 }
 
 function ConnectedNote({ text }: { text: string }) {
-  return <p className="text-xs text-neutral-400">{text}</p>;
+  return <p className="text-xs text-on-surface-variant">{text}</p>;
 }

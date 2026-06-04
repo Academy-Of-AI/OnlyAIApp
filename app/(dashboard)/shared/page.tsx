@@ -25,18 +25,18 @@ export default async function SharedListPage() {
 
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-      <h1 className="text-2xl font-bold tracking-tight mb-1">Shared with you</h1>
-      <p className="text-sm text-neutral-500 mb-8">Read-only projects others have shared with you.</p>
+      <h1 className="text-2xl font-bold tracking-tight mb-1 font-display text-on-surface">Shared with you</h1>
+      <p className="text-sm text-outline mb-8">Read-only projects others have shared with you.</p>
 
       {projects.length === 0 ? (
-        <p className="text-sm text-neutral-600 text-center py-12">Nothing shared with you yet.</p>
+        <p className="text-sm text-outline text-center py-12">Nothing shared with you yet.</p>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {projects.map((p) => (
             <Link key={p.id} href={`/shared/${p.id}`}
-              className="block border border-white/10 rounded-xl p-5 hover:border-white/25 transition-all">
-              <div className="font-semibold">{p.name}</div>
-              <div className="text-xs text-neutral-500 mt-1">{p.status} · read-only</div>
+              className="panel block p-5 hover:border-outline transition-all">
+              <div className="font-semibold text-on-surface">{p.name}</div>
+              <div className="text-xs text-outline mt-1">{p.status} · read-only</div>
             </Link>
           ))}
         </div>

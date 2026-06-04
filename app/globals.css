@@ -1,1 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Public+Sans:wght@500;600;700;800&display=swap');
 @import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────
+   OnlyAIApp design system (GroundStream spec, violet-brand tenant)
+   Token-driven: change a token, the whole UI follows.
+   Light canvas · white cards · dark sidebar · violet = interaction,
+   green/amber/red = status only.
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  /* Light surfaces */
+  --color-surface: #f5f6f8;          /* page background */
+  --color-surface-dim: #eef0f3;      /* subtle sections */
+  --color-surface-bright: #ffffff;
+  --color-surface-low: #ffffff;      /* cards / panels */
+  --color-surface-high: #eceef2;     /* bar tracks, chips, hover */
+  --color-surface-highest: #e3e6eb;
+  --color-on-surface: #182230;       /* primary text (navy) */
+  --color-on-surface-variant: #5a6573;/* secondary text (slate) */
+  --color-outline: #9aa3af;
+  --color-outline-variant: #e4e7ec;  /* hairline borders */
+
+  /* Dark sidebar (stays dark while content is light) */
+  --color-sidebar: #0f1115;
+  --color-sidebar-border: #20242b;
+  --color-sidebar-on: #e7e9ee;
+  --color-sidebar-on-variant: #969eaa;
+  --color-sidebar-hover: #181b21;
+  --color-sidebar-active: #23272e;
+
+  /* Brand = OnlyAIApp violet (interaction only) */
+  --color-brand: #7c3aed;
+  --color-brand-dim: #6d28d9;
+  --color-brand-container: #f4f1fe;
+  --color-brand-border: #e7defb;
+
+  /* Signals = status only */
+  --color-success: #15a44b;  --color-success-dim: #0f8a3e;
+  --color-warn: #b45309;     --color-warn-dim: #f59e0b;
+  --color-danger: #dc2626;   --color-danger-dim: #ef4444;
+  --color-info: #2563eb;     --color-info-container: #e6efff;
+
+  /* Type + shape */
+  --font-display: "Public Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-data: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --radius-md: 4px; --radius-lg: 8px; --radius-xl: 12px;
+}
+
+:root { color-scheme: light; }
+body {
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-data);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Reusable component classes ── */
+.font-display { font-family: var(--font-display); }
+.font-data { font-family: var(--font-data); }
+.tabnum { font-variant-numeric: tabular-nums; }
+
+.panel {
+  background: var(--color-surface-low);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+}
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--color-outline-variant);
+}
+
+.eyebrow {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .12em; color: var(--color-brand);
+}
+
+/* Inputs */
+.cap-input {
+  width: 100%; background: var(--color-surface);
+  border: 1px solid var(--color-outline-variant); border-radius: 8px;
+  padding: 11px 13px; font-size: 14px; color: var(--color-on-surface);
+}
+.cap-input::placeholder { color: var(--color-outline); }
+.cap-input:focus { outline: none; border-color: var(--color-brand); }
+
+/* Buttons */
+.btn-brand {
+  background: var(--color-brand); color: #fff; border-radius: 8px; font-weight: 600;
+  box-shadow: 0 1px 2px rgba(109,40,217,.25); transition: background .15s;
+}
+.btn-brand:hover { background: var(--color-brand-dim); }
+.btn-brand:disabled { opacity: .45; cursor: default; }
+.btn-ghost {
+  background: var(--color-surface-low); border: 1px solid var(--color-outline-variant);
+  border-radius: 8px; color: var(--color-on-surface); font-weight: 500; transition: border-color .15s;
+}
+.btn-ghost:hover { border-color: var(--color-outline); }
+
+/* Chips / badges (status) */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em; padding: 3px 9px; border-radius: 999px; border: 1px solid;
+}
+.chip-success { background: rgba(21,164,75,.12); color: var(--color-success); border-color: rgba(15,138,62,.3); }
+.chip-warn    { background: rgba(245,158,11,.14); color: var(--color-warn); border-color: rgba(245,158,11,.35); }
+.chip-danger  { background: rgba(220,38,38,.12); color: var(--color-danger); border-color: rgba(239,68,68,.35); }
+.chip-info    { background: var(--color-info-container); color: var(--color-info); border-color: rgba(37,99,235,.3); }
+.chip-brand   { background: var(--color-brand-container); color: var(--color-brand-dim); border-color: var(--color-brand-border); }
+.chip-neutral { background: var(--color-surface-high); color: var(--color-on-surface-variant); border-color: var(--color-outline-variant); }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+
+/* KPI tile */
+.tile {
+  background: var(--color-surface-low); border: 1px solid var(--color-outline-variant);
+  border-radius: 12px; padding: 14px 16px;
+}
+.tile-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--color-on-surface-variant); opacity: .85; }
+.tile-value { font-size: 28px; font-weight: 700; line-height: 1.05; margin-top: 6px;
+  font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+/* Mono code chip (file paths etc.) */
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px;
+  border: 1px solid var(--color-outline-variant); color: var(--color-on-surface-variant);
+  border-radius: 6px; padding: 2px 7px; background: var(--color-surface-low);
+}
+.mono-on { background: var(--color-brand-container); border-color: var(--color-brand-border); color: var(--color-brand-dim); }
+
+/* Dark sidebar nav */
+.snav { display: flex; align-items: center; gap: 11px; padding: 8px 11px; border-radius: 8px;
+  color: var(--color-sidebar-on-variant); font-size: 14px; font-weight: 500; transition: .12s; }
+.snav:hover { background: var(--color-sidebar-hover); color: var(--color-sidebar-on); }
+.snav-active { background: var(--color-sidebar-active); color: var(--color-sidebar-on); }
+.snav-active svg, .snav-active .snav-icon { color: var(--color-brand); }
+.seclabel { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--color-sidebar-on-variant); opacity: .7; }

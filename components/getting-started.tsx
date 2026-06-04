@@ -31,12 +31,12 @@ export function GettingStarted({
   // Graduation: they've run the full loop. Take the training wheels off.
   if (hasProject && hasPlan && hasMemory) {
     return (
-      <section className="border border-violet-500/30 bg-violet-500/5 rounded-xl p-6">
-        <h2 className="font-semibold text-lg">🎓 Training wheels are off</h2>
-        <p className="text-sm text-neutral-400 mt-1">
+      <section className="border border-brand-border bg-brand-container rounded-xl p-6">
+        <h2 className="font-semibold text-lg font-display text-on-surface">🎓 Training wheels are off</h2>
+        <p className="text-sm text-on-surface-variant mt-1">
           You&apos;ve shipped the full loop — set an objective, built with your agent, and your
           memory is compounding. From here OnlyAIApp just keeps you on course.{" "}
-          <Link href="/mission-control" className="text-violet-300 hover:underline">Open Mission Control →</Link>
+          <Link href="/mission-control" className="text-brand hover:underline">Open Mission Control →</Link>
         </p>
       </section>
     );
@@ -56,31 +56,31 @@ export function GettingStarted({
   const total = steps.length;
 
   return (
-    <section className="border border-white/10 rounded-xl p-6">
+    <section className="panel p-6">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="font-semibold text-lg">Your first app with an AI agent</h2>
-        <span className="text-xs text-neutral-500">{completed}/{total}</span>
+        <h2 className="font-semibold text-lg font-display text-on-surface">Your first app with an AI agent</h2>
+        <span className="text-xs text-outline tabnum">{completed}/{total}</span>
       </div>
-      <p className="text-sm text-neutral-400 mb-4">
+      <p className="text-sm text-on-surface-variant mb-4">
         Training wheels for Claude Code — we handle setup and keep the agent on course while you learn.
       </p>
-      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-5">
-        <div className="h-full bg-violet-500 transition-all" style={{ width: `${(completed / total) * 100}%` }} />
+      <div className="h-1.5 bg-surface-high rounded-full overflow-hidden mb-5">
+        <div className="h-full bg-brand transition-all" style={{ width: `${(completed / total) * 100}%` }} />
       </div>
 
       <ul className="space-y-2">
         {steps.map((s) => (
           <li key={s.label}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-white/5 bg-white/[0.02]">
-            <span className={`text-base leading-none ${s.done ? "text-green-400" : "text-neutral-600"}`}>
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-outline-variant bg-surface">
+            <span className={`text-base leading-none ${s.done ? "text-success" : "text-outline"}`}>
               {s.done ? "●" : "○"}
             </span>
-            <span className={`flex-1 text-sm ${s.done ? "text-neutral-500 line-through" : "text-neutral-200"}`}>
+            <span className={`flex-1 text-sm ${s.done ? "text-outline line-through" : "text-on-surface"}`}>
               {s.label}
             </span>
             {!s.done && s.href !== "#" && (
               <Link href={s.href}
-                className="text-xs font-medium text-violet-300 hover:text-violet-200 transition-colors shrink-0">
+                className="text-xs font-medium text-brand hover:text-brand-dim transition-colors shrink-0">
                 {s.cta} →
               </Link>
             )}
@@ -88,7 +88,7 @@ export function GettingStarted({
         ))}
       </ul>
 
-      <Link href="/start" className="inline-block mt-4 text-xs text-neutral-500 hover:text-neutral-300 transition-colors">
+      <Link href="/start" className="inline-block mt-4 text-xs text-outline hover:text-on-surface-variant transition-colors">
         New to all this? Start here →
       </Link>
     </section>

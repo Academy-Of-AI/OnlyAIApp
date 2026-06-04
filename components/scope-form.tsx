@@ -85,13 +85,13 @@ export function ScopeForm() {
   return (
     <div className="space-y-5">
       {/* Mode toggle */}
-      <div className="inline-flex border border-white/10 rounded-lg p-1 text-sm">
+      <div className="inline-flex border border-outline-variant bg-surface-low rounded-lg p-1 text-sm">
         <button onClick={() => setMode("describe")}
-          className={`px-3 py-1.5 rounded-md transition-colors ${mode === "describe" ? "bg-violet-500/15 text-white border border-violet-500/30" : "text-neutral-400 hover:text-white border border-transparent"}`}>
+          className={`px-3 py-1.5 rounded-md transition-colors ${mode === "describe" ? "bg-brand-container text-brand-dim border border-brand-border" : "text-on-surface-variant hover:text-on-surface border border-transparent"}`}>
           ✍️ Describe it
         </button>
         <button onClick={() => setMode("upload")}
-          className={`px-3 py-1.5 rounded-md transition-colors ${mode === "upload" ? "bg-violet-500/15 text-white border border-violet-500/30" : "text-neutral-400 hover:text-white border border-transparent"}`}>
+          className={`px-3 py-1.5 rounded-md transition-colors ${mode === "upload" ? "bg-brand-container text-brand-dim border border-brand-border" : "text-on-surface-variant hover:text-on-surface border border-transparent"}`}>
           📄 I have a PRD / spec
         </button>
       </div>
@@ -101,13 +101,13 @@ export function ScopeForm() {
           <div className="lg:col-span-2 space-y-4">
             {FIELDS.map((f) => (
               <div key={f.key} className="space-y-1.5">
-                <label className="text-sm text-neutral-300">{f.q}</label>
+                <label className="text-sm text-on-surface-variant">{f.q}</label>
                 {("area" in f && f.area) ? (
                   <textarea value={v[f.key]} onChange={(e) => set(f.key, e.target.value)} placeholder={f.ph} rows={3}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500 resize-none" />
+                    className="cap-input resize-none" />
                 ) : (
                   <input value={v[f.key]} onChange={(e) => set(f.key, e.target.value)} placeholder={f.ph}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500" />
+                    className="cap-input" />
                 )}
               </div>
             ))}
@@ -130,36 +130,36 @@ export function ScopeForm() {
               onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
               onDrop={(e) => { e.preventDefault(); setDragActive(false); onFiles(e.dataTransfer.files); }}
               className={`block border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-                dragActive ? "border-violet-500 bg-violet-500/[0.06]" : "border-white/15 hover:border-violet-500/40"
+                dragActive ? "border-brand-border bg-brand-container" : "border-outline-variant hover:border-brand-border"
               }`}
             >
               <input type="file" accept=".md,.markdown,.txt" multiple className="hidden"
                 onChange={(e) => onFiles(e.target.files)} />
               <p className="text-2xl mb-1">📄</p>
-              <p className="text-sm text-neutral-300">
-                <span className="text-violet-300">Drag &amp; drop</span> your <b>.md</b> files here, or click to browse
+              <p className="text-sm text-on-surface-variant">
+                <span className="text-brand">Drag &amp; drop</span> your <b>.md</b> files here, or click to browse
               </p>
-              <p className="text-xs text-neutral-600 mt-1">PRD, architecture, data model, a skill spec — whatever you&apos;ve already written.</p>
+              <p className="text-xs text-outline mt-1">PRD, architecture, data model, a skill spec — whatever you&apos;ve already written.</p>
             </label>
 
             {docs.length > 0 && (
-              <div className="border border-white/10 rounded-xl divide-y divide-white/[0.06]">
+              <div className="panel divide-y divide-[var(--color-outline-variant)]">
                 {docs.map((d) => (
                   <div key={d.name} className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm">
-                    <span className="text-neutral-200 truncate min-w-0">📄 {d.name}</span>
+                    <span className="text-on-surface truncate min-w-0">📄 {d.name}</span>
                     <div className="flex items-center gap-2 shrink-0">
                       <select
                         value={d.kind}
                         onChange={(e) => setDocs((p) => p.map((x) => x.name === d.name ? { ...x, kind: e.target.value as DocKind } : x))}
-                        className="bg-black/40 border border-white/10 rounded px-1.5 py-0.5 text-[11px] text-neutral-300 outline-none focus:border-violet-500"
+                        className="bg-surface border border-outline-variant rounded px-1.5 py-0.5 text-[11px] text-on-surface-variant outline-none focus:border-brand"
                         title="PRD/plan → shapes the plan & database · Skill → goes into your repo for the agent"
                       >
                         <option value="prd">PRD / plan</option>
                         <option value="skill">Skill / repo</option>
                       </select>
-                      <span className="text-[11px] text-neutral-600 hidden sm:inline">{(d.content.length / 1024).toFixed(1)} KB</span>
+                      <span className="text-[11px] text-outline hidden sm:inline">{(d.content.length / 1024).toFixed(1)} KB</span>
                       <button onClick={() => setDocs((p) => p.filter((x) => x.name !== d.name))}
-                        className="text-neutral-600 hover:text-red-400 text-xs">✕</button>
+                        className="text-outline hover:text-danger text-xs">✕</button>
                     </div>
                   </div>
                 ))}
@@ -169,7 +169,7 @@ export function ScopeForm() {
             {/* Planning mode — only relevant once there are docs */}
             {docs.length > 0 && (
               <div className="space-y-2 pt-1">
-                <p className="text-xs text-neutral-500 uppercase tracking-wider">How should we use them?</p>
+                <p className="text-xs text-on-surface-variant uppercase tracking-wider">How should we use them?</p>
                 <div className="grid sm:grid-cols-2 gap-2">
                   <ModeCard
                     active={planningMode === "ground_truth"}
@@ -187,7 +187,7 @@ export function ScopeForm() {
               </div>
             )}
 
-            <p className="text-xs text-neutral-600">
+            <p className="text-xs text-outline">
               We&apos;ll provision the repo + database + hosting, put your docs in place, and hand it to your agent —
               so you skip the annoying setup and go straight to building.
             </p>
@@ -205,13 +205,13 @@ function ModeCard({ active, onClick, title, desc }: { active: boolean; onClick: 
   return (
     <button onClick={onClick}
       className={`text-left rounded-lg border p-3 transition-colors ${
-        active ? "border-violet-500/50 bg-violet-500/[0.08]" : "border-white/10 hover:border-white/25"
+        active ? "border-brand-border bg-brand-container" : "border-outline-variant bg-surface-low hover:border-outline"
       }`}>
       <div className="flex items-center gap-2">
-        <span className={`w-3.5 h-3.5 rounded-full border flex-shrink-0 ${active ? "border-violet-400 bg-violet-500" : "border-white/30"}`} />
-        <span className="text-sm font-medium text-neutral-200">{title}</span>
+        <span className={`w-3.5 h-3.5 rounded-full border flex-shrink-0 ${active ? "border-brand bg-brand" : "border-outline"}`} />
+        <span className="text-sm font-medium text-on-surface">{title}</span>
       </div>
-      <p className="text-[11px] text-neutral-500 mt-1 ml-[22px]">{desc}</p>
+      <p className="text-[11px] text-on-surface-variant mt-1 ml-[22px]">{desc}</p>
     </button>
   );
 }
@@ -223,36 +223,36 @@ function BuildPanel({
   rows?: [string, string][]; uploadCount?: number; planningMode?: PlanningMode;
 }) {
   return (
-    <div className="border border-white/10 rounded-xl p-4 space-y-3 lg:sticky lg:top-6">
-      <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+    <div className="panel p-4 space-y-3 lg:sticky lg:top-6">
+      <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         {rows ? "Your scope brief" : "Your docs"}
       </p>
       {rows ? (
         <div className="text-sm space-y-2.5">
           {rows.map(([label, val]) => (
             <div key={label}>
-              <p className="text-[11px] text-neutral-500">{label}</p>
-              <p className={val.trim() ? "text-neutral-200" : "text-neutral-700"}>{val.trim() || "—"}</p>
+              <p className="text-[11px] text-on-surface-variant">{label}</p>
+              <p className={val.trim() ? "text-on-surface" : "text-outline"}>{val.trim() || "—"}</p>
             </div>
           ))}
         </div>
       ) : (
         <div className="text-sm space-y-1.5">
-          <p className="text-neutral-300">
+          <p className="text-on-surface-variant">
             {uploadCount ? `${uploadCount} file${uploadCount === 1 ? "" : "s"} ready to seed your project.` : "Upload your .md files to continue."}
           </p>
           {!!uploadCount && (
-            <p className="text-[11px] text-neutral-500">
+            <p className="text-[11px] text-on-surface-variant">
               {planningMode === "skip" ? "Skip planning — repo + database from your docs." : "Plan built from your docs."}
             </p>
           )}
         </div>
       )}
       <button onClick={onBuild} disabled={!ready || busy}
-        className="w-full bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors mt-1">
+        className="btn-brand w-full text-sm px-4 py-2.5 mt-1">
         {busy ? "Opening…" : "Build this OS →"}
       </button>
-      <p className="text-[11px] text-neutral-600 text-center">Next: name it &amp; provision — this seeds the Plan.</p>
+      <p className="text-[11px] text-outline text-center">Next: name it &amp; provision — this seeds the Plan.</p>
     </div>
   );
 }

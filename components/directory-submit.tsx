@@ -35,42 +35,42 @@ export function DirectorySubmit({ projects }: { projects: { id: string; name: st
   if (!open) {
     return (
       <button onClick={() => setOpen(true)}
-        className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shrink-0">
+        className="btn-brand text-sm px-4 py-2 shrink-0">
         ＋ Add your app
       </button>
     );
   }
 
   return (
-    <div className="w-full sm:w-96 border border-violet-500/30 bg-violet-500/[0.05] rounded-xl p-4 space-y-3">
+    <div className="w-full sm:w-96 panel p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">Add to the Directory</p>
-        <button onClick={() => setOpen(false)} className="text-neutral-500 hover:text-white text-sm">✕</button>
+        <p className="text-sm font-semibold text-on-surface">Add to the Directory</p>
+        <button onClick={() => setOpen(false)} className="text-on-surface-variant hover:text-on-surface text-sm">✕</button>
       </div>
 
-      <label className="block text-xs text-neutral-400 space-y-1">
+      <label className="block text-xs text-on-surface-variant space-y-1">
         <span>Project</span>
         <select value={projectId} onChange={(e) => setProjectId(e.target.value)}
-          className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-violet-500">
+          className="cap-input">
           {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </label>
 
       <input value={tagline} onChange={(e) => setTagline(e.target.value)}
         placeholder="One line — what does it do?"
-        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500" />
+        className="cap-input" />
 
       <div className="space-y-1">
         <input value={shot} onChange={(e) => setShot(e.target.value)}
           placeholder="Screenshot image URL (optional)"
-          className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500" />
-        <p className="text-[11px] text-neutral-600">Leave blank to auto-capture. Apps behind a login look better with your own dashboard screenshot.</p>
+          className="cap-input" />
+        <p className="text-[11px] text-outline">Leave blank to auto-capture. Apps behind a login look better with your own dashboard screenshot.</p>
       </div>
 
-      {err && <p className="text-xs text-red-400">{err}</p>}
+      {err && <p className="text-xs text-danger">{err}</p>}
 
       <button onClick={submit} disabled={busy || !projectId}
-        className="w-full bg-violet-500 hover:bg-violet-400 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+        className="btn-brand w-full text-sm px-4 py-2">
         {busy ? "Checking it's live…" : "Add to Directory"}
       </button>
     </div>

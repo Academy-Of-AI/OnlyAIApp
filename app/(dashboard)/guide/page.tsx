@@ -32,26 +32,26 @@ export default function GuidePage() {
 
   return (
     <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
-      <Link href="/dashboard" className="text-sm text-neutral-500 hover:text-white transition-colors">← Dashboard</Link>
-      <h1 className="text-3xl font-bold tracking-tight mt-4 mb-2">How OnlyAIApp works</h1>
-      <p className="text-neutral-400 mb-10">
+      <Link href="/dashboard" className="text-sm text-on-surface-variant hover:text-on-surface transition-colors">← Dashboard</Link>
+      <h1 className="text-3xl font-bold font-display tracking-tight text-on-surface mt-4 mb-2">How OnlyAIApp works</h1>
+      <p className="text-on-surface-variant mb-10">
         A control plane for AI-coded projects. You provision and track; Claude Code and Codex build.
-        The connective tissue is <span className="font-mono text-neutral-300">CLAUDE.md</span> — the file
+        The connective tissue is <span className="mono-on">CLAUDE.md</span> — the file
         your agent reads natively every session.
       </p>
 
       <ol className="space-y-6">
         {steps.map((s) => (
           <li key={s.n} className="flex gap-4">
-            <span className="shrink-0 w-8 h-8 rounded-full bg-violet-500/15 text-violet-300 grid place-items-center text-sm font-semibold">
+            <span className="shrink-0 w-8 h-8 rounded-full bg-brand-container text-brand-dim grid place-items-center text-sm font-semibold">
               {s.n}
             </span>
             <div>
-              <h3 className="font-semibold">{s.title}</h3>
-              <p className="text-sm text-neutral-400 mt-1 leading-relaxed">{s.body}</p>
+              <h3 className="font-semibold font-display text-on-surface">{s.title}</h3>
+              <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">{s.body}</p>
               {s.href && (
                 <Link href={s.href}
-                  className="inline-block mt-2 text-xs font-medium text-violet-300 hover:text-violet-200 transition-colors">
+                  className="inline-block mt-2 text-xs font-medium text-brand hover:text-brand-dim transition-colors">
                   {s.cta} →
                 </Link>
               )}
@@ -60,8 +60,8 @@ export default function GuidePage() {
         ))}
       </ol>
 
-      <div className="mt-12 border-t border-white/10 pt-6">
-        <p className="text-sm text-neutral-500">
+      <div className="mt-12 border-t border-outline-variant pt-6">
+        <p className="text-sm text-on-surface-variant">
           The retention engine is the memory + course-keeper loop: the longer you use a project,
           the more context accrues in CLAUDE.md and the harder it is to work without it.
         </p>

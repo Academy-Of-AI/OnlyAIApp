@@ -20,7 +20,7 @@ export function UpdateConnectionButton({
     <div>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="text-xs text-neutral-500 hover:text-neutral-300 underline underline-offset-2 transition-colors"
+        className="text-xs text-on-surface-variant hover:text-on-surface underline underline-offset-2 transition-colors"
       >
         {open ? "Cancel" : label}
       </button>
@@ -33,7 +33,7 @@ export function UpdateConnectionButton({
           {provider === "github"   && (
             <a
               href="/api/github/connect"
-              className="flex items-center justify-center gap-2 bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-neutral-200 transition-colors w-full"
+              className="btn-brand flex items-center justify-center gap-2 text-sm px-4 py-2 transition-colors w-full"
             >
               Reconnect GitHub →
             </a>

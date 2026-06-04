@@ -35,16 +35,16 @@ export default async function OpsPage({ params }: { params: Promise<{ id: string
 
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-6">
-        <Link href="/mission-control" className="hover:text-white transition-colors">Mission Control</Link>
+      <div className="flex items-center gap-2 text-sm text-on-surface-variant mb-6">
+        <Link href="/mission-control" className="hover:text-on-surface transition-colors">Mission Control</Link>
         <span>/</span>
-        <Link href={`/projects/${id}`} className="hover:text-white transition-colors">{project.name}</Link>
+        <Link href={`/projects/${id}`} className="hover:text-on-surface transition-colors">{project.name}</Link>
         <span>/</span>
-        <span className="text-neutral-300">Ops</span>
+        <span className="text-on-surface">Ops</span>
       </div>
 
-      <h1 className="text-2xl font-bold tracking-tight mb-1">Ops · {project.name}</h1>
-      <p className="text-sm text-neutral-500 mb-8">Environment variables and deploy rollback.</p>
+      <h1 className="text-2xl font-bold tracking-tight font-display text-on-surface mb-1">Ops · {project.name}</h1>
+      <p className="text-sm text-on-surface-variant mb-8">Environment variables and deploy rollback.</p>
 
       <OpsPanel projectId={id} initialEnvs={envs} />
     </main>

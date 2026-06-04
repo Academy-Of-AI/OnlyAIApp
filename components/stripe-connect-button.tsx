@@ -34,7 +34,7 @@ export function StripeConnectButton() {
       >
         {loading ? "Opening Stripe…" : "Connect Stripe"}
       </button>
-      {err && <p className="text-xs text-red-400 px-1">{err}</p>}
+      {err && <p className="text-xs text-danger px-1">{err}</p>}
     </div>
   );
 }

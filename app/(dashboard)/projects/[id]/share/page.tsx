@@ -19,16 +19,16 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
 
   return (
     <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-6">
-        <Link href="/mission-control" className="hover:text-white transition-colors">Mission Control</Link>
+      <div className="flex items-center gap-2 text-sm text-on-surface-variant mb-6">
+        <Link href="/mission-control" className="hover:text-on-surface transition-colors">Mission Control</Link>
         <span>/</span>
-        <Link href={`/projects/${id}`} className="hover:text-white transition-colors">{project.name}</Link>
+        <Link href={`/projects/${id}`} className="hover:text-on-surface transition-colors">{project.name}</Link>
         <span>/</span>
-        <span className="text-neutral-300">Share</span>
+        <span className="text-on-surface">Share</span>
       </div>
 
-      <h1 className="text-2xl font-bold tracking-tight mb-1">Share · {project.name}</h1>
-      <p className="text-sm text-neutral-500 mb-8">Give teammates or stakeholders a read-only view of this project.</p>
+      <h1 className="text-2xl font-bold tracking-tight font-display text-on-surface mb-1">Share · {project.name}</h1>
+      <p className="text-sm text-on-surface-variant mb-8">Give teammates or stakeholders a read-only view of this project.</p>
 
       <SharePanel projectId={id} initial={members ?? []} />
     </main>

@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
 const STATUS_STYLES: Record<string, string> = {
-  deployed:     "bg-green-500/15 text-green-400",
-  provisioning: "bg-amber-500/15 text-amber-400",
-  building:     "bg-amber-500/15 text-amber-400",
-  pending:      "bg-white/10 text-neutral-400",
-  failed:       "bg-red-500/15 text-red-400",
+  deployed:     "chip chip-success",
+  provisioning: "chip chip-warn",
+  building:     "chip chip-warn",
+  pending:      "chip chip-neutral",
+  failed:       "chip chip-danger",
 };
 
 export default async function DashboardPage({
@@ -62,33 +62,33 @@ export default async function DashboardPage({
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8 sm:space-y-10">
       {/* Alerts */}
       {params.connected && (
-        <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm px-4 py-3 rounded-lg">
+        <div className="panel border-l-2 border-l-success text-success text-sm px-4 py-3">
           ✓ {connectedLabel(params.connected)} connected successfully.
         </div>
       )}
       {params.error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
+        <div className="panel border-l-2 border-l-danger text-danger text-sm px-4 py-3">
           Connection failed. Please try again.
         </div>
       )}
 
       {/* Required: connect GitHub (the only thing needed to start) */}
       {!hasGitHub && (
-        <section className="border border-violet-500/30 bg-violet-500/5 rounded-xl p-5 sm:p-6 space-y-4">
+        <section className="panel border-brand-border bg-brand-container p-5 sm:p-6 space-y-4">
           <div>
-            <h2 className="font-semibold text-lg">Connect GitHub to start</h2>
-            <p className="text-sm text-neutral-400 mt-1">
+            <h2 className="font-display tracking-tight font-semibold text-lg text-on-surface">Connect GitHub to start</h2>
+            <p className="text-sm text-on-surface-variant mt-1">
               Your projects get a private repo, created automatically. It&apos;s the only thing you need to begin.
             </p>
           </div>
           <a href="/api/github/connect"
-            className="flex items-center justify-center gap-2 bg-white text-black text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-neutral-200 transition-colors w-full sm:w-auto">
+            className="btn-brand flex items-center justify-center gap-2 text-sm px-4 py-2.5 w-full sm:w-auto">
             <GHIcon /> Connect GitHub →
           </a>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-outline">
             No GitHub account?{" "}
             <a href="https://github.com/signup" target="_blank" rel="noopener noreferrer"
-              className="text-neutral-300 hover:text-white underline underline-offset-2">
+              className="text-on-surface-variant hover:text-on-surface underline underline-offset-2">
               Create one free →
             </a>{" "}
             — it takes a minute, then come back and connect.
@@ -112,12 +112,15 @@ export default async function DashboardPage({
 
       {/* Projects header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">Your projects</h1>
+        <div>
+          <p className="eyebrow">Workspace</p>
+          <h1 className="text-xl font-bold font-display tracking-tight text-on-surface">Your projects</h1>
+        </div>
         <div className="flex items-center gap-2">
           {!!projects?.length && (
             <Link
               href="/mission-control"
-              className="border border-white/10 hover:border-white/25 text-sm text-neutral-300 hover:text-white px-4 py-2 rounded-lg transition-colors"
+              className="btn-ghost text-sm px-4 py-2"
             >
               ▦ Mission Control
             </Link>
@@ -125,7 +128,7 @@ export default async function DashboardPage({
           {canCreate && (
             <Link
               href="/new-project"
-              className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              className="btn-brand text-sm px-4 py-2"
             >
               + New project
             </Link>
@@ -135,11 +138,11 @@ export default async function DashboardPage({
 
       {/* Project list */}
       {!projects?.length ? (
-        <div className="text-center py-20 text-neutral-500 space-y-2">
+        <div className="text-center py-20 text-on-surface-variant space-y-2">
           <p className="text-3xl">🚀</p>
           <p>No projects yet.</p>
           {canCreate && (
-            <Link href="/new-project" className="text-violet-400 hover:underline text-sm">
+            <Link href="/new-project" className="text-brand hover:underline text-sm">
               Create your first project →
             </Link>
           )}
@@ -149,32 +152,32 @@ export default async function DashboardPage({
           {projects.map((p) => (
             <div
               key={p.id}
-              className="border border-white/10 rounded-xl p-5 space-y-3 hover:border-white/25 hover:bg-white/[0.02] transition-all"
+              className="panel p-5 space-y-3 hover:border-outline transition-all"
             >
               <Link href={`/projects/${p.id}`} className="block space-y-3">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="font-semibold truncate">{p.name}</span>
+                  <span className="font-semibold truncate text-on-surface">{p.name}</span>
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
+                    className={`shrink-0 ${
                       STATUS_STYLES[p.status] ?? STATUS_STYLES.pending
                     }`}
                   >
                     {p.status}
                   </span>
                 </div>
-                <p className="text-xs text-neutral-500">{p.template_id}</p>
+                <p className="text-xs text-outline">{p.template_id}</p>
                 <div className="flex gap-3 text-xs">
                   {p.github_repo_url && (
-                    <span className="text-neutral-400">GitHub →</span>
+                    <span className="text-on-surface-variant">GitHub →</span>
                   )}
                   {p.vercel_preview_url && (
-                    <span className="text-neutral-400">Live URL →</span>
+                    <span className="text-on-surface-variant">Live URL →</span>
                   )}
                 </div>
-                {p.error && <p className="text-xs text-red-400 truncate">{p.error}</p>}
+                {p.error && <p className="text-xs text-danger truncate">{p.error}</p>}
               </Link>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs text-neutral-600">{new Date(p.created_at).toLocaleDateString()}</p>
+                <p className="text-xs text-outline">{new Date(p.created_at).toLocaleDateString()}</p>
                 <DeleteProjectButton projectId={p.id} projectName={p.name} />
               </div>
             </div>

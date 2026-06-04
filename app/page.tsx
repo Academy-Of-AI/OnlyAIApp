@@ -10,17 +10,17 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen flex flex-col">
       {/* Nav — just the logo */}
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+      <nav className="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
         <div className="flex items-baseline gap-2 min-w-0">
-          <span className="font-bold text-lg tracking-tight">OnlyAIApp</span>
+          <span className="font-display font-bold text-lg tracking-tight text-on-surface">OnlyAIApp</span>
           <a href="https://goacademyai.com" target="_blank" rel="noopener noreferrer"
-            className="hidden sm:inline text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors whitespace-nowrap">
+            className="hidden sm:inline text-[11px] text-outline hover:text-on-surface transition-colors whitespace-nowrap">
             by Academy of AI
           </a>
         </div>
         <Link
           href="/sign-in"
-          className="text-sm bg-white text-black font-medium px-4 py-1.5 rounded-md hover:bg-neutral-200 transition-colors"
+          className="btn-brand text-sm px-4 py-1.5"
         >
           Start building
         </Link>
@@ -28,65 +28,65 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-6 py-16 sm:py-24 gap-6">
-        <div className="inline-flex items-center gap-2 bg-white/10 text-white/70 text-xs px-3 py-1 rounded-full border border-white/20">
-          <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+        <div className="inline-flex items-center gap-2 bg-brand-container text-brand text-xs px-3 py-1 rounded-full border border-brand-border">
+          <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
           Not a prompt. Not a course.
         </div>
 
         {/* FIX 1: explicit space via template literal so "system built" renders correctly */}
-        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight max-w-3xl leading-[1.1]">
+        <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight max-w-3xl leading-[1.1] text-on-surface">
           Own a working AI system{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-300">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-fuchsia-400">
             built by you, in a day
           </span>
         </h1>
 
-        <p className="text-neutral-400 text-lg max-w-xl">
+        <p className="text-on-surface-variant text-lg max-w-xl">
           Not a prompt. Not a course. A real system you build on a reliable foundation —
           one that runs without you. We handle the setup and keep your agent on track, so
           you ship something real and own it.
         </p>
 
         {/* FIX 4: trust anchor — ownership reassurance above the fold */}
-        <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-neutral-500">
+        <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-on-surface-variant">
           <span>✓ You own the repo &amp; infra</span>
           <span>✓ Built with Claude Code</span>
           <span>✓ No API keys to manage</span>
         </div>
 
         <div className="flex gap-3 flex-wrap justify-center">
-          <Link href="/sign-in" className="bg-violet-500 hover:bg-violet-400 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
+          <Link href="/sign-in" className="btn-brand font-semibold px-6 py-3">
             Start building →
           </Link>
-          <Link href="/start" className="border border-white/15 hover:border-white/30 text-neutral-200 font-semibold px-6 py-3 rounded-lg transition-colors">
+          <Link href="/start" className="btn-ghost font-semibold px-6 py-3">
             How it works
           </Link>
         </div>
 
-        <p className="text-xs text-neutral-600 max-w-md">
+        <p className="text-xs text-outline max-w-md">
           Database + coded logic first, AI on top — so your system keeps running even when the AI is off.
         </p>
       </section>
 
       {/* Steps */}
-      <section className="border-t border-white/10 px-5 sm:px-6 py-14 sm:py-16">
+      <section className="border-t border-outline-variant px-5 sm:px-6 py-14 sm:py-16">
         <div className="max-w-4xl mx-auto grid sm:grid-cols-3 gap-8">
           {steps.map((s) => (
             <div key={s.n} className="space-y-2">
-              <span className="text-violet-400 font-mono text-sm">{s.n}</span>
-              <h3 className="font-semibold text-lg">{s.title}</h3>
-              <p className="text-neutral-400 text-sm leading-relaxed">{s.body}</p>
+              <span className="text-brand font-mono text-sm">{s.n}</span>
+              <h3 className="font-display font-semibold text-lg text-on-surface">{s.title}</h3>
+              <p className="text-on-surface-variant text-sm leading-relaxed">{s.body}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 px-6 py-6 text-center text-xs text-neutral-600">
+      <footer className="border-t border-outline-variant px-6 py-6 text-center text-xs text-outline">
         OnlyAIApp — own a working AI system, built by you{" "}
-        <span className="text-neutral-700">·</span>{" "}
+        <span className="text-outline">·</span>{" "}
         <a href="https://goacademyai.com" target="_blank" rel="noopener noreferrer"
-          className="text-neutral-700 hover:text-neutral-500 transition-colors">
+          className="text-outline hover:text-on-surface transition-colors">
           An Academy of AI (AOAI) product
         </a>
       </footer>

@@ -9,19 +9,19 @@ export default async function SignInPage({
   const authError = params?.auth_error;
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 bg-neutral-950">
+    <main className="min-h-screen flex items-center justify-center px-4 bg-surface">
       <div className="w-full max-w-sm space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <p className="text-white/40 text-sm tracking-wide uppercase text-xs">OnlyAIApp</p>
-          <h1 className="text-2xl font-bold text-white">Build your AI system</h1>
-          <p className="text-neutral-500 text-sm">
+          <p className="eyebrow text-sm tracking-wide uppercase text-xs">OnlyAIApp</p>
+          <h1 className="font-display text-2xl font-bold text-on-surface">Build your AI system</h1>
+          <p className="text-on-surface-variant text-sm">
             Sign in or create an account — your workspace is tied to your GitHub.
           </p>
         </div>
 
         {authError && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs px-3 py-2 rounded-lg break-words">
+          <div className="bg-[rgba(220,38,38,.08)] border border-[rgba(220,38,38,.25)] text-danger text-xs px-3 py-2 rounded-lg break-words">
             {authError}
           </div>
         )}
@@ -30,7 +30,7 @@ export default async function SignInPage({
         <form action={signInWithGitHub}>
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-2.5 bg-white text-black font-semibold py-3 rounded-lg hover:bg-neutral-100 transition-colors text-sm"
+            className="btn-brand w-full flex items-center justify-center gap-2.5 py-3 text-sm"
           >
             <GitHubIcon />
             Continue with GitHub
@@ -38,13 +38,13 @@ export default async function SignInPage({
         </form>
 
         {/* Fix 5: product-specific rationale */}
-        <p className="text-center text-xs text-neutral-600 leading-relaxed">
+        <p className="text-center text-xs text-on-surface-variant leading-relaxed">
           GitHub is required — your app, repo, and workflow live in real code.
           We create your workspace and keep your build on track from there.
         </p>
 
         {/* Fix 3: trust / legal microcopy — no Terms/Privacy pages exist yet, so safe copy only */}
-        <p className="text-center text-[11px] text-neutral-700">
+        <p className="text-center text-[11px] text-outline">
           By continuing you agree that OnlyAIApp may access your GitHub account to
           create and manage repositories on your behalf.
         </p>

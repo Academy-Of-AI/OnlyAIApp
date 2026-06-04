@@ -67,22 +67,22 @@ export function OpsPanel({
     <div className="space-y-8">
       {/* Env vars */}
       <section>
-        <h3 className="text-sm font-semibold mb-1">Environment variables</h3>
-        <p className="text-xs text-neutral-500 mb-4">
+        <h3 className="text-sm font-semibold text-on-surface mb-1">Environment variables</h3>
+        <p className="text-xs text-on-surface-variant mb-4">
           Synced to Vercel across production, preview &amp; development. Values are write-only —
           Vercel never returns secrets, so existing ones show as ••••.
         </p>
 
-        <div className="border border-white/10 rounded-xl divide-y divide-white/5">
+        <div className="panel divide-y divide-[var(--color-outline-variant)]">
           {envs.length === 0 && (
-            <p className="text-xs text-neutral-600 px-4 py-3">No environment variables yet.</p>
+            <p className="text-xs text-outline px-4 py-3">No environment variables yet.</p>
           )}
           {envs.map((e) => (
             <div key={e.key} className="flex items-center justify-between px-4 py-2.5">
-              <span className="font-mono text-xs">{e.key}</span>
+              <span className="font-mono text-xs text-on-surface">{e.key}</span>
               <span className="flex items-center gap-3">
-                <span className="font-mono text-xs text-neutral-600">••••••••</span>
-                <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded">synced</span>
+                <span className="font-mono text-xs text-outline">••••••••</span>
+                <span className="text-[10px] text-success bg-[rgba(21,164,75,0.12)] px-2 py-0.5 rounded">synced</span>
               </span>
             </div>
           ))}
@@ -92,39 +92,39 @@ export function OpsPanel({
           <input
             value={key} onChange={(e) => setKey(e.target.value.toUpperCase())}
             placeholder="KEY_NAME" spellCheck={false}
-            className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm font-mono focus:border-white/30 outline-none"
+            className="cap-input flex-1 font-mono"
           />
           <input
             value={value} onChange={(e) => setValue(e.target.value)}
             placeholder="value" type="password" autoComplete="off" spellCheck={false}
-            className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm font-mono focus:border-white/30 outline-none"
+            className="cap-input flex-1 font-mono"
           />
           <button
             type="submit" disabled={saving || !key || !value}
-            className="bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-neutral-200 disabled:opacity-40 transition-colors"
+            className="btn-ghost text-sm px-4 py-2 disabled:opacity-40 transition-colors"
           >
             {saving ? "Saving…" : "Add / update"}
           </button>
         </form>
         {msg && (
-          <p className={`text-xs mt-2 ${msg.kind === "ok" ? "text-green-400" : "text-red-400"}`}>{msg.text}</p>
+          <p className={`text-xs mt-2 ${msg.kind === "ok" ? "text-success" : "text-danger"}`}>{msg.text}</p>
         )}
       </section>
 
       {/* Rollback */}
       <section>
-        <h3 className="text-sm font-semibold mb-1">Rollback</h3>
-        <p className="text-xs text-neutral-500 mb-3">
+        <h3 className="text-sm font-semibold text-on-surface mb-1">Rollback</h3>
+        <p className="text-xs text-on-surface-variant mb-3">
           Re-deploy the last successful production commit — for when a build goes bad.
         </p>
         <button
           onClick={rollback} disabled={rolling}
-          className="border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-40 transition-colors"
+          className="border border-[rgba(245,158,11,0.35)] text-warn hover:bg-[rgba(245,158,11,0.1)] text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-40 transition-colors"
         >
           {rolling ? "Rolling back…" : "↺ Roll back to last good deploy"}
         </button>
         {rollMsg && (
-          <p className={`text-xs mt-2 ${rollMsg.kind === "ok" ? "text-green-400" : "text-red-400"}`}>{rollMsg.text}</p>
+          <p className={`text-xs mt-2 ${rollMsg.kind === "ok" ? "text-success" : "text-danger"}`}>{rollMsg.text}</p>
         )}
       </section>
     </div>

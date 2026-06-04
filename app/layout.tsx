@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased bg-neutral-950 text-white">
+      <body className="antialiased bg-[var(--color-surface)] text-[var(--color-on-surface)]">
           <PHProvider>{children}</PHProvider>
         </body>
     </html>

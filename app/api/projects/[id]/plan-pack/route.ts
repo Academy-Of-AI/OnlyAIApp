@@ -330,22 +330,11 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const ownerFunded = process.env.OWNER_FUNDED_BUILDS === "true";
   const anthropicKey = process.env.ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_SECRET_KEY;
   if (!anthropicKey) {
     return NextResponse.json(
       { error: "AI not configured — add ANTHROPIC_API_KEY to your Vercel environment variables." },
       { status: 500 },
-    );
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles").select("build_credits, plan").eq("id", user.id).single();
-  const isPro = profile?.plan === "pro"; // Pro = unlimited Plan Packs (no credit gate)
-  if (!ownerFunded && !isPro && (!profile || profile.build_credits <= 0)) {
-    return NextResponse.json(
-      { error: "You're out of credits — get 3 for $10, or go Pro for unlimited.", code: "no_credits" },
-      { status: 402 },
     );
   }
 
@@ -387,13 +376,7 @@ export async function POST(
       const send = (e: Record<string, unknown>) =>
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(e)}\n\n`));
 
-      let creditUsed = false;
       try {
-        if (!ownerFunded && !isPro) {
-          const { data: deducted } = await supabase.rpc("use_build_credit", { p_user_id: user.id });
-          creditUsed = deducted !== false;
-        }
-
         const anthropic = new Anthropic({ apiKey: anthropicKey });
 
         let docs: Array<{ path: string; content: string }> = [];
@@ -643,7 +626,6 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
         });
       } catch (err) {
         console.error("[plan-pack] error:", err);
-        if (creditUsed) { try { await supabase.rpc("refund_build_credit", { p_user_id: user.id }); } catch {} }
         const msg = friendlyAiError(err) ?? (err instanceof Error ? err.message : "Plan generation failed.");
         try { send({ step: "error", message: msg }); } catch {}
       } finally {

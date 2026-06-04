@@ -31,41 +31,41 @@ export default async function UsagePage({ params }: { params: Promise<{ id: stri
 
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-6">
-        <Link href="/mission-control" className="hover:text-white transition-colors">Mission Control</Link>
+      <div className="flex items-center gap-2 text-sm text-on-surface-variant mb-6">
+        <Link href="/mission-control" className="hover:text-on-surface transition-colors">Mission Control</Link>
         <span>/</span>
-        <Link href={`/projects/${id}`} className="hover:text-white transition-colors">{project.name}</Link>
+        <Link href={`/projects/${id}`} className="hover:text-on-surface transition-colors">{project.name}</Link>
         <span>/</span>
-        <span className="text-neutral-300">Usage</span>
+        <span className="text-on-surface">Usage</span>
       </div>
 
-      <h1 className="text-2xl font-bold tracking-tight mb-1">Usage · {project.name}</h1>
-      <p className="text-sm text-neutral-500 mb-8">Estimated AI spend for this project.</p>
+      <h1 className="text-2xl font-bold tracking-tight font-display text-on-surface mb-1">Usage · {project.name}</h1>
+      <p className="text-sm text-on-surface-variant mb-8">Estimated AI spend for this project.</p>
 
       <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className="border border-white/10 rounded-xl p-5">
-          <div className="text-xs text-neutral-500">Estimated spend</div>
-          <div className="text-3xl font-bold mt-1">${(totalCents / 100).toFixed(2)}</div>
+        <div className="tile">
+          <div className="tile-label">Estimated spend</div>
+          <div className="tile-value tabnum">${(totalCents / 100).toFixed(2)}</div>
         </div>
-        <div className="border border-white/10 rounded-xl p-5">
-          <div className="text-xs text-neutral-500">Tokens</div>
-          <div className="text-3xl font-bold mt-1">{(totalTokens / 1000).toFixed(0)}k</div>
+        <div className="tile">
+          <div className="tile-label">Tokens</div>
+          <div className="tile-value tabnum">{(totalTokens / 1000).toFixed(0)}k</div>
         </div>
       </div>
 
       {Object.keys(byKind).length > 0 && (
-        <div className="border border-white/10 rounded-xl divide-y divide-white/5 mb-8">
+        <div className="panel divide-y divide-[var(--color-outline-variant)] mb-8">
           {Object.entries(byKind).map(([k, v]) => (
-            <div key={k} className="flex items-center justify-between px-4 py-3 text-sm">
-              <span className="capitalize">{k} <span className="text-neutral-600">×{v.count}</span></span>
-              <span className="font-mono text-neutral-400">${(v.cents / 100).toFixed(2)}</span>
+            <div key={k} className="flex items-center justify-between px-4 py-3 text-sm text-on-surface">
+              <span className="capitalize">{k} <span className="text-outline tabnum">×{v.count}</span></span>
+              <span className="font-mono text-on-surface-variant tabnum">${(v.cents / 100).toFixed(2)}</span>
             </div>
           ))}
         </div>
       )}
 
       {rows.length === 0 && (
-        <p className="text-sm text-neutral-600 text-center py-8">No usage recorded yet.</p>
+        <p className="text-sm text-outline text-center py-8">No usage recorded yet.</p>
       )}
     </main>
   );

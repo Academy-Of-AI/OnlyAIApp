@@ -29,26 +29,26 @@ export function NotificationsBell() {
   return (
     <div className="relative">
       <button onClick={() => { setOpen(!open); if (!open && unread) markAll(); }}
-        className="relative border border-white/10 hover:border-white/25 rounded-lg w-9 h-9 grid place-items-center text-neutral-300 transition-colors">
+        className="relative btn-ghost rounded-lg w-9 h-9 grid place-items-center text-on-surface-variant transition-colors">
         🔔
         {unread > 0 && (
-          <span className="absolute -top-1 -right-1 bg-violet-500 text-white text-[10px] font-bold rounded-full w-4 h-4 grid place-items-center">
+          <span className="absolute -top-1 -right-1 bg-brand text-white text-[10px] font-bold rounded-full w-4 h-4 grid place-items-center">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-neutral-900 border border-white/15 rounded-xl shadow-xl z-50">
+        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto panel z-50">
           {items.length === 0 ? (
-            <p className="text-sm text-neutral-500 px-4 py-6 text-center">No notifications yet.</p>
+            <p className="text-sm text-on-surface-variant px-4 py-6 text-center">No notifications yet.</p>
           ) : (
             items.map((n) => (
               <Link key={n.id} href={n.project_id ? `/projects/${n.project_id}` : "/dashboard"}
-                className="block px-4 py-3 border-b border-white/5 hover:bg-white/[0.03] transition-colors">
-                <div className="text-sm font-medium flex items-center gap-2">
+                className="block px-4 py-3 border-b border-outline-variant hover:bg-surface-high transition-colors">
+                <div className="text-sm font-medium flex items-center gap-2 text-on-surface">
                   <span>{ICON[n.type] ?? "•"}</span>{n.title}
                 </div>
-                {n.body && <p className="text-xs text-neutral-500 mt-0.5">{n.body}</p>}
+                {n.body && <p className="text-xs text-on-surface-variant mt-0.5">{n.body}</p>}
               </Link>
             ))
           )}

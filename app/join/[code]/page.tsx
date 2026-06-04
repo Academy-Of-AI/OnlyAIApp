@@ -76,29 +76,29 @@ export default function JoinPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+      <main className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-outline-variant border-t-brand rounded-full animate-spin" />
       </main>
     );
   }
 
   if (done) {
     return (
-      <main className="min-h-screen bg-neutral-950 flex items-center justify-center px-4">
+      <main className="min-h-screen bg-surface flex items-center justify-center px-4">
         <div className="max-w-sm w-full text-center space-y-6">
           <div className="text-5xl">🚀</div>
-          <h1 className="text-2xl font-bold text-white">You&apos;re in!</h1>
-          <p className="text-neutral-400 text-sm">Your project is live and ready to hack on.</p>
+          <h1 className="text-2xl font-bold text-on-surface font-display tracking-tight">You&apos;re in!</h1>
+          <p className="text-on-surface-variant text-sm">Your project is live and ready to hack on.</p>
           <div className="flex flex-col gap-3">
             <a href={done.vercelPreviewUrl} target="_blank" rel="noopener noreferrer"
-              className="bg-green-500 hover:bg-green-400 text-black font-semibold py-3 rounded-lg transition-colors text-sm">
+              className="btn-brand text-white py-3 transition-colors text-sm">
               Open live URL →
             </a>
             <a href={done.githubRepoUrl} target="_blank" rel="noopener noreferrer"
-              className="border border-white/20 hover:border-white/40 text-white/70 hover:text-white py-3 rounded-lg transition-colors text-sm">
+              className="btn-ghost py-3 transition-colors text-sm">
               Open GitHub repo
             </a>
-            <a href="/dashboard" className="text-neutral-500 hover:text-white text-xs transition-colors">
+            <a href="/dashboard" className="text-outline hover:text-on-surface text-xs transition-colors">
               Go to dashboard
             </a>
           </div>
@@ -108,42 +108,42 @@ export default function JoinPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 flex items-center justify-center px-4">
+    <main className="min-h-screen bg-surface flex items-center justify-center px-4">
       <div className="max-w-sm w-full space-y-6">
         <div className="text-center space-y-2">
-          <span className="text-white/40 text-xs font-mono bg-white/5 px-3 py-1 rounded-full border border-white/10">
+          <span className="mono">
             INVITE CODE: {code}
           </span>
-          <h1 className="text-2xl font-bold text-white mt-3">Join the hackathon</h1>
-          <p className="text-neutral-400 text-sm">
+          <h1 className="text-2xl font-bold text-on-surface mt-3 font-display tracking-tight">Join the hackathon</h1>
+          <p className="text-on-surface-variant text-sm">
             Get a full-stack app provisioned under your GitHub + Vercel in ~60 seconds.
           </p>
         </div>
 
         {!user ? (
           <div className="space-y-3">
-            <p className="text-neutral-500 text-sm text-center">Sign in or create an account to continue</p>
+            <p className="text-outline text-sm text-center">Sign in or create an account to continue</p>
             <a
               href={`/sign-up?next=/join/${code}`}
-              className="block w-full text-center bg-green-500 hover:bg-green-400 text-black font-semibold py-3 rounded-lg transition-colors"
+              className="btn-brand block w-full text-center text-white py-3 transition-colors"
             >
               Create free account →
             </a>
             <a
               href={`/sign-in?next=/join/${code}`}
-              className="block w-full text-center border border-white/20 hover:border-white/40 text-white/70 hover:text-white py-3 rounded-lg transition-colors text-sm"
+              className="btn-ghost block w-full text-center py-3 transition-colors text-sm"
             >
               Sign in
             </a>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-neutral-400">
-              Signed in as <span className="text-white">{user.email}</span>
+            <div className="panel px-4 py-3 text-sm text-on-surface-variant">
+              Signed in as <span className="text-on-surface">{user.email}</span>
             </div>
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
+              <div className="bg-red-500/10 border border-red-500/30 text-danger text-sm px-4 py-3 rounded-lg">
                 {error}
               </div>
             )}
@@ -151,11 +151,11 @@ export default function JoinPage() {
             <button
               onClick={join}
               disabled={joining}
-              className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black font-semibold py-3 rounded-lg transition-colors"
+              className="btn-brand w-full text-white py-3 transition-colors"
             >
               {joining ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                   {step || "Provisioning…"}
                 </span>
               ) : (

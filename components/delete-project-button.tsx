@@ -45,16 +45,16 @@ export function DeleteProjectButton({
   if (confirming) {
     return (
       <span className="inline-flex items-center gap-2 text-xs">
-        <span className="text-red-400">Delete &amp; wipe its database?</span>
+        <span className="text-danger">Delete &amp; wipe its database?</span>
         <button onClick={del} disabled={deleting}
-          className="bg-red-500/90 hover:bg-red-500 text-white px-2.5 py-1 rounded-md disabled:opacity-50">
+          className="bg-danger hover:bg-danger-dim text-white px-2.5 py-1 rounded-md disabled:opacity-50">
           {deleting ? "Deleting…" : "Yes, delete"}
         </button>
         <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirming(false); }}
-          className="border border-white/15 hover:border-white/30 px-2.5 py-1 rounded-md text-neutral-300">
+          className="btn-ghost px-2.5 py-1 rounded-md">
           Cancel
         </button>
-        {err && <span className="text-red-400">{err}</span>}
+        {err && <span className="text-danger">{err}</span>}
       </span>
     );
   }
@@ -63,7 +63,7 @@ export function DeleteProjectButton({
     return (
       <button
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirming(true); }}
-        className="text-sm border border-red-500/30 text-red-400 hover:bg-red-500/10 px-4 py-2 rounded-lg transition-colors"
+        className="text-sm border border-danger/30 text-danger hover:bg-danger/10 px-4 py-2 rounded-lg transition-colors"
       >
         Delete project
       </button>
@@ -73,7 +73,7 @@ export function DeleteProjectButton({
   return (
     <button
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirming(true); }}
-      className="text-xs text-neutral-600 hover:text-red-400 transition-colors"
+      className="text-xs text-outline hover:text-danger transition-colors"
     >
       Delete
     </button>

@@ -12,11 +12,11 @@ const KINDS = [
   { v: "note", label: "Note" },
 ];
 const KIND_COLOR: Record<string, string> = {
-  objective: "text-violet-300 bg-violet-500/10",
-  decision: "text-blue-300 bg-blue-500/10",
-  architecture: "text-emerald-300 bg-emerald-500/10",
-  gotcha: "text-amber-300 bg-amber-500/10",
-  note: "text-neutral-300 bg-white/5",
+  objective: "text-brand-dim bg-brand-container",
+  decision: "text-info bg-[var(--color-info-container)]",
+  architecture: "text-on-surface-variant bg-surface-high",
+  gotcha: "text-warn bg-[rgba(245,158,11,0.14)]",
+  note: "text-on-surface-variant bg-surface-high",
 };
 
 export function MemoryPanel({
@@ -75,15 +75,15 @@ export function MemoryPanel({
 
   return (
     <div className="space-y-6">
-      <form onSubmit={add} className="border border-white/10 rounded-xl p-4 space-y-3">
+      <form onSubmit={add} className="panel p-4 space-y-3">
         <div className="flex gap-2">
           <select
             value={kind} onChange={(e) => setKind(e.target.value)}
-            className="bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-white/30"
+            className="bg-surface border border-outline-variant rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:border-brand"
           >
-            {KINDS.map((k) => <option key={k.v} value={k.v} className="bg-neutral-900">{k.label}</option>)}
+            {KINDS.map((k) => <option key={k.v} value={k.v} className="bg-surface-low">{k.label}</option>)}
           </select>
-          <span className="text-xs text-neutral-500 self-center">
+          <span className="text-xs text-on-surface-variant self-center">
             Captured into the project&apos;s memory, then written to CLAUDE.md.
           </span>
         </div>
@@ -91,11 +91,11 @@ export function MemoryPanel({
           value={content} onChange={(e) => setContent(e.target.value)}
           placeholder="e.g. Auth uses Supabase SSR; middleware must tolerate missing env vars."
           rows={2}
-          className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-white/30 resize-none"
+          className="cap-input resize-none"
         />
         <button
           type="submit" disabled={saving || !content.trim()}
-          className="bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-neutral-200 disabled:opacity-40 transition-colors"
+          className="btn-ghost text-sm px-4 py-2 disabled:opacity-40 transition-colors"
         >
           {saving ? "Saving…" : "Add to memory"}
         </button>
@@ -103,19 +103,19 @@ export function MemoryPanel({
 
       <div className="space-y-2">
         {entries.length === 0 && (
-          <p className="text-sm text-neutral-600 text-center py-8">
+          <p className="text-sm text-outline text-center py-8">
             No memory yet. Capture decisions, architecture, and gotchas — they become CLAUDE.md.
           </p>
         )}
         {entries.map((e) => (
-          <div key={e.id} className="group flex items-start gap-3 border border-white/10 rounded-lg px-4 py-3">
+          <div key={e.id} className="group flex items-start gap-3 panel rounded-lg px-4 py-3">
             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded shrink-0 mt-0.5 ${KIND_COLOR[e.kind] ?? KIND_COLOR.note}`}>
               {e.kind}
             </span>
-            <span className="text-sm text-neutral-200 flex-1">{e.content}</span>
+            <span className="text-sm text-on-surface flex-1">{e.content}</span>
             <button
               onClick={() => remove(e.id)}
-              className="text-neutral-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-xs shrink-0"
+              className="text-outline hover:text-danger opacity-0 group-hover:opacity-100 transition text-xs shrink-0"
             >
               remove
             </button>
@@ -123,16 +123,16 @@ export function MemoryPanel({
         ))}
       </div>
 
-      <div className="flex items-center gap-3 border-t border-white/10 pt-5">
+      <div className="flex items-center gap-3 border-t border-outline-variant pt-5">
         <button
           onClick={sync} disabled={syncing}
-          className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-40 transition-colors"
+          className="btn-brand text-sm px-4 py-2 disabled:opacity-40 transition-colors"
         >
           {syncing ? "Syncing…" : "⟳ Sync to CLAUDE.md"}
         </button>
-        <span className="text-xs text-neutral-500">Commits CLAUDE.md to your repo so the agent reads it.</span>
+        <span className="text-xs text-on-surface-variant">Commits CLAUDE.md to your repo so the agent reads it.</span>
       </div>
-      {msg && <p className={`text-xs ${msg.kind === "ok" ? "text-green-400" : "text-red-400"}`}>{msg.text}</p>}
+      {msg && <p className={`text-xs ${msg.kind === "ok" ? "text-success" : "text-danger"}`}>{msg.text}</p>}
     </div>
   );
 }

@@ -32,16 +32,16 @@ export default async function HackathonDetailPage({
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
       <div>
-        <Link href="/hackathons" className="text-neutral-500 text-sm hover:text-white">← Hackathons</Link>
+        <Link href="/hackathons" className="text-on-surface-variant text-sm hover:text-on-surface">← Hackathons</Link>
         <div className="flex items-start justify-between mt-2 gap-4">
           <div>
-            <h1 className="text-2xl font-bold">{hackathon.name}</h1>
+            <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">{hackathon.name}</h1>
             {hackathon.description && (
-              <p className="text-neutral-400 text-sm mt-1">{hackathon.description}</p>
+              <p className="text-on-surface-variant text-sm mt-1">{hackathon.description}</p>
             )}
           </div>
-          <span className={`text-xs px-2 py-1 rounded-full mt-1 whitespace-nowrap ${
-            hackathon.status === "active" ? "bg-green-500/20 text-green-400" : "bg-neutral-500/20 text-neutral-400"
+          <span className={`chip mt-1 whitespace-nowrap ${
+            hackathon.status === "active" ? "chip-success" : "chip-neutral"
           }`}>
             {hackathon.status}
           </span>
@@ -49,15 +49,15 @@ export default async function HackathonDetailPage({
       </div>
 
       {/* Invite link */}
-      <div className="border border-white/10 rounded-xl p-5 space-y-3">
-        <h2 className="font-semibold text-sm">Invite link</h2>
+      <div className="panel p-5 space-y-3">
+        <h2 className="font-semibold text-sm text-on-surface">Invite link</h2>
         <div className="flex gap-2">
-          <code className="flex-1 bg-white/5 text-green-400 text-sm px-3 py-2 rounded-lg font-mono truncate">
+          <code className="flex-1 bg-brand-container text-brand-dim text-sm px-3 py-2 rounded-lg font-mono truncate">
             {joinUrl}
           </code>
           <CopyButton text={joinUrl} />
         </div>
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-on-surface-variant">
           Share this link. Participants sign up, connect GitHub + Vercel, and get a live app in ~60 seconds.
         </p>
       </div>
@@ -69,23 +69,23 @@ export default async function HackathonDetailPage({
           { label: "Deployed", value: deployed },
           { label: "Capacity", value: hackathon.max_participants },
         ].map((s) => (
-          <div key={s.label} className="border border-white/10 rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold">{s.value}</p>
-            <p className="text-xs text-neutral-500 mt-1">{s.label}</p>
+          <div key={s.label} className="tile text-center">
+            <p className="text-2xl font-bold text-on-surface tabnum">{s.value}</p>
+            <p className="text-xs text-on-surface-variant mt-1">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Participant table */}
       <div className="space-y-3">
-        <h2 className="font-semibold">Participants</h2>
+        <h2 className="font-semibold text-on-surface">Participants</h2>
         {!participants?.length ? (
-          <p className="text-neutral-500 text-sm py-8 text-center">No participants yet. Share the invite link above.</p>
+          <p className="text-on-surface-variant text-sm py-8 text-center">No participants yet. Share the invite link above.</p>
         ) : (
-          <div className="border border-white/10 rounded-xl overflow-hidden">
+          <div className="panel overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-neutral-500 text-xs">
+                <tr className="border-b border-outline-variant text-on-surface-variant text-xs">
                   <th className="text-left px-4 py-3">Participant</th>
                   <th className="text-left px-4 py-3">Project</th>
                   <th className="text-left px-4 py-3">Status</th>
@@ -100,17 +100,17 @@ export default async function HackathonDetailPage({
                   const profile = profileRaw as unknown as { email: string; github_username: string } | null;
                   const project = projectRaw as unknown as { name: string; status: string; github_repo_url: string; vercel_preview_url: string } | null;
                   return (
-                    <tr key={i} className="border-b border-white/5 last:border-0 hover:bg-white/2">
-                      <td className="px-4 py-3 text-neutral-300">
+                    <tr key={i} className="border-b border-outline-variant last:border-0 hover:bg-surface-high">
+                      <td className="px-4 py-3 text-on-surface">
                         {profile?.github_username ? `@${profile.github_username}` : profile?.email ?? "—"}
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-neutral-400">{project?.name ?? "—"}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-on-surface-variant">{project?.name ?? "—"}</td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          project?.status === "deployed" ? "bg-green-500/20 text-green-400" :
-                          project?.status === "provisioning" ? "bg-yellow-500/20 text-yellow-400" :
-                          project?.status === "failed" ? "bg-red-500/20 text-red-400" :
-                          "bg-neutral-500/20 text-neutral-400"
+                        <span className={`chip ${
+                          project?.status === "deployed" ? "chip-success" :
+                          project?.status === "provisioning" ? "chip-warn" :
+                          project?.status === "failed" ? "chip-danger" :
+                          "chip-neutral"
                         }`}>
                           {project?.status ?? "pending"}
                         </span>
@@ -119,15 +119,15 @@ export default async function HackathonDetailPage({
                         <div className="flex gap-3 text-xs">
                           {project?.vercel_preview_url && (
                             <a href={project.vercel_preview_url} target="_blank" rel="noopener noreferrer"
-                              className="text-green-400 hover:underline">Live →</a>
+                              className="text-brand hover:underline">Live →</a>
                           )}
                           {project?.github_repo_url && (
                             <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer"
-                              className="text-neutral-400 hover:text-white">GitHub</a>
+                              className="text-on-surface-variant hover:text-on-surface">GitHub</a>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-neutral-600">
+                      <td className="px-4 py-3 text-xs text-outline tabnum">
                         {new Date(p.joined_at).toLocaleDateString()}
                       </td>
                     </tr>

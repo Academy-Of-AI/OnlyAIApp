@@ -37,35 +37,35 @@ export default function StartPage() {
   return (
     <main className="max-w-2xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
       <nav className="flex items-center justify-between mb-12">
-        <Link href="/" className="font-bold tracking-tight">OnlyAIApp</Link>
-        <Link href="/sign-up" className="text-sm bg-violet-500 hover:bg-violet-400 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+        <Link href="/" className="font-display font-bold tracking-tight text-on-surface">OnlyAIApp</Link>
+        <Link href="/sign-up" className="btn-brand text-sm px-4 py-2">
           Start free
         </Link>
       </nav>
 
-      <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3 leading-tight">Your first app with an AI agent</h1>
-      <p className="text-neutral-400 text-lg mb-2">
+      <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight mb-3 leading-tight text-on-surface">Your first app with an AI agent</h1>
+      <p className="text-on-surface-variant text-lg mb-2">
         Never coded before? Good. OnlyAIApp is training wheels for Claude Code — we handle the
         scary parts so you ship something real and learn the actual workflow.
       </p>
-      <p className="text-sm text-neutral-600 mb-12">Five steps. About 15 minutes to your first live app.</p>
+      <p className="text-sm text-outline mb-12">Five steps. About 15 minutes to your first live app.</p>
 
       <ol className="space-y-8">
         {steps.map((s) => (
           <li key={s.n} className="flex gap-4">
-            <span className="shrink-0 w-9 h-9 rounded-full bg-violet-500/15 text-violet-300 grid place-items-center text-sm font-bold">
+            <span className="shrink-0 w-9 h-9 rounded-full bg-brand-container text-brand grid place-items-center text-sm font-bold">
               {s.n}
             </span>
             <div className="flex-1">
-              <h3 className="font-semibold text-lg">{s.title}</h3>
-              <p className="text-sm text-neutral-400 mt-1 leading-relaxed">{s.body}</p>
+              <h3 className="font-display font-semibold text-lg text-on-surface">{s.title}</h3>
+              <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">{s.body}</p>
               {s.code && (
-                <code className="block mt-3 text-xs font-mono bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-violet-300">
+                <code className="block mt-3 text-xs font-mono bg-surface-high border border-outline-variant rounded-lg px-3 py-2 text-brand-dim">
                   {s.code}
                 </code>
               )}
               {s.cta && (
-                <Link href={s.cta.href} className="inline-block mt-3 text-sm font-medium text-violet-300 hover:text-violet-200 transition-colors">
+                <Link href={s.cta.href} className="inline-block mt-3 text-sm font-medium text-brand hover:text-brand-dim transition-colors">
                   {s.cta.label}
                 </Link>
               )}
@@ -74,9 +74,9 @@ export default function StartPage() {
         ))}
       </ol>
 
-      <div className="mt-14 border-t border-white/10 pt-8">
-        <h2 className="font-semibold mb-2">Why not just have the app build it for me?</h2>
-        <p className="text-sm text-neutral-400 leading-relaxed">
+      <div className="mt-14 border-t border-outline-variant pt-8">
+        <h2 className="font-display font-semibold mb-2 text-on-surface">Why not just have the app build it for me?</h2>
+        <p className="text-sm text-on-surface-variant leading-relaxed">
           Because then you&apos;d learn nothing and own nothing. Tools that build it for you make a
           toy you can&apos;t change. OnlyAIApp gets <em>you</em> driving the real agent the pros use —
           with guardrails — so when the training wheels come off, you actually know how to build.
@@ -84,7 +84,7 @@ export default function StartPage() {
       </div>
 
       <div className="mt-10 text-center">
-        <Link href="/sign-up" className="inline-block bg-violet-500 hover:bg-violet-400 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
+        <Link href="/sign-up" className="inline-block btn-brand font-semibold px-6 py-3">
           Start your first app →
         </Link>
       </div>

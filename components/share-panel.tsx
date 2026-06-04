@@ -38,26 +38,26 @@ export function SharePanel({ projectId, initial }: { projectId: string; initial:
         <input
           value={email} onChange={(e) => setEmail(e.target.value)} type="email"
           placeholder="teammate@email.com"
-          className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-white/30 min-w-0"
+          className="cap-input flex-1 min-w-0"
         />
         <button type="submit" disabled={busy || !email}
-          className="shrink-0 bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-neutral-200 disabled:opacity-40 transition-colors">
+          className="shrink-0 btn-brand text-sm px-4 py-2 disabled:opacity-40 transition-colors">
           {busy ? "…" : "Share (read-only)"}
         </button>
       </form>
-      {err && <p className="text-xs text-red-400">{err}</p>}
+      {err && <p className="text-xs text-danger">{err}</p>}
 
-      <div className="border border-white/10 rounded-xl divide-y divide-white/5">
-        {members.length === 0 && <p className="text-xs text-neutral-600 px-4 py-3">Not shared with anyone yet.</p>}
+      <div className="panel divide-y divide-[var(--color-outline-variant)]">
+        {members.length === 0 && <p className="text-xs text-outline px-4 py-3">Not shared with anyone yet.</p>}
         {members.map((m) => (
           <div key={m.id} className="group flex items-center justify-between px-4 py-2.5">
-            <span className="text-sm">{m.member_email}<span className="text-xs text-neutral-600 ml-2">{m.role}</span></span>
+            <span className="text-sm text-on-surface">{m.member_email}<span className="text-xs text-outline ml-2">{m.role}</span></span>
             <button onClick={() => remove(m.id)}
-              className="text-xs text-neutral-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition">remove</button>
+              className="text-xs text-outline hover:text-danger opacity-0 group-hover:opacity-100 transition">remove</button>
           </div>
         ))}
       </div>
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-on-surface-variant">
         Shared members see a read-only view (status, objective, milestones, recent memory) at /shared.
       </p>
     </div>

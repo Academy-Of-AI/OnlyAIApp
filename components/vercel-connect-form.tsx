@@ -34,27 +34,27 @@ export function VercelConnectForm({ redirectTo = "/dashboard" }: { redirectTo?: 
           type="password"
           placeholder="Paste your Vercel token here…"
           required
-          className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-violet-500 min-w-0"
+          className="cap-input min-w-0"
         />
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-black border border-white/20 text-white text-sm px-4 py-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50 whitespace-nowrap"
+          className="btn-ghost w-full text-sm px-4 py-2 transition-colors disabled:opacity-50 whitespace-nowrap"
         >
           {loading ? "Connecting…" : "▲ Connect Vercel"}
         </button>
       </form>
 
       {error && (
-        <p className="text-xs text-red-400 px-1">{error}</p>
+        <p className="text-xs text-danger px-1">{error}</p>
       )}
 
       {/* Helper links */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-on-surface-variant">
         <span>
           No Vercel account?{" "}
           <a href="https://vercel.com/signup" target="_blank" rel="noopener noreferrer"
-            className="text-neutral-300 hover:text-white underline underline-offset-2">
+            className="text-on-surface-variant hover:text-on-surface underline underline-offset-2">
             Sign up free →
           </a>
         </span>
@@ -62,7 +62,7 @@ export function VercelConnectForm({ redirectTo = "/dashboard" }: { redirectTo?: 
         <button
           type="button"
           onClick={() => setShowSteps((s) => !s)}
-          className="text-neutral-300 hover:text-white underline underline-offset-2 cursor-pointer"
+          className="text-on-surface-variant hover:text-on-surface underline underline-offset-2 cursor-pointer"
         >
           {showSteps ? "Hide instructions ↑" : "How to get your token ↓"}
         </button>
@@ -70,39 +70,39 @@ export function VercelConnectForm({ redirectTo = "/dashboard" }: { redirectTo?: 
 
       {/* Step-by-step instructions */}
       {showSteps && (
-        <div className="bg-white/3 border border-white/10 rounded-xl p-4 space-y-3 text-sm">
-          <p className="font-semibold text-white text-xs uppercase tracking-wide">
+        <div className="bg-surface border border-outline-variant rounded-xl p-4 space-y-3 text-sm">
+          <p className="font-semibold text-on-surface text-xs uppercase tracking-wide">
             How to get your Vercel token — 3 steps
           </p>
-          <ol className="space-y-3 text-neutral-300">
+          <ol className="space-y-3 text-on-surface-variant">
             <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-white/10 text-white text-xs flex items-center justify-center font-bold">1</span>
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-surface-high text-on-surface text-xs flex items-center justify-center font-bold">1</span>
               <span>
                 Go to your Vercel account settings:{" "}
                 <a href="https://vercel.com/account/tokens" target="_blank" rel="noopener noreferrer"
-                  className="text-green-400 hover:underline font-mono text-xs">
+                  className="text-brand hover:underline font-mono text-xs">
                   vercel.com/account/tokens
                 </a>
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-white/10 text-white text-xs flex items-center justify-center font-bold">2</span>
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-surface-high text-on-surface text-xs flex items-center justify-center font-bold">2</span>
               <span>
-                Click <strong className="text-white">Create Token</strong>.
-                Give it any name (e.g. <code className="text-green-400 text-xs bg-white/5 px-1 rounded">vibe-launchpad</code>).
-                Set scope to <strong className="text-white">Full Account</strong>.
-                Set expiry to <strong className="text-white">No Expiration</strong>.
+                Click <strong className="text-on-surface">Create Token</strong>.
+                Give it any name (e.g. <code className="mono mono-on text-xs">vibe-launchpad</code>).
+                Set scope to <strong className="text-on-surface">Full Account</strong>.
+                Set expiry to <strong className="text-on-surface">No Expiration</strong>.
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-white/10 text-white text-xs flex items-center justify-center font-bold">3</span>
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-surface-high text-on-surface text-xs flex items-center justify-center font-bold">3</span>
               <span>
-                Copy the token that appears (starts with <code className="text-green-400 text-xs bg-white/5 px-1 rounded">vercel_</code>)
-                and paste it in the box above. <strong className="text-white">Save it somewhere safe</strong> — Vercel only shows it once.
+                Copy the token that appears (starts with <code className="mono mono-on text-xs">vercel_</code>)
+                and paste it in the box above. <strong className="text-on-surface">Save it somewhere safe</strong> — Vercel only shows it once.
               </span>
             </li>
           </ol>
-          <p className="text-xs text-neutral-600 pt-1">
+          <p className="text-xs text-outline pt-1">
             🔒 Your token is encrypted before being stored. We only use it to deploy your projects.
           </p>
         </div>

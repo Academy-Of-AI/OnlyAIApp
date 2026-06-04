@@ -88,7 +88,7 @@ export function SupabaseConnectForm({ redirectTo = "/dashboard" }: { redirectTo?
             onChange={(e) => setToken(e.target.value)}
             placeholder="Paste your Supabase token here…"
             required
-            className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#3ECF8E] min-w-0"
+            className="cap-input focus:border-[#3ECF8E] min-w-0"
           />
           <button
             type="submit"
@@ -101,15 +101,15 @@ export function SupabaseConnectForm({ redirectTo = "/dashboard" }: { redirectTo?
         </form>
       ) : (
         <form onSubmit={handleOrgSubmit} className="space-y-2">
-          <label className="text-xs text-neutral-400">Select your Supabase organization</label>
+          <label className="text-xs text-on-surface-variant">Select your Supabase organization</label>
           <div className="flex flex-col gap-2">
             <select
               value={selectedOrgId}
               onChange={(e) => setSelectedOrgId(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#3ECF8E] min-w-0"
+              className="cap-input focus:border-[#3ECF8E] min-w-0"
             >
               {orgs.map((org) => (
-                <option key={org.id} value={org.id} className="bg-neutral-900">
+                <option key={org.id} value={org.id} className="bg-surface-low">
                   {org.name}
                 </option>
               ))}
@@ -126,14 +126,14 @@ export function SupabaseConnectForm({ redirectTo = "/dashboard" }: { redirectTo?
         </form>
       )}
 
-      {error && <p className="text-xs text-red-400 px-1">{error}</p>}
+      {error && <p className="text-xs text-danger px-1">{error}</p>}
 
       {/* Helper */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-on-surface-variant">
         <span>
           No Supabase account?{" "}
           <a href="https://supabase.com/dashboard/sign-up" target="_blank" rel="noopener noreferrer"
-            className="text-neutral-300 hover:text-white underline underline-offset-2">
+            className="text-on-surface-variant hover:text-on-surface underline underline-offset-2">
             Create one free →
           </a>
         </span>
@@ -141,20 +141,20 @@ export function SupabaseConnectForm({ redirectTo = "/dashboard" }: { redirectTo?
         <button
           type="button"
           onClick={() => setShowSteps((s) => !s)}
-          className="text-neutral-300 hover:text-white underline underline-offset-2 cursor-pointer"
+          className="text-on-surface-variant hover:text-on-surface underline underline-offset-2 cursor-pointer"
         >
           {showSteps ? "Hide instructions ↑" : "How to get your token ↓"}
         </button>
       </div>
 
       {showSteps && (
-        <div className="bg-white/3 border border-white/10 rounded-xl p-4 space-y-3 text-sm">
-          <p className="font-semibold text-white text-xs uppercase tracking-wide">
+        <div className="bg-surface border border-outline-variant rounded-xl p-4 space-y-3 text-sm">
+          <p className="font-semibold text-on-surface text-xs uppercase tracking-wide">
             How to get your Supabase token — 3 steps
           </p>
-          <ol className="space-y-3 text-neutral-300">
+          <ol className="space-y-3 text-on-surface-variant">
             <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-white/10 text-white text-xs flex items-center justify-center font-bold">
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-surface-high text-on-surface text-xs flex items-center justify-center font-bold">
                 1
               </span>
               <span>
@@ -171,13 +171,13 @@ export function SupabaseConnectForm({ redirectTo = "/dashboard" }: { redirectTo?
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-white/10 text-white text-xs flex items-center justify-center font-bold">
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-surface-high text-on-surface text-xs flex items-center justify-center font-bold">
                 2
               </span>
               <span>
-                Click <strong className="text-white">Generate new token</strong>, name it{" "}
+                Click <strong className="text-on-surface">Generate new token</strong>, name it{" "}
                 <code
-                  className="text-xs bg-white/5 px-1 rounded"
+                  className="mono text-xs"
                   style={{ color: "#3ECF8E" }}
                 >
                   vibe-launchpad
@@ -186,16 +186,16 @@ export function SupabaseConnectForm({ redirectTo = "/dashboard" }: { redirectTo?
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-white/10 text-white text-xs flex items-center justify-center font-bold">
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-surface-high text-on-surface text-xs flex items-center justify-center font-bold">
                 3
               </span>
               <span>
                 Copy and paste above —{" "}
-                <strong className="text-white">Supabase only shows it once</strong>.
+                <strong className="text-on-surface">Supabase only shows it once</strong>.
               </span>
             </li>
           </ol>
-          <p className="text-xs text-neutral-600 pt-1">
+          <p className="text-xs text-outline pt-1">
             🔒 Your token is encrypted before being stored. We only use it to provision databases.
           </p>
         </div>

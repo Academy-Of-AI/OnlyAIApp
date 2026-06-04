@@ -23,25 +23,23 @@ type Project = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  deployed:     "bg-green-500/15 text-green-400",
-  provisioning: "bg-amber-500/15 text-amber-400",
-  building:     "bg-amber-500/15 text-amber-400",
-  pending:      "bg-white/10 text-neutral-400",
-  failed:       "bg-red-500/15 text-red-400",
+  deployed:     "chip chip-success",
+  provisioning: "chip chip-warn",
+  building:     "chip chip-warn",
+  pending:      "chip chip-neutral",
+  failed:       "chip chip-danger",
 };
 
 type View = "plan" | "pilot" | "settings";
 
 export function ProjectTabs({
   project,
-  buildCredits = 0,
   memory = [],
   liveUrl = null,
   initialPack = null,
   autoCapture = false,
 }: {
   project: Project;
-  buildCredits?: number;
   memory?: Array<{ kind: string; content: string }>;
   liveUrl?: string | null;
   initialPack?: PlanPackResult | null;
@@ -50,7 +48,7 @@ export function ProjectTabs({
   const [view, setView] = useState<View>("plan");
   const pnav = (active: boolean) =>
     `rounded-lg border px-3 py-2.5 flex items-center gap-2 transition-colors text-left ${
-      active ? "border-violet-500/50 bg-violet-500/[0.08] text-white" : "border-white/10 text-neutral-300 hover:border-white/25"
+      active ? "border-brand-border bg-brand-container text-brand-dim" : "border-outline-variant text-on-surface-variant hover:border-outline"
     }`;
 
   return (
@@ -59,34 +57,34 @@ export function ProjectTabs({
       <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
         <div className="min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight truncate">{project.name}</h1>
-            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${STATUS_STYLES[project.status] ?? STATUS_STYLES.pending}`}>{project.status}</span>
+            <h1 className="font-display tracking-tight text-2xl font-bold text-on-surface truncate">{project.name}</h1>
+            <span className={STATUS_STYLES[project.status] ?? STATUS_STYLES.pending}>{project.status}</span>
             <button onClick={() => setView("settings")} title="Settings"
-              className={`text-lg leading-none transition-colors ${view === "settings" ? "text-violet-300" : "text-neutral-500 hover:text-white"}`}>⚙</button>
+              className={`text-lg leading-none transition-colors ${view === "settings" ? "text-brand" : "text-on-surface-variant hover:text-on-surface"}`}>⚙</button>
           </div>
-          <p className="text-sm text-neutral-500 mt-1">Created {new Date(project.created_at).toLocaleDateString()}</p>
-          {project.error && <p className="text-xs text-red-400 mt-1 truncate max-w-lg">{project.error}</p>}
+          <p className="text-sm text-on-surface-variant mt-1">Created {new Date(project.created_at).toLocaleDateString()}</p>
+          {project.error && <p className="text-xs text-danger mt-1 truncate max-w-lg">{project.error}</p>}
         </div>
         <div className="flex gap-2 shrink-0">
           {project.github_repo_url && (
             <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer"
-              className="border border-white/10 hover:border-white/20 text-sm text-neutral-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors">GitHub →</a>
+              className="btn-ghost text-sm px-3 py-1.5">GitHub →</a>
           )}
           {liveUrl && (
             <a href={liveUrl} target="_blank" rel="noopener noreferrer"
-              className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">↗ Live app</a>
+              className="btn-brand text-sm font-semibold px-4 py-1.5">↗ Live app</a>
           )}
         </div>
       </div>
 
       {/* The 3 Ps — the only nav (no tab bar) */}
       <div className="grid grid-cols-3 gap-2 text-sm mb-8">
-        <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2.5 flex items-center gap-2"><span className="text-neutral-500">①</span><span className="font-semibold">Provision</span><span className="ml-auto text-xs text-green-400">✓</span></div>
-        <button onClick={() => setView("plan")} className={pnav(view === "plan")}><span className="text-violet-300">②</span><span className="font-semibold">Plan</span></button>
-        <button onClick={() => setView("pilot")} className={pnav(view === "pilot")}><span className="text-violet-300">③</span><span className="font-semibold">Pilot</span></button>
+        <div className="rounded-lg border border-outline-variant bg-surface-low px-3 py-2.5 flex items-center gap-2"><span className="text-on-surface-variant">①</span><span className="font-semibold">Provision</span><span className="ml-auto text-xs text-success">✓</span></div>
+        <button onClick={() => setView("plan")} className={pnav(view === "plan")}><span className="text-brand">②</span><span className="font-semibold">Plan</span></button>
+        <button onClick={() => setView("pilot")} className={pnav(view === "pilot")}><span className="text-brand">③</span><span className="font-semibold">Pilot</span></button>
       </div>
 
-      {view === "plan" && <PlanView project={project} buildCredits={buildCredits} initialPack={initialPack} />}
+      {view === "plan" && <PlanView project={project} initialPack={initialPack} />}
       {view === "pilot" && <PilotView project={project} memory={memory} liveUrl={liveUrl} autoCapture={autoCapture} />}
       {view === "settings" && <SettingsTab project={project} />}
     </div>
@@ -95,20 +93,20 @@ export function ProjectTabs({
 
 /* ── Plan view ─────────────────────────────────────────────────────────── */
 function PlanView({
-  project, buildCredits, initialPack = null,
+  project, initialPack = null,
 }: {
-  project: Project; buildCredits: number; initialPack?: PlanPackResult | null;
+  project: Project; initialPack?: PlanPackResult | null;
 }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold mb-1">Plan it, then build it</h2>
-        <p className="text-sm text-neutral-400">
+        <h2 className="font-display tracking-tight text-lg font-semibold text-on-surface mb-1">Plan it, then build it</h2>
+        <p className="text-sm text-on-surface-variant">
           Start with a Plan Pack — a PRD, architecture, data model and sprint plan committed to your
           repo. Then hand it to your agent (Claude Code) to build it, the reliable way.
         </p>
       </div>
-      <PlanPack project={project} initialPack={initialPack} buildCredits={buildCredits} />
+      <PlanPack project={project} initialPack={initialPack} />
     </div>
   );
 }
@@ -122,8 +120,8 @@ function PilotView({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold mb-1">Pilot — keep it on course &amp; ship it</h2>
-        <p className="text-sm text-neutral-400">
+        <h2 className="font-display tracking-tight text-lg font-semibold text-on-surface mb-1">Pilot — keep it on course &amp; ship it</h2>
+        <p className="text-sm text-on-surface-variant">
           As you build, Pilot quietly tracks what changed and why, flags drift from your plan, and helps
           you launch — so you never write anything down, and the AI always knows your project.
         </p>
@@ -132,16 +130,16 @@ function PilotView({
       <AutoCaptureToggle projectId={project.id} enabled={autoCapture} />
 
       {project.last_digest && (
-        <div className="rounded-xl p-4 border border-white/10 bg-white/[0.02]">
+        <div className="panel p-4">
           <p className="text-xs font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <span className={`inline-block w-1.5 h-1.5 rounded-full ${project.last_digest.onTrack ? "bg-green-500" : "bg-amber-500"}`} />
-            <span className="text-neutral-400">{project.last_digest.onTrack ? "On track" : "Heads up"}</span>
+            <span className={`dot ${project.last_digest.onTrack ? "bg-success" : "bg-warn"}`} />
+            <span className="text-on-surface-variant">{project.last_digest.onTrack ? "On track" : "Heads up"}</span>
           </p>
-          <p className="text-sm text-neutral-300">{project.last_digest.note}</p>
+          <p className="text-sm text-on-surface-variant">{project.last_digest.note}</p>
           {(project.last_digest.scopeCreep ?? []).length > 0 && (
             <ul className="mt-2 space-y-1">
               {(project.last_digest.scopeCreep ?? []).map((s, i) => (
-                <li key={i} className="text-xs text-neutral-400">• {s}</li>
+                <li key={i} className="text-xs text-on-surface-variant">• {s}</li>
               ))}
             </ul>
           )}
@@ -149,17 +147,17 @@ function PilotView({
       )}
 
       {memory.length > 0 && (
-        <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">What OnlyAIApp remembers about this project</p>
-          <div className="divide-y divide-white/[0.06]">
+        <div className="panel p-5">
+          <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">What OnlyAIApp remembers about this project</p>
+          <div className="divide-y divide-[var(--color-outline-variant)]">
             {memory.map((mItem, i) => (
               <div key={i} className="flex gap-2 py-2 text-sm">
-                <span className="text-[10px] text-neutral-500 bg-white/5 rounded px-1.5 py-0.5 h-fit whitespace-nowrap">{mItem.kind}</span>
-                <span className="text-neutral-300">{mItem.content}</span>
+                <span className="text-[10px] text-on-surface-variant bg-surface-high rounded px-1.5 py-0.5 h-fit whitespace-nowrap">{mItem.kind}</span>
+                <span className="text-on-surface-variant">{mItem.content}</span>
               </div>
             ))}
           </div>
-          <p className="text-xs text-neutral-600 mt-3">Picked up automatically as you build — so the AI always knows your project.</p>
+          <p className="text-xs text-outline mt-3">Picked up automatically as you build — so the AI always knows your project.</p>
         </div>
       )}
 
@@ -195,7 +193,7 @@ function LaunchTab({ project, liveUrl = null }: { project: Project; liveUrl?: st
   }
 
   const icon = (s: Check["status"]) => (s === "pass" ? "✓" : s === "fail" ? "✕" : s === "warn" ? "!" : "○");
-  const color = (s: Check["status"]) => (s === "pass" ? "text-green-400" : s === "fail" ? "text-red-400" : s === "warn" ? "text-amber-400" : "text-neutral-500");
+  const color = (s: Check["status"]) => (s === "pass" ? "text-success" : s === "fail" ? "text-danger" : s === "warn" ? "text-warn" : "text-on-surface-variant");
   const remaining = checks?.filter((c) => c.status === "fail" || c.status === "warn").length ?? 0;
 
   // Definition of Done (client-side certainty gate for v1)
@@ -231,8 +229,8 @@ function LaunchTab({ project, liveUrl = null }: { project: Project; liveUrl?: st
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold mb-1">Launch readiness</h2>
-        <p className="text-sm text-neutral-400">
+        <h2 className="font-display tracking-tight text-lg font-semibold text-on-surface mb-1">Launch readiness</h2>
+        <p className="text-sm text-on-surface-variant">
           We check what separates &quot;it built&quot; from &quot;it&apos;s actually launched&quot; — then hand you the exact task to
           paste into your Claude Code for anything that isn&apos;t ready yet.
         </p>
@@ -240,7 +238,7 @@ function LaunchTab({ project, liveUrl = null }: { project: Project; liveUrl?: st
 
       {!checks && (
         <button onClick={run} disabled={loading}
-          className="bg-violet-500 hover:bg-violet-400 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          className="btn-brand text-sm font-semibold px-4 py-2">
           {loading ? "Checking…" : "Check launch readiness"}
         </button>
       )}
@@ -248,28 +246,28 @@ function LaunchTab({ project, liveUrl = null }: { project: Project; liveUrl?: st
       {checks && (
         <>
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-on-surface-variant">
               {remaining === 0 ? "🎉 All clear — you're launch-ready." : `${remaining} thing${remaining === 1 ? "" : "s"} left before launch.`}
             </p>
             <button onClick={run} disabled={loading}
-              className="text-xs border border-white/10 hover:border-white/30 px-3 py-1.5 rounded-lg transition-colors">
+              className="btn-ghost text-xs px-3 py-1.5">
               {loading ? "…" : "Re-check"}
             </button>
           </div>
 
           <div className="space-y-3">
             {checks.map((c) => (
-              <div key={c.id} className="border border-white/10 rounded-xl p-4">
+              <div key={c.id} className="panel p-4">
                 <div className="flex items-start gap-3">
                   <span className={`${color(c.status)} font-bold w-4 text-center`}>{icon(c.status)}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{c.label}</p>
-                    <p className="text-xs text-neutral-500 mt-0.5">{c.detail}</p>
+                    <p className="text-sm font-medium text-on-surface">{c.label}</p>
+                    <p className="text-xs text-on-surface-variant mt-0.5">{c.detail}</p>
                     {c.claudeTask && (
                       <div className="mt-3 flex items-start gap-2">
-                        <code className="flex-1 text-xs font-mono bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-violet-300 leading-relaxed">{c.claudeTask}</code>
+                        <code className="flex-1 text-xs font-mono bg-surface border border-outline-variant rounded-lg px-3 py-2 text-brand-dim leading-relaxed">{c.claudeTask}</code>
                         <button onClick={() => copy(c.id, c.claudeTask!)}
-                          className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">
+                          className="btn-ghost text-xs px-3 py-2 shrink-0">
                           {copied === c.id ? "Copied" : "Copy task"}
                         </button>
                       </div>
@@ -279,30 +277,30 @@ function LaunchTab({ project, liveUrl = null }: { project: Project; liveUrl?: st
               </div>
             ))}
           </div>
-          <p className="text-xs text-neutral-600">Paste a task into your Claude Code, let it fix it, push — then hit Re-check.</p>
+          <p className="text-xs text-outline">Paste a task into your Claude Code, let it fix it, push — then hit Re-check.</p>
 
           {canSubmit && (
-            <div className="border border-violet-500/30 bg-violet-500/[0.05] rounded-xl p-4 space-y-3">
+            <div className="border border-brand-border bg-brand-container rounded-xl p-4 space-y-3">
               {submitted ? (
                 <div className="text-sm">
-                  <p className="text-green-400 font-medium">🎉 Submitted to The Wall!</p>
-                  <a href="/wall" target="_blank" rel="noopener noreferrer" className="text-violet-300 hover:underline text-sm">See it on The Wall →</a>
+                  <p className="text-success font-medium">🎉 Submitted to The Wall!</p>
+                  <a href="/wall" target="_blank" rel="noopener noreferrer" className="text-brand hover:underline text-sm">See it on The Wall →</a>
                 </div>
               ) : (
                 <>
-                  <p className="text-sm font-semibold">🧱 You&apos;re launch-ready — put it on The Wall</p>
+                  <p className="text-sm font-semibold text-on-surface">🧱 You&apos;re launch-ready — put it on The Wall</p>
                   <input value={wTitle} onChange={(e) => setWTitle(e.target.value)} placeholder="Title"
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500" />
+                    className="cap-input" />
                   <input value={wTagline} onChange={(e) => setWTagline(e.target.value)} placeholder="One line — what does it do?"
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500" />
+                    className="cap-input" />
                   <input value={wDemo} onChange={(e) => setWDemo(e.target.value)} placeholder="Demo link (60-sec video or live URL)"
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500" />
+                    className="cap-input" />
                   <div className="flex items-center gap-3 flex-wrap">
                     <button onClick={submitToWall} disabled={submitting || !wTitle.trim() || !wDemo.trim()}
-                      className="bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+                      className="btn-brand text-sm font-semibold px-4 py-2">
                       {submitting ? "Submitting…" : "Submit to The Wall"}
                     </button>
-                    {submitErr && <span className="text-xs text-red-400">{submitErr}</span>}
+                    {submitErr && <span className="text-xs text-danger">{submitErr}</span>}
                   </div>
                 </>
               )}
@@ -368,25 +366,25 @@ function SettingsTab({ project }: { project: Project }) {
   return (
     <div className="max-w-xl space-y-6">
       {error && (
-        <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">
+        <div className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-4 py-2">
           {error}
         </div>
       )}
 
       <div>
-        <h2 className="text-base font-semibold mb-4">Project details</h2>
-        <div className="border border-white/10 rounded-xl overflow-hidden divide-y divide-white/[0.06]">
+        <h2 className="font-display tracking-tight text-base font-semibold text-on-surface mb-4">Project details</h2>
+        <div className="panel overflow-hidden divide-y divide-[var(--color-outline-variant)]">
 
           {/* Editable: name */}
           <div className="flex items-center justify-between px-5 py-3 text-sm gap-4">
-            <span className="text-neutral-500 w-36 shrink-0">Project name</span>
+            <span className="text-on-surface-variant w-36 shrink-0">Project name</span>
             <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
               {editingName ? (
                 <>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="bg-white/5 border border-white/15 rounded-md px-2 py-1 text-sm text-white outline-none focus:border-violet-500/50 w-48"
+                    className="cap-input w-48"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") save("name");
@@ -396,24 +394,24 @@ function SettingsTab({ project }: { project: Project }) {
                   <button
                     onClick={() => save("name")}
                     disabled={saving === "name"}
-                    className="text-xs bg-violet-500 hover:bg-violet-400 text-white font-semibold px-2.5 py-1 rounded-md transition-colors disabled:opacity-50"
+                    className="btn-brand text-xs font-semibold px-2.5 py-1"
                   >
                     {saving === "name" ? "…" : "Save"}
                   </button>
                   <button
                     onClick={() => { setName(project.name); setEditingName(false); }}
-                    className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
+                    className="text-xs text-on-surface-variant hover:text-on-surface transition-colors"
                   >
                     Cancel
                   </button>
                 </>
               ) : (
                 <>
-                  <span className="text-neutral-300 truncate">{name}</span>
-                  {saved === "name" && <span className="text-xs text-green-400">Saved ✓</span>}
+                  <span className="text-on-surface truncate">{name}</span>
+                  {saved === "name" && <span className="text-xs text-success">Saved ✓</span>}
                   <button
                     onClick={() => setEditingName(true)}
-                    className="text-neutral-600 hover:text-neutral-300 text-xs transition-colors ml-1"
+                    className="text-outline hover:text-on-surface text-xs transition-colors ml-1"
                     title="Edit"
                   >✎</button>
                 </>
@@ -423,14 +421,14 @@ function SettingsTab({ project }: { project: Project }) {
 
           {/* Editable: live URL */}
           <div className="flex items-center justify-between px-5 py-3 text-sm gap-4">
-            <span className="text-neutral-500 w-36 shrink-0">Live URL</span>
+            <span className="text-on-surface-variant w-36 shrink-0">Live URL</span>
             <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
               {editingUrl ? (
                 <>
                   <input
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    className="bg-white/5 border border-white/15 rounded-md px-2 py-1 text-sm text-white outline-none focus:border-violet-500/50 w-56"
+                    className="cap-input w-56"
                     autoFocus
                     placeholder="https://your-app.vercel.app"
                     onKeyDown={(e) => {
@@ -441,13 +439,13 @@ function SettingsTab({ project }: { project: Project }) {
                   <button
                     onClick={() => save("url")}
                     disabled={saving === "url"}
-                    className="text-xs bg-violet-500 hover:bg-violet-400 text-white font-semibold px-2.5 py-1 rounded-md transition-colors disabled:opacity-50"
+                    className="btn-brand text-xs font-semibold px-2.5 py-1"
                   >
                     {saving === "url" ? "…" : "Save"}
                   </button>
                   <button
                     onClick={() => { setUrl(project.vercel_preview_url ?? ""); setEditingUrl(false); }}
-                    className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
+                    className="text-xs text-on-surface-variant hover:text-on-surface transition-colors"
                   >
                     Cancel
                   </button>
@@ -459,17 +457,17 @@ function SettingsTab({ project }: { project: Project }) {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-violet-300 hover:text-violet-200 truncate transition-colors"
+                      className="text-brand hover:text-brand-dim truncate transition-colors"
                     >
                       {url}
                     </a>
                   ) : (
-                    <span className="text-neutral-600">—</span>
+                    <span className="text-outline">—</span>
                   )}
-                  {saved === "url" && <span className="text-xs text-green-400">Saved ✓</span>}
+                  {saved === "url" && <span className="text-xs text-success">Saved ✓</span>}
                   <button
                     onClick={() => setEditingUrl(true)}
-                    className="text-neutral-600 hover:text-neutral-300 text-xs transition-colors ml-1"
+                    className="text-outline hover:text-on-surface text-xs transition-colors ml-1"
                     title="Edit"
                   >✎</button>
                 </>
@@ -480,24 +478,24 @@ function SettingsTab({ project }: { project: Project }) {
           {/* Read-only rows */}
           {readOnlyRows.map(({ label, value, href, copy }) => (
             <div key={label} className="flex items-center justify-between px-5 py-3 text-sm">
-              <span className="text-neutral-500 w-36 shrink-0">{label}</span>
+              <span className="text-on-surface-variant w-36 shrink-0">{label}</span>
               <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
                 {href && value ? (
                   <a
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-violet-300 hover:text-violet-200 truncate transition-colors"
+                    className="text-brand hover:text-brand-dim truncate transition-colors"
                   >
                     {value}
                   </a>
                 ) : (
-                  <span className="text-neutral-300 truncate">{value ?? "—"}</span>
+                  <span className="text-on-surface truncate">{value ?? "—"}</span>
                 )}
                 {copy && value && (
                   <button
                     onClick={() => copyToClipboard(value)}
-                    className="text-neutral-600 hover:text-neutral-400 text-xs shrink-0 transition-colors"
+                    className="text-outline hover:text-on-surface-variant text-xs shrink-0 transition-colors"
                     title="Copy"
                   >
                     ⎘
@@ -511,13 +509,13 @@ function SettingsTab({ project }: { project: Project }) {
 
       {/* Per-project integrations — what THIS project is wired to */}
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold">Integrations</h3>
-        <p className="text-xs text-neutral-500">
+        <h3 className="text-sm font-semibold text-on-surface">Integrations</h3>
+        <p className="text-xs text-on-surface-variant">
           What this project is connected to. Account tokens (used to provision new projects) are
           managed in{" "}
-          <a href="/settings" className="text-violet-300 hover:text-violet-200">Settings ⚙</a>.
+          <a href="/settings" className="text-brand hover:text-brand-dim">Settings ⚙</a>.
         </p>
-        <div className="border border-white/10 rounded-xl overflow-hidden divide-y divide-white/[0.06]">
+        <div className="panel overflow-hidden divide-y divide-[var(--color-outline-variant)]">
           <IntegrationRow icon="" name="GitHub" ok={!!project.github_repo_url}
             status={project.github_repo_url ? "Connected" : "Not linked"}
             href={project.github_repo_url ?? undefined} hrefLabel="Open repo →" />
@@ -534,9 +532,9 @@ function SettingsTab({ project }: { project: Project }) {
         </div>
       </div>
 
-      <div className="border border-red-500/20 rounded-xl p-5 space-y-3">
-        <h3 className="text-sm font-semibold text-red-400">Danger zone</h3>
-        <p className="text-xs text-neutral-500 leading-relaxed">
+      <div className="border border-danger/20 rounded-xl p-5 space-y-3">
+        <h3 className="text-sm font-semibold text-danger">Danger zone</h3>
+        <p className="text-xs text-on-surface-variant leading-relaxed">
           Permanently delete this project. This also deletes its Supabase database and Vercel
           deployment — freeing a slot under your Supabase limit. Your GitHub repo is kept (delete it
           on GitHub if you want it gone).
@@ -557,15 +555,15 @@ function IntegrationRow({
   return (
     <div className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
       <div className="flex items-center gap-2 min-w-0">
-        {icon && <span className="text-neutral-400 shrink-0">{icon}</span>}
-        <span className="font-medium">{name}</span>
-        <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide shrink-0 ${
-          ok ? "text-green-400 bg-green-500/10" : muted ? "text-neutral-500 bg-white/5" : "text-amber-300 bg-amber-500/10"
+        {icon && <span className="text-on-surface-variant shrink-0">{icon}</span>}
+        <span className="font-medium text-on-surface">{name}</span>
+        <span className={`shrink-0 ${
+          ok ? "chip chip-success" : muted ? "chip chip-neutral" : "chip chip-warn"
         }`}>{status}</span>
       </div>
       {href && hrefLabel && (
         <a href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined}
-          className="text-violet-300 hover:text-violet-200 text-xs shrink-0 transition-colors">{hrefLabel}</a>
+          className="text-brand hover:text-brand-dim text-xs shrink-0 transition-colors">{hrefLabel}</a>
       )}
     </div>
   );

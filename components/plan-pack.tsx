@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { QuickMockup } from "@/components/quick-mockup";
 
 type Project = {
   id: string;
@@ -49,11 +48,10 @@ type TabName = (typeof TABS)[number];
 const KICKOFF = "Read everything in /docs, confirm the plan in 3 lines, then build straight through the sprints until the app actually works end-to-end — the PRD's success scenario, not just auth + an empty dashboard. The database schema is already applied, so run `vercel env pull .env.local` and build on the existing tables; commit + push after each sprint to deploy. Stop only when a real user can do the core job.";
 
 export function PlanPack({
-  project, initialPack = null, buildCredits = 0,
+  project, initialPack = null,
 }: {
   project: Project;
   initialPack?: Result | null;
-  buildCredits?: number;
 }) {
   const router = useRouter();
   const repo = project.github_repo_url;
@@ -205,14 +203,14 @@ export function PlanPack({
   }
 
   return (
-    <div className="border border-violet-500/30 bg-violet-500/[0.05] rounded-xl overflow-hidden">
+    <div className="panel overflow-hidden">
       {/* header */}
       <div className="px-4 sm:px-5 pt-4 pb-3 flex items-center justify-between gap-2 flex-wrap">
-        <p className="text-sm font-semibold">📋 Your Plan Pack</p>
+        <p className="text-sm font-semibold text-on-surface">📋 Your Plan Pack</p>
       </div>
 
       {/* tab bar */}
-      <div className="flex gap-1 px-2 border-b border-white/10 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-1 px-2 border-b border-outline-variant overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map((t) => {
           const enabled = t === "Describe" || unlocked;
           return (
@@ -221,9 +219,9 @@ export function PlanPack({
               onClick={() => enabled && setTab(t)}
               disabled={!enabled}
               className={`px-3 py-2 text-xs font-semibold whitespace-nowrap border-b-2 -mb-px transition-colors ${
-                tab === t ? "border-violet-500 text-white"
-                : enabled ? "border-transparent text-neutral-400 hover:text-neutral-200"
-                : "border-transparent text-neutral-700 cursor-not-allowed"
+                tab === t ? "border-brand text-brand-dim"
+                : enabled ? "border-transparent text-on-surface-variant hover:text-on-surface"
+                : "border-transparent text-outline cursor-not-allowed"
               }`}
             >
               {t}
@@ -237,8 +235,8 @@ export function PlanPack({
         {tab === "Describe" && (
           <div className="space-y-3">
             {uploadDocs && uploadDocs.length > 0 && !result ? (
-              <div className="border border-violet-500/30 bg-violet-500/[0.06] rounded-lg p-3 space-y-1.5">
-                <p className="text-sm text-violet-200 font-medium">
+              <div className="border border-brand-border bg-brand-container rounded-lg p-3 space-y-1.5">
+                <p className="text-sm text-brand-dim font-medium">
                   📄 Loaded {uploadDocs.length} doc{uploadDocs.length === 1 ? "" : "s"} from Start here
                   {(() => {
                     const p = uploadDocs.filter((d) => d.kind !== "skill").length;
@@ -246,16 +244,16 @@ export function PlanPack({
                     return ` (${p} plan · ${s} skill)`;
                   })()}
                 </p>
-                <p className="text-xs text-neutral-400">
+                <p className="text-xs text-on-surface-variant">
                   {uploadMode === "skip"
                     ? "Mode: Skip planning — we'll commit your docs as-is, set up your database from them, and put any skill specs in .claude/skills/. Fast."
                     : "Mode: Use my docs as the source of truth — we'll structure them into the plan, fill gaps, and build your database from them."}
                 </p>
               </div>
             ) : (
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-on-surface-variant">
                 Describe what you want to deliver. We turn it into a clear, well-sequenced plan and commit it to
-                <span className="text-violet-300"> /docs</span> — so your agent starts knowing exactly what to build.
+                <span className="text-brand"> /docs</span> — so your agent starts knowing exactly what to build.
               </p>
             )}
             <textarea
@@ -264,13 +262,13 @@ export function PlanPack({
               disabled={running || !repo}
               rows={3}
               placeholder="e.g. A tool to run my consultancy: capture leads from calls, auto-draft proposals, track who's paid, and tell me who to follow up with today. For me + 2 associates."
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 outline-none focus:border-violet-500 resize-none disabled:opacity-50"
+              className="cap-input resize-none disabled:opacity-50"
             />
             <div className="flex items-center gap-3 flex-wrap">
               <button
                 onClick={generate}
                 disabled={running || !idea.trim() || !repo}
-                className="bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                className="btn-brand text-sm font-semibold px-4 py-2"
               >
                 {running ? "Generating…"
                   : result ? "✦ Change the plan"
@@ -278,13 +276,13 @@ export function PlanPack({
                   : uploadDocs ? "✦ Generate plan from my docs"
                   : "✦ Generate the Plan Pack"}
               </button>
-              {!repo && <span className="text-xs text-amber-300">Finish provisioning first.</span>}
+              {!repo && <span className="text-xs text-warn">Finish provisioning first.</span>}
             </div>
 
             {(running || (stepIdx >= 0 && !result)) && (
-              <div className="border-t border-white/10 pt-3 space-y-1.5">
+              <div className="border-t border-outline-variant pt-3 space-y-1.5">
                 {running && (
-                  <p className="text-xs text-neutral-500 mb-1">
+                  <p className="text-xs text-outline mb-1">
                     ⏳ Working… {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")} · {uploadDocs && uploadMode === "skip" ? "this is quick — usually under a minute" : "this usually takes 3–5 minutes"}
                   </p>
                 )}
@@ -294,51 +292,51 @@ export function PlanPack({
                 ).map((st, i) => {
                   const state = stepIdx > i ? "done" : stepIdx === i && running ? "now" : stepIdx === i ? "done" : "todo";
                   const icon = state === "done" ? "✓" : state === "now" ? "●" : "○";
-                  const color = state === "done" ? "text-green-400" : state === "now" ? "text-violet-400" : "text-neutral-600";
+                  const color = state === "done" ? "text-success" : state === "now" ? "text-brand" : "text-outline";
                   return (
                     <div key={st.key} className="flex items-center gap-2 text-sm">
                       <span className={`${color} w-4 text-center`}>{icon}</span>
-                      <span className={state === "todo" ? "text-neutral-600" : "text-neutral-300"}>{st.label}</span>
+                      <span className={state === "todo" ? "text-outline" : "text-on-surface-variant"}>{st.label}</span>
                     </div>
                   );
                 })}
               </div>
             )}
-            {err && <p className="text-xs text-red-400">{err}</p>}
-            {result && <p className="text-xs text-green-400">✓ Plan pack committed — see the Plan, Docs, Sprints and Hand off tabs.</p>}
+            {err && <p className="text-xs text-danger">{err}</p>}
+            {result && <p className="text-xs text-success">✓ Plan pack committed — see the Plan, Docs, Sprints and Hand off tabs.</p>}
           </div>
         )}
 
         {/* PLAN — sequencing + the generated docs (consolidated) */}
         {tab === "Plan" && result && (
           <div className="space-y-4">
-            {result.summary && <p className="text-sm text-neutral-300">{result.summary}</p>}
+            {result.summary && <p className="text-sm text-on-surface-variant">{result.summary}</p>}
             <div className="space-y-2">
-              <p className="text-xs text-neutral-500 uppercase tracking-wider">Your build, sequenced</p>
+              <p className="text-xs text-on-surface-variant uppercase tracking-wider">Your build, sequenced</p>
               <div className="grid sm:grid-cols-3 gap-3 text-sm">
                 <PlanColumn title="Now" badge="v1" tone="green" items={result.plan?.now} />
                 <PlanColumn title="Next" badge="soon" tone="amber" items={result.plan?.next} />
                 <PlanColumn title="Later" badge="when ready" tone="neutral" items={result.plan?.later} />
               </div>
-              <p className="text-xs text-neutral-600">Built data-first, so the core keeps working reliably — even with the AI switched off.</p>
+              <p className="text-xs text-outline">Built data-first, so the core keeps working reliably — even with the AI switched off.</p>
             </div>
-            <div className="space-y-2 border-t border-white/10 pt-3">
-              <p className="text-xs text-neutral-500 uppercase tracking-wider">The pack — committed to <span className="font-mono">/docs</span></p>
+            <div className="space-y-2 border-t border-outline-variant pt-3">
+              <p className="text-xs text-on-surface-variant uppercase tracking-wider">The pack — committed to <span className="font-mono">/docs</span></p>
               <div className="flex flex-wrap gap-1.5">
                 {allFiles.map((f, i) => (
                   <button
                     key={f.path}
                     onClick={() => setActiveDoc(i)}
                     className={`text-[11px] font-mono rounded px-1.5 py-0.5 border transition-colors ${
-                      i === activeDoc ? "bg-violet-500/15 border-violet-500/50 text-violet-200"
-                      : "border-white/10 text-neutral-400 hover:text-neutral-200"
+                      i === activeDoc ? "bg-brand-container border-brand-border text-brand-dim"
+                      : "border-outline-variant text-on-surface-variant hover:text-on-surface"
                     }`}
                   >{f.path}</button>
                 ))}
               </div>
               {shownFile && (
-                <div className="bg-black/40 border border-white/10 rounded-lg p-3 max-h-[400px] overflow-auto">
-                  <pre className="text-xs leading-relaxed text-neutral-300 whitespace-pre-wrap font-mono">{shownFile.content}</pre>
+                <div className="bg-surface border border-outline-variant rounded-lg p-3 max-h-[400px] overflow-auto">
+                  <pre className="text-xs leading-relaxed text-on-surface-variant whitespace-pre-wrap font-mono">{shownFile.content}</pre>
                 </div>
               )}
             </div>
@@ -349,17 +347,17 @@ export function PlanPack({
         {tab === "Sprints" && result && (
           <div className="space-y-3">
             {result.sprints.length === 0 ? (
-              <p className="text-sm text-neutral-500">See <span className="font-mono">docs/TASKS.md</span> in the Plan tab for the sprint plan.</p>
+              <p className="text-sm text-on-surface-variant">See <span className="font-mono">docs/TASKS.md</span> in the Plan tab for the sprint plan.</p>
             ) : (
               result.sprints.map((s, i) => (
-                <div key={i} className="border border-white/10 rounded-lg p-3">
+                <div key={i} className="border border-outline-variant rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-[10px] font-mono bg-violet-500/15 text-violet-200 border border-violet-500/30 rounded px-1.5 py-0.5">Sprint {i + 1}</span>
-                    <span className="text-sm font-medium text-neutral-200">{s.title}</span>
+                    <span className="text-[10px] font-mono bg-brand-container text-brand-dim border border-brand-border rounded px-1.5 py-0.5">Sprint {i + 1}</span>
+                    <span className="text-sm font-medium text-on-surface">{s.title}</span>
                   </div>
                   <ul className="space-y-1">
                     {s.items.map((it, j) => (
-                      <li key={j} className="text-xs text-neutral-400 flex gap-2"><span className="text-neutral-600">○</span>{it}</li>
+                      <li key={j} className="text-xs text-on-surface-variant flex gap-2"><span className="text-outline">○</span>{it}</li>
                     ))}
                   </ul>
                 </div>
@@ -371,22 +369,21 @@ export function PlanPack({
         {/* HAND OFF */}
         {tab === "Hand off" && result && (
           <div className="space-y-3">
-            <p className="text-sm text-neutral-300">One command — clone the repo and start your agent with the plan baked in. It already knows what to build (your CLAUDE.md enforces it).</p>
+            <p className="text-sm text-on-surface-variant">One command — clone the repo and start your agent with the plan baked in. It already knows what to build (your CLAUDE.md enforces it).</p>
             <div className="flex items-start gap-2">
-              <code className="flex-1 text-xs font-mono bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-violet-300 leading-relaxed break-words whitespace-pre-wrap">{handoffCmd}</code>
-              <button onClick={() => copy(handoffCmd)} className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">{copied ? "Copied" : "Copy"}</button>
+              <code className="flex-1 text-xs font-mono bg-surface border border-outline-variant rounded-lg px-3 py-2 text-brand-dim leading-relaxed break-words whitespace-pre-wrap">{handoffCmd}</code>
+              <button onClick={() => copy(handoffCmd)} className="btn-ghost text-xs px-3 py-2 shrink-0">{copied ? "Copied" : "Copy"}</button>
             </div>
             {commitEmail && (
-              <p className="text-xs text-neutral-600">
-                Sets your git identity to <span className="font-mono text-neutral-500">{commitEmail}</span> so Vercel
+              <p className="text-xs text-outline">
+                Sets your git identity to <span className="font-mono text-on-surface-variant">{commitEmail}</span> so Vercel
                 won&apos;t block your first deploy (a commit email it can&apos;t match to your GitHub account).
               </p>
             )}
             {result.repoUrl && (
               <a href={`${result.repoUrl.replace(/\.git$/, "")}/tree/main/docs`} target="_blank" rel="noopener noreferrer"
-                className="inline-block text-sm text-violet-300 hover:underline">View the pack on GitHub →</a>
+                className="inline-block text-sm text-brand hover:underline">View the pack on GitHub →</a>
             )}
-            <QuickMockup project={project} buildCredits={buildCredits} idea={idea} />
           </div>
         )}
       </div>
@@ -397,17 +394,17 @@ export function PlanPack({
 function PlanColumn({ title, badge, tone, items }: { title: string; badge: string; tone: "green" | "amber" | "neutral"; items?: string[] }) {
   // Calm palette: these are phases, not statuses — keep them neutral. "Now" (the
   // v1 focus) gets a subtle violet accent on its badge; that's the only color.
-  const toneCls = "bg-white/[0.02] border-white/10";
+  const toneCls = "bg-surface-low border-outline-variant";
   const badgeCls =
-    tone === "green" ? "text-violet-300 border-violet-500/30"
-    : "text-neutral-400 border-white/15";
+    tone === "green" ? "text-brand-dim border-brand-border"
+    : "text-on-surface-variant border-outline-variant";
   return (
     <div className={`rounded-xl p-4 border ${toneCls}`}>
       <div className="flex items-center justify-between mb-2">
-        <b>{title}</b>
+        <b className="text-on-surface">{title}</b>
         <span className={`text-[10px] border rounded-full px-2 py-0.5 ${badgeCls}`}>{badge}</span>
       </div>
-      <ul className="text-xs space-y-1.5 text-neutral-300">
+      <ul className="text-xs space-y-1.5 text-on-surface-variant">
         {(items && items.length > 0 ? items : ["—"]).map((it, i) => <li key={i}>• {it}</li>)}
       </ul>
     </div>

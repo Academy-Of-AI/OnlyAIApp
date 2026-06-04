@@ -128,27 +128,27 @@ export default function NewProjectPage() {
   return (
     <main className="max-w-lg mx-auto px-4 sm:px-6 py-10 sm:py-12 space-y-8">
       <div>
-        <Link href="/dashboard" className="text-neutral-500 text-sm hover:text-white">
+        <Link href="/dashboard" className="text-on-surface-variant text-sm hover:text-on-surface">
           ← Dashboard
         </Link>
-        <h1 className="text-2xl font-bold mt-2">New project</h1>
-        <p className="text-neutral-400 text-sm mt-1">
+        <h1 className="text-2xl font-bold mt-2 font-display tracking-tight text-on-surface">New project</h1>
+        <p className="text-on-surface-variant text-sm mt-1">
           Fill in a name below and we&apos;ll handle the rest — automatically, in about 60–120 seconds.
         </p>
       </div>
 
       {/* What you'll get */}
       {!result && (
-        <div className="border border-white/10 rounded-xl p-5 space-y-4">
-          <p className="text-xs uppercase tracking-widest text-neutral-500 font-semibold">
+        <div className="panel p-5 space-y-4">
+          <p className="eyebrow">
             What gets created for you
           </p>
           <div className="grid gap-3">
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 text-lg">🔒</span>
               <div>
-                <p className="text-sm font-medium text-white">Private GitHub repository</p>
-                <p className="text-xs text-neutral-400 mt-0.5">
+                <p className="text-sm font-medium text-on-surface">Private GitHub repository</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">
                   A brand-new private repo under your GitHub account, pre-loaded with the Next.js +
                   Supabase template. Only you can see it.
                 </p>
@@ -157,8 +157,8 @@ export default function NewProjectPage() {
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 text-lg">⚡</span>
               <div>
-                <p className="text-sm font-medium text-white">Supabase database</p>
-                <p className="text-xs text-neutral-400 mt-0.5">
+                <p className="text-sm font-medium text-on-surface">Supabase database</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">
                   A dedicated Supabase project with auth, tables, and storage — connection strings
                   injected automatically. No copy-pasting.
                 </p>
@@ -167,8 +167,8 @@ export default function NewProjectPage() {
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 text-lg">▲</span>
               <div>
-                <p className="text-sm font-medium text-white">Live Vercel deployment</p>
-                <p className="text-xs text-neutral-400 mt-0.5">
+                <p className="text-sm font-medium text-on-surface">Live Vercel deployment</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">
                   Your project is instantly deployed to Vercel&apos;s global CDN. Every push to GitHub
                   automatically triggers a new deployment — CI/CD out of the box.
                 </p>
@@ -177,10 +177,10 @@ export default function NewProjectPage() {
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 text-lg">🌐</span>
               <div>
-                <p className="text-sm font-medium text-white">Public preview URL</p>
-                <p className="text-xs text-neutral-400 mt-0.5">
+                <p className="text-sm font-medium text-on-surface">Public preview URL</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">
                   A real{" "}
-                  <code className="text-green-400 text-xs bg-white/5 px-1 rounded">*.vercel.app</code>{" "}
+                  <code className="mono">*.vercel.app</code>{" "}
                   URL ready to share with clients or testers — no extra DNS setup needed.
                 </p>
               </div>
@@ -188,8 +188,8 @@ export default function NewProjectPage() {
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 text-lg">✉️</span>
               <div>
-                <p className="text-sm font-medium text-white">Email (Resend) <span className="text-xs text-neutral-500 font-normal">· add when you need it</span></p>
-                <p className="text-xs text-neutral-400 mt-0.5">
+                <p className="text-sm font-medium text-on-surface">Email (Resend) <span className="text-xs text-outline font-normal">· add when you need it</span></p>
+                <p className="text-xs text-on-surface-variant mt-0.5">
                   Send signup confirmations &amp; transactional email. Connect Resend and the key is injected for you — no copy-pasting.
                 </p>
               </div>
@@ -197,8 +197,8 @@ export default function NewProjectPage() {
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 text-lg">💳</span>
               <div>
-                <p className="text-sm font-medium text-white">Payments (Stripe) <span className="text-xs text-neutral-500 font-normal">· add when you charge</span></p>
-                <p className="text-xs text-neutral-400 mt-0.5">
+                <p className="text-sm font-medium text-on-surface">Payments (Stripe) <span className="text-xs text-outline font-normal">· add when you charge</span></p>
+                <p className="text-xs text-on-surface-variant mt-0.5">
                   Take payments from your users when you&apos;re ready. The template is Stripe-ready — connect Stripe to start charging.
                 </p>
               </div>
@@ -209,45 +209,48 @@ export default function NewProjectPage() {
 
       {/* Scaffolded to the OS-as-SaaS doctrine */}
       {!result && (
-        <div className="border border-white/10 rounded-xl p-5 space-y-3">
-          <p className="text-xs uppercase tracking-widest text-neutral-500 font-semibold">
+        <div className="panel p-5 space-y-3">
+          <p className="eyebrow">
             Scaffolded the reliable way (by default)
           </p>
           <div className="space-y-2.5">
-            <div className="border-l-2 border-cyan-400/70 pl-3">
-              <p className="text-sm font-medium text-white">🗄 Database first</p>
-              <p className="text-xs text-neutral-400 mt-0.5">A real data model is laid before any behavior.</p>
+            <div className="border-l-2 border-info pl-3">
+              <p className="text-sm font-medium text-on-surface">🗄 Database first</p>
+              <p className="text-xs text-on-surface-variant mt-0.5">A real data model is laid before any behavior.</p>
             </div>
-            <div className="border-l-2 border-green-400/70 pl-3">
-              <p className="text-sm font-medium text-white">⚙️ Coded logic second</p>
-              <p className="text-xs text-neutral-400 mt-0.5">Business rules in real, debuggable code — not trapped in prompts.</p>
+            <div className="border-l-2 border-success pl-3">
+              <p className="text-sm font-medium text-on-surface">⚙️ Coded logic second</p>
+              <p className="text-xs text-on-surface-variant mt-0.5">Business rules in real, debuggable code — not trapped in prompts.</p>
             </div>
-            <div className="border-l-2 border-amber-400/70 pl-3">
-              <p className="text-sm font-medium text-white">✨ Intelligence on top</p>
-              <p className="text-xs text-neutral-400 mt-0.5">The agent uses the database as truth — and the core runs without it.</p>
+            <div className="border-l-2 border-warn pl-3">
+              <p className="text-sm font-medium text-on-surface">✨ Intelligence on top</p>
+              <p className="text-xs text-on-surface-variant mt-0.5">The agent uses the database as truth — and the core runs without it.</p>
             </div>
           </div>
-          <p className="text-xs text-neutral-600">
-            Your project starts <span className="text-neutral-400">reliable</span> — not blank, not agent-first.
+          <p className="text-xs text-outline">
+            Your project starts <span className="text-on-surface-variant">reliable</span> — not blank, not agent-first.
           </p>
         </div>
       )}
 
       {/* Success card */}
       {result && (
-        <div className="border border-green-500/30 bg-green-500/5 rounded-xl p-6 space-y-4">
+        <div className="panel p-6 space-y-4">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🎉</span>
             <div>
-              <p className="font-bold text-lg text-white">Your project is live!</p>
-              <p className="text-sm text-neutral-400">Set up automatically. Now just describe what you want — VAB builds it for you, right here.</p>
+              <div className="flex items-center gap-2">
+                <span className="dot bg-success" />
+                <p className="font-bold text-lg text-on-surface font-display tracking-tight">Your project is live!</p>
+              </div>
+              <p className="text-sm text-on-surface-variant">Set up automatically. Now just describe what you want — VAB builds it for you, right here.</p>
             </div>
           </div>
 
           {/* Primary: build it in-app (no editor, no terminal) */}
           <Link
             href={`/projects/${result.id}`}
-            className="flex items-center justify-between bg-violet-500 hover:bg-violet-400 rounded-lg px-4 py-3 transition-colors"
+            className="btn-brand flex items-center justify-between px-4 py-3"
           >
             <div>
               <p className="text-sm font-bold text-white">✨ Build your first version</p>
@@ -261,32 +264,32 @@ export default function NewProjectPage() {
             href={result.vercelPreviewUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-4 py-3 hover:border-green-500/50 transition-colors group"
+            className="flex items-center justify-between bg-surface-low border border-outline-variant rounded-lg px-4 py-3 hover:border-outline transition-colors group"
           >
             <div>
-              <p className="text-sm font-medium text-white">🌐 Open live site</p>
-              <p className="text-xs text-neutral-500">{result.vercelPreviewUrl}</p>
+              <p className="text-sm font-medium text-on-surface">🌐 Open live site</p>
+              <p className="text-xs text-on-surface-variant">{result.vercelPreviewUrl}</p>
             </div>
-            <span className="text-neutral-500 group-hover:text-white">→</span>
+            <span className="text-outline group-hover:text-on-surface">→</span>
           </a>
 
           {/* Demoted: take the wheel in your own editor (graduation path) */}
-          <details className="bg-white/5 border border-white/10 rounded-lg px-4 py-3">
-            <summary className="text-sm font-medium text-white cursor-pointer list-none">Prefer your own editor? Take the wheel →</summary>
+          <details className="bg-surface-low border border-outline-variant rounded-lg px-4 py-3">
+            <summary className="text-sm font-medium text-on-surface cursor-pointer list-none">Prefer your own editor? Take the wheel →</summary>
             <div className="mt-3 space-y-2">
               <div className="flex items-start gap-2">
-                <code className="text-xs text-green-400 bg-black/30 px-2 py-1 rounded flex-1 font-mono whitespace-pre-wrap break-all leading-relaxed">
+                <code className="text-xs text-on-surface bg-surface px-2 py-1 rounded flex-1 font-mono whitespace-pre-wrap break-all leading-relaxed border border-outline-variant">
                   {cloneCmd}
                 </code>
                 <button
                   onClick={() => navigator.clipboard.writeText(cloneCmd)}
-                  className="text-xs text-neutral-400 hover:text-white px-2 py-1 rounded border border-white/10 hover:border-white/30 transition-colors whitespace-nowrap shrink-0"
+                  className="btn-ghost text-xs px-2 py-1 whitespace-nowrap shrink-0"
                 >
                   Copy
                 </button>
               </div>
-              <p className="text-xs text-neutral-600">
-                Open the folder in Claude Code / Cursor and keep building — your <code className="text-neutral-400">CLAUDE.md</code> is pre-loaded.
+              <p className="text-xs text-outline">
+                Open the folder in Claude Code / Cursor and keep building — your <code className="text-on-surface-variant">CLAUDE.md</code> is pre-loaded.
                 {result.commitEmail && " The git identity is set so Vercel won't block your deploys."}
               </p>
             </div>
@@ -294,7 +297,7 @@ export default function NewProjectPage() {
 
           <Link
             href="/dashboard"
-            className="block text-center text-xs text-neutral-500 hover:text-white transition-colors"
+            className="block text-center text-xs text-on-surface-variant hover:text-on-surface transition-colors"
           >
             ← Back to dashboard
           </Link>
@@ -309,7 +312,7 @@ export default function NewProjectPage() {
 
           {/* Project name */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-neutral-300">Project name</label>
+            <label className="text-sm font-medium text-on-surface-variant">Project name</label>
             <input
               type="text"
               value={name}
@@ -318,13 +321,13 @@ export default function NewProjectPage() {
               pattern="[a-z0-9-]{3,40}"
               required
               disabled={loading}
-              className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-green-500 font-mono disabled:opacity-50"
+              className="cap-input font-mono disabled:opacity-50"
             />
-            <p className="text-xs text-neutral-600">Lowercase letters, numbers, hyphens · 3–40 chars</p>
+            <p className="text-xs text-outline">Lowercase letters, numbers, hyphens · 3–40 chars</p>
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
+            <div className="panel border-l-2 border-l-danger text-danger text-sm px-4 py-3">
               {error}
             </div>
           )}
@@ -334,14 +337,14 @@ export default function NewProjectPage() {
             <div className="space-y-2 py-1">
               {steps.map((s, i) => (
                 <div key={i} className="flex items-center gap-3 text-sm">
-                  <span className="text-green-400">✓</span>
-                  <span className={i === steps.length - 1 ? "text-white" : "text-neutral-500"}>
+                  <span className="text-success">✓</span>
+                  <span className={i === steps.length - 1 ? "text-on-surface" : "text-on-surface-variant"}>
                     {s.message}
                   </span>
                 </div>
               ))}
-              <div className="flex items-center gap-3 text-sm text-neutral-400">
-                <span className="w-4 h-4 border-2 border-neutral-600 border-t-white rounded-full animate-spin inline-block flex-shrink-0" />
+              <div className="flex items-center gap-3 text-sm text-on-surface-variant">
+                <span className="w-4 h-4 border-2 border-outline-variant border-t-brand rounded-full animate-spin inline-block flex-shrink-0" />
                 <span>Working…</span>
               </div>
             </div>
@@ -351,7 +354,7 @@ export default function NewProjectPage() {
           <button
             type="submit"
             disabled={loading || !name}
-            className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black font-semibold py-3 rounded-lg transition-colors"
+            className="btn-brand w-full py-3"
           >
             {loading ? "Provisioning…" : "🚀 Provision project"}
           </button>

@@ -27,20 +27,20 @@ export function AutoCaptureToggle({ projectId, enabled }: { projectId: string; e
   }
 
   return (
-    <div className="border border-white/10 rounded-xl p-4 flex items-center justify-between gap-4">
+    <div className="panel p-4 flex items-center justify-between gap-4">
       <div>
-        <div className="text-sm font-medium flex items-center gap-2">
+        <div className="text-sm font-medium flex items-center gap-2 text-on-surface">
           🛫 Auto-capture
-          {on && <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded">on</span>}
+          {on && <span className="chip chip-success">on</span>}
         </div>
-        <p className="text-xs text-neutral-500 mt-1">Updates Pilot on every push to GitHub.</p>
-        {err && <p className="text-xs text-red-400 mt-1">{err}</p>}
+        <p className="text-xs text-on-surface-variant mt-1">Updates Pilot on every push to GitHub.</p>
+        {err && <p className="text-xs text-danger mt-1">{err}</p>}
       </div>
       <button
         onClick={toggle} disabled={busy}
         className={`shrink-0 text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${
-          on ? "border border-white/15 text-neutral-300 hover:border-white/30"
-             : "bg-violet-500 hover:bg-violet-400 text-white"
+          on ? "btn-ghost"
+             : "btn-brand text-white"
         }`}
       >
         {busy ? "…" : on ? "Turn off" : "Turn on"}

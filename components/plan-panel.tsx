@@ -7,9 +7,9 @@ interface Milestone { id: string; title: string; detail: string | null; status: 
 
 const NEXT_STATUS: Record<string, string> = { todo: "in_progress", in_progress: "done", done: "todo" };
 const STATUS_UI: Record<string, { box: string; cls: string }> = {
-  todo: { box: "○", cls: "text-neutral-500" },
-  in_progress: { box: "◐", cls: "text-amber-400" },
-  done: { box: "●", cls: "text-green-400 line-through opacity-70" },
+  todo: { box: "○", cls: "text-outline" },
+  in_progress: { box: "◐", cls: "text-warn" },
+  done: { box: "●", cls: "text-success line-through opacity-70" },
 };
 
 export function PlanPanel({
@@ -62,31 +62,31 @@ export function PlanPanel({
 
   if (!hasPlan) {
     return (
-      <form onSubmit={generate} className="border border-white/10 rounded-xl p-5 space-y-4">
+      <form onSubmit={generate} className="panel p-5 space-y-4">
         <div>
-          <label className="text-sm font-medium">Objective</label>
+          <label className="text-sm font-medium text-on-surface">Objective</label>
           <input
             value={objective} onChange={(e) => setObjective(e.target.value)}
             placeholder="One sentence: what is this project for?"
-            className="w-full mt-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-white/30"
+            className="cap-input mt-1"
           />
         </div>
         <div>
-          <label className="text-sm font-medium">PRD / details <span className="text-neutral-600">(optional)</span></label>
+          <label className="text-sm font-medium text-on-surface">PRD / details <span className="text-outline">(optional)</span></label>
           <textarea
             value={prd} onChange={(e) => setPrd(e.target.value)} rows={5}
             placeholder="Paste your PRD, requirements, or notes. Claude breaks it into milestones."
-            className="w-full mt-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-white/30 resize-none"
+            className="cap-input mt-1 resize-none"
           />
         </div>
         <button
           type="submit" disabled={generating || !objective.trim()}
-          className="bg-violet-500 hover:bg-violet-400 text-white text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-40 transition-colors"
+          className="btn-brand text-sm px-4 py-2 disabled:opacity-40 transition-colors"
         >
           {generating ? "Generating plan…" : "Generate plan of record"}
         </button>
-        {err && <p className="text-xs text-red-400">{err}</p>}
-        <p className="text-xs text-neutral-500">
+        {err && <p className="text-xs text-danger">{err}</p>}
+        <p className="text-xs text-on-surface-variant">
           The plan is written into CLAUDE.md so the agent stays anchored to it and flags scope creep.
         </p>
       </form>
@@ -98,16 +98,16 @@ export function PlanPanel({
 
   return (
     <div className="space-y-5">
-      <div className="border border-white/10 rounded-xl p-4">
-        <p className="text-xs uppercase tracking-wide text-neutral-500 mb-1">Objective</p>
-        <p className="text-sm text-neutral-200">{initialObjective}</p>
+      <div className="panel p-4">
+        <p className="text-xs uppercase tracking-wide text-on-surface-variant mb-1">Objective</p>
+        <p className="text-sm text-on-surface">{initialObjective}</p>
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-          <div className="h-full bg-green-500 transition-all" style={{ width: `${pct}%` }} />
+        <div className="flex-1 h-2 bg-surface-high rounded-full overflow-hidden">
+          <div className="h-full bg-success transition-all" style={{ width: `${pct}%` }} />
         </div>
-        <span className="text-xs text-neutral-400">{done}/{milestones.length} done</span>
+        <span className="text-xs text-on-surface-variant tabnum">{done}/{milestones.length} done</span>
       </div>
 
       <div className="space-y-2">
@@ -116,18 +116,18 @@ export function PlanPanel({
           return (
             <button
               key={m.id} onClick={() => cycle(m)}
-              className="w-full text-left flex items-start gap-3 border border-white/10 rounded-lg px-4 py-3 hover:border-white/25 transition"
+              className="w-full text-left flex items-start gap-3 panel rounded-lg px-4 py-3 hover:border-outline transition"
             >
               <span className={`text-lg leading-none mt-0.5 ${ui.cls}`}>{ui.box}</span>
               <span className="flex-1">
-                <span className={`text-sm font-medium ${m.status === "done" ? "line-through text-neutral-500" : ""}`}>{m.title}</span>
-                {m.detail && <span className="block text-xs text-neutral-500 mt-0.5">{m.detail}</span>}
+                <span className={`text-sm font-medium ${m.status === "done" ? "line-through text-outline" : "text-on-surface"}`}>{m.title}</span>
+                {m.detail && <span className="block text-xs text-on-surface-variant mt-0.5">{m.detail}</span>}
               </span>
             </button>
           );
         })}
       </div>
-      <p className="text-xs text-neutral-600">Click a milestone to cycle todo → in&nbsp;progress → done. Each change re-syncs CLAUDE.md.</p>
+      <p className="text-xs text-outline">Click a milestone to cycle todo → in&nbsp;progress → done. Each change re-syncs CLAUDE.md.</p>
     </div>
   );
 }

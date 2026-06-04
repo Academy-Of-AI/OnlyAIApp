@@ -20,14 +20,6 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
-  // Build credits + whether owner-funded AI builds are enabled (the cost switch)
-  const { data: creditRow } = await supabase
-    .from("profiles")
-    .select("build_credits")
-    .eq("id", user!.id)
-    .single();
-  const buildCredits = (creditRow?.build_credits as number | null) ?? 0;
-
   // Inferred context (zero-forms) — shown read-only inside the Build loop
   const { data: memoryRows } = await supabase
     .from("project_memory")
@@ -75,13 +67,13 @@ export default async function ProjectPage({
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-neutral-500 mb-5 min-w-0">
-        <Link href="/dashboard" className="hover:text-white transition-colors shrink-0">Dashboard</Link>
+      <div className="flex items-center gap-2 text-sm text-on-surface-variant mb-5 min-w-0">
+        <Link href="/dashboard" className="hover:text-on-surface transition-colors shrink-0">Dashboard</Link>
         <span className="shrink-0">/</span>
-        <span className="text-neutral-300 truncate">{project.name}</span>
+        <span className="text-on-surface truncate">{project.name}</span>
       </div>
 
-      <ProjectTabs project={project} buildCredits={buildCredits} memory={memory} liveUrl={liveUrl} initialPack={initialPack} autoCapture={!!project.auto_capture} />
+      <ProjectTabs project={project} memory={memory} liveUrl={liveUrl} initialPack={initialPack} autoCapture={!!project.auto_capture} />
     </main>
   );
 }
