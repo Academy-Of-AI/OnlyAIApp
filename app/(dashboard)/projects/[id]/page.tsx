@@ -1,7 +1,7 @@
 import { ProjectTabs } from "@/components/project-tabs";
 import type { Result as PlanPackResult } from "@/components/plan-pack";
 import { decrypt } from "@/lib/crypto";
-import { getLatestDeploymentStatus } from "@/lib/vercel";
+import { getLatestDeploymentStatus, getVercelProjectDomain } from "@/lib/vercel";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -38,9 +38,10 @@ export default async function ProjectPage({
     .limit(6);
   const memory = (memoryRows as Array<{ kind: string; content: string }> | null) ?? [];
 
-  // Live URL: only surface "Open live app" when there's an ACTUAL ready
-  // production deployment, and link straight to it — so it never 404s. (Stored
-  // <name>.vercel.app guesses don't resolve; an unbuilt project has no live app.)
+  // Live URL: link to the PRODUCTION ALIAS (always the latest prod deploy — the
+  // real app), not the per-deployment URL (which can be a frozen old build, e.g.
+  // the original scaffold). Gate on a READY deploy so it never 404s on an
+  // un-built project; fall back to the stored alias.
   let liveUrl: string | null = null;
   if (project.vercel_project_id) {
     try {
@@ -48,13 +49,23 @@ export default async function ProjectPage({
         .from("oauth_connections").select("access_token")
         .eq("user_id", user!.id).eq("provider", "vercel").single();
       if (vConn?.access_token) {
+        const token = await decrypt(vConn.access_token as string);
         const latest = await getLatestDeploymentStatus({
-          token: await decrypt(vConn.access_token as string),
+          token,
           projectId: project.vercel_project_id as string,
         });
-        if (latest.state === "READY" && latest.url) liveUrl = latest.url;
+        if (latest.state === "READY") {
+          liveUrl = await getVercelProjectDomain({
+            token,
+            projectId: project.vercel_project_id as string,
+            projectName: project.name as string,
+          });
+        }
       }
     } catch { /* no live link */ }
+  }
+  if (!liveUrl && project.status === "deployed") {
+    liveUrl = (project.vercel_preview_url as string | null) ?? null;
   }
 
   // Persisted plan pack (if the projects.plan_pack column exists) — lets the
