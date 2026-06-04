@@ -44,8 +44,9 @@ const TABS = ["Describe", "Plan", "Sprints", "Hand off"] as const;
 type TabName = (typeof TABS)[number];
 
 // The grounding kickoff prompt — names the spec so the agent can't drift into a
-// marketing landing page. Matches the binding rules in the generated CLAUDE.md.
-const KICKOFF = "Read everything in /docs, confirm the plan in 3 lines, then build Sprint 1 from TASKS.md — your database schema is already applied, so run `vercel env pull .env.local` and build on the existing tables, commit + push to deploy, the real working app, not a landing page.";
+// marketing landing page, AND tells it to build through to a FUNCTIONAL app in one
+// pass (not stop at an auth/setup dashboard). Matches the binding rules in CLAUDE.md.
+const KICKOFF = "Read everything in /docs, confirm the plan in 3 lines, then build straight through the sprints until the app actually works end-to-end — the PRD's success scenario, not just auth + an empty dashboard. The database schema is already applied, so run `vercel env pull .env.local` and build on the existing tables; commit + push after each sprint to deploy. Stop only when a real user can do the core job.";
 
 export function PlanPack({
   project, initialPack = null, buildCredits = 0,

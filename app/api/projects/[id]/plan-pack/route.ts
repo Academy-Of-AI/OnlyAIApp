@@ -91,8 +91,10 @@ docs/AGENTIC_LAYER.md — Draftable actions; executable-after-approval actions; 
   actions; named tools; audit-log fields; v1 vs later, tagged by risk level.
 docs/SECURITY.md — Secret handling; permission model; approved-tools rule; audit principle.
 docs/TASKS.md — Sprints 1..N. Each sprint: goal + a checklist of tasks + its Definition of
-  Done. Order them so the DB + core CRUD come first, intelligence/agentic later. Include a
-  simple text Gantt (which sprint each task lands in).
+  Done. Order them so the DB + core CRUD come first, intelligence/agentic later. Mark the sprint
+  at which the app FIRST works end-to-end (the success scenario is usable) as the "v1 functional"
+  milestone — everything up to and including it should be built in the FIRST handoff pass (do not
+  stop at an auth/setup dashboard). Include a simple text Gantt (which sprint each task lands in).
 docs/TEST_PLAN.md — Manual test steps for the v1 success scenario + empty/error cases.
 
 ALSO fill (for the UI, de-branded, the app's own words):
@@ -266,12 +268,17 @@ ${list}
 
 ## Build rules (binding — follow in order)
 1. ${rule1}
-2. **Confirm the plan** back to me in 2–3 lines (objects, Sprint 1 scope) BEFORE coding.
-3. **Build the first slice from the docs only**, then stop for review. Nothing outside the plan.
-4. **Database-first:** create the data model + core CRUD before any styling/polish. The core
-   must work with the AI switched off.
-5. **This is the real working app** — dashboards, records, forms, the flows in the plan.
-   Do **NOT** build a marketing/landing page or a front-end-only demo.
+2. **Confirm the plan** back to me in 2–3 lines (the core objects + the one main workflow) BEFORE coding.
+3. **Build straight through the sprints until the app actually WORKS end-to-end.** Do NOT stop
+   after auth + an empty or "Connected" status dashboard — that is NOT done. Keep going through the
+   data model, the core CRUD, AND the main user workflow from the PRD so a real person can do the
+   core job (create, see, and act on the core objects). Commit + push after each sprint so progress
+   deploys; only pause for review once the core workflow is genuinely usable.
+4. **Database-first, but don't stop at the database:** lay the data model + core CRUD first (the
+   core must work with the AI switched off), then build the real screens that make it usable.
+5. **This is the real working app** — real forms, lists, detail views, and the end-to-end flow from
+   the PRD's success scenario. Do **NOT** build a marketing/landing page, a front-end-only demo, or
+   a connection-status dashboard.
 6. Never put secrets in frontend code.${skillBullet}
 
 ## Deploy & data (binding — this stack is already provisioned)
@@ -284,9 +291,11 @@ ${list}
   env. Pull them locally: \`vercel link\` then \`vercel env pull .env.local\`. Don't invent new ones.
 ${dataBullet}${commitBullet}
 
-Kickoff prompt: "Read everything in /docs, confirm the plan in 3 lines, then build the first
-slice — the database schema is already applied (pull env with vercel env pull and build on
-the existing tables), commit + push to deploy, the real working app, not a landing page."
+Kickoff prompt: "Read everything in /docs, confirm the plan in 3 lines, then build straight
+through the sprints until the app actually works end-to-end — the PRD's success scenario, not
+just auth + an empty dashboard. The schema is already applied, so pull env with vercel env pull
+and build on the existing tables; commit + push after each sprint to deploy. Stop only when a
+real user can do the core job."
 `;
 }
 
