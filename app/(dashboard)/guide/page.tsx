@@ -3,30 +3,30 @@ import Link from "next/link";
 export default function GuidePage() {
   const steps = [
     {
-      n: "1", title: "Provision a real project",
-      body: "One click creates a private GitHub repo, a Vercel project, and a Supabase database — all wired together with env vars set. You get a deployed, agent-ready scaffold in about a minute.",
+      n: "1", title: "Set up your project",
+      body: "One click sets up everything your app needs — a private place to store your code, a home for your data, and live web hosting — all connected for you. In about a minute you have a working app online, ready for your AI to build on.",
       href: "/new-project", cta: "New project",
     },
     {
-      n: "2", title: "Set a plan of record",
-      body: "Paste your objective and PRD. Claude breaks it into ordered milestones scoped to avoid creep. This becomes your North Star — and it's written into CLAUDE.md so the agent sees it too.",
+      n: "2", title: "Write down your plan",
+      body: "Tell us what you want to build. Claude turns it into a clear, step-by-step plan you and your AI assistant both follow. We save it into a notes file your AI reads every time, so it always remembers where the project is headed.",
     },
     {
-      n: "3", title: "Build with Claude Code / Codex",
-      body: "Open the repo in your agent of choice. Because CLAUDE.md carries the objective, current milestone, decisions, and gotchas, the agent starts every session already in context.",
+      n: "3", title: "Build with your AI assistant",
+      body: "Open your project in the AI coding tool you like. Because that notes file holds your goal, the current step, and past decisions, your AI starts every session already up to speed — no need to re-explain.",
     },
     {
-      n: "4", title: "Capture memory as you go",
-      body: "Record decisions, architecture, and gotchas. They sync into CLAUDE.md so the knowledge compounds instead of evaporating between sessions.",
+      n: "4", title: "Save what you learn",
+      body: "As you go, jot down decisions and things to remember. We add them to the notes file so your AI keeps getting smarter about your project instead of forgetting between sessions.",
     },
     {
-      n: "5", title: "Watch from Mission Control",
-      body: "Live deploy status across every project, plain-English errors when a build breaks, env-var management, and one-click rollback. Stop opening the Vercel dashboard.",
-      href: "/mission-control", cta: "Open Mission Control",
+      n: "5", title: "Keep an eye on things from Pilot",
+      body: "See whether each of your apps is live, get plain-English explanations when something breaks, manage your project's settings, and undo a bad change with one click. No need to dig through technical dashboards.",
+      href: "/pilot", cta: "Open Pilot",
     },
     {
-      n: "6", title: "Stay on course",
-      body: "The course-keeper compares your commits to the plan and flags scope creep and rabbit holes before they cost you days — keeping you (and the agent) tethered to the objective.",
+      n: "6", title: "Stay on track",
+      body: "We compare what your AI is building against your plan and gently flag when it starts drifting off course — so small detours don't quietly turn into days of lost work.",
     },
   ];
 
@@ -35,9 +35,9 @@ export default function GuidePage() {
       <Link href="/dashboard" className="text-sm text-on-surface-variant hover:text-on-surface transition-colors">← Dashboard</Link>
       <h1 className="text-3xl font-bold font-display tracking-tight text-on-surface mt-4 mb-2">How OnlyAIApp works</h1>
       <p className="text-on-surface-variant mb-10">
-        A control plane for AI-coded projects. You provision and track; Claude Code and Codex build.
-        The connective tissue is <span className="mono-on">CLAUDE.md</span> — the file
-        your agent reads natively every session.
+        The easy command-center for apps your AI builds. You set things up and keep watch; your AI
+        assistant does the building. It all stays connected through <span className="mono-on">CLAUDE.md</span> —
+        a notes file your AI assistant reads every time, so it always remembers your project.
       </p>
 
       <ol className="space-y-6">
@@ -62,8 +62,8 @@ export default function GuidePage() {
 
       <div className="mt-12 border-t border-outline-variant pt-6">
         <p className="text-sm text-on-surface-variant">
-          The retention engine is the memory + course-keeper loop: the longer you use a project,
-          the more context accrues in CLAUDE.md and the harder it is to work without it.
+          The longer you work on a project, the more your AI remembers — every decision and lesson
+          builds up in your notes file, so your assistant only gets more helpful over time.
         </p>
       </div>
     </main>

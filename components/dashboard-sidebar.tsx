@@ -12,6 +12,8 @@ const ICON = {
   bank: <path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6" strokeLinejoin="round" />,
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 113.5 2.3c-.8.4-1 1-1 1.7M12 17h.01" strokeLinecap="round" /></>,
   gear: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.6 1.6 0 00.3 1.8M4.6 9a1.6 1.6 0 00-.3-1.8M9 4.6A1.6 1.6 0 0010.6 3M15 19.4a1.6 1.6 0 00-1.6 1.6M19.4 9a1.6 1.6 0 00.3-1.8M4.6 15a1.6 1.6 0 00-.3 1.8M9 19.4A1.6 1.6 0 0010.6 21M15 4.6A1.6 1.6 0 0013.4 3" strokeLinecap="round" /></>,
+  bulb: <><path d="M9 18h6M10 21.5h4M12 2.5a6.5 6.5 0 00-3.7 11.8c.6.5 1 1.2 1 2v.7h5.4v-.7c0-.8.4-1.5 1-2A6.5 6.5 0 0012 2.5z" strokeLinejoin="round" /></>,
+  book: <path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 006.5 22H20V2H6.5A2.5 2.5 0 004 4.5v15z" strokeLinejoin="round" />,
 } as const;
 
 function Icon({ children }: { children: React.ReactNode }) {
@@ -26,10 +28,11 @@ const WORKSPACE: NavItem[] = [
   { href: "/scope", label: "Start here", icon: <Icon>{ICON.star}</Icon> },
   { href: "/dashboard", label: "Projects", icon: <Icon>{ICON.grid}</Icon> },
   { href: "/pilot", label: "Pilot", icon: <Icon>{ICON.plane}</Icon> },
-  { href: "/directory", label: "Directory", icon: <Icon>{ICON.bank}</Icon> },
+  { href: "/directory", label: "Inspiration", icon: <Icon>{ICON.bulb}</Icon> },
 ];
 const ACCOUNT: NavItem[] = [
   { href: "/guide", label: "How it works", icon: <Icon>{ICON.help}</Icon> },
+  { href: "/basics", label: "Basics (101)", icon: <Icon>{ICON.book}</Icon> },
   { href: "/settings", label: "Settings", icon: <Icon>{ICON.gear}</Icon> },
 ];
 

@@ -110,12 +110,6 @@ export default async function SettingsPage({
           {hasSupabase
             ? <ConnectedNote text="Connected — new projects get their own database." />
             : <SupabaseConnectForm redirectTo="/settings" />}
-          <div className="mt-3 bg-warn/10 border border-warn/30 rounded-lg px-3 py-2 text-xs text-warn leading-relaxed">
-            Each project creates its <b>own</b> Supabase project in your org. Supabase&apos;s free tier
-            allows <b>2</b> active projects — to run up to <b>8</b> you&apos;ll need{" "}
-            <a href="https://supabase.com/dashboard/org/_/billing" target="_blank" rel="noopener noreferrer"
-              className="text-warn underline underline-offset-2">Supabase Pro ($25/mo)</a>.
-          </div>
         </IntegrationCard>
 
         {/* Resend */}

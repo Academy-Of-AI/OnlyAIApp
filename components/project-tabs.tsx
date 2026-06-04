@@ -130,13 +130,28 @@ function PilotView({
       </div>
 
       {!isPro && (
-        <div className="panel p-6 text-center space-y-4">
-          <p className="eyebrow">Pro feature</p>
-          <p className="text-sm text-on-surface-variant max-w-md mx-auto">
-            Pilot — auto-capture, drift detection, and launch readiness — is part of Pro. Upgrade to keep
-            this build on course and let the AI always know your project.
-          </p>
-          <a href="/upgrade" className="btn-brand inline-block text-sm px-5 py-2.5">✨ Upgrade to Pro</a>
+        <div className="relative">
+          {/* Blurred teaser of what Pilot shows */}
+          <div className="blur-[3px] select-none pointer-events-none space-y-3" aria-hidden>
+            <div className="panel p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5"><span className="dot bg-success" />On track</p>
+              <p className="text-sm text-on-surface-variant mt-1">Auto-captured: added the records table + create form, wired to the database. No drift from the plan.</p>
+            </div>
+            <div className="panel p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Launch readiness</p>
+              <p className="text-sm text-on-surface-variant mt-1 tabnum">7 checks · 1 left before you can launch</p>
+            </div>
+          </div>
+          {/* Upgrade overlay */}
+          <div className="absolute inset-0 grid place-items-center px-4">
+            <div className="panel p-6 text-center space-y-3 max-w-sm" style={{ boxShadow: "0 8px 30px rgba(16,24,40,.14)" }}>
+              <p className="text-3xl">🛫</p>
+              <p className="eyebrow">Pro feature</p>
+              <h3 className="font-display tracking-tight text-lg font-bold text-on-surface">Unlock Pilot for this build</h3>
+              <p className="text-sm text-on-surface-variant">Auto-capture, drift detection &amp; launch-readiness checks — so the AI always knows your project and nothing slips.</p>
+              <a href="/upgrade" className="btn-brand inline-block text-sm px-5 py-2.5">✨ Upgrade to Pro</a>
+            </div>
+          </div>
         </div>
       )}
 

@@ -170,27 +170,61 @@ export default async function PilotPage() {
   );
 }
 
-/** Free-tier lock for Pilot (a Pro feature). */
+/** Free-tier tease for Pilot (a Pro feature) — show a blurred board behind an upgrade card. */
 function PilotLocked() {
+  const tiles = [
+    { label: "OSes", val: "8", dot: "" },
+    { label: "On track", val: "6", dot: "bg-success" },
+    { label: "Building", val: "1", dot: "bg-warn-dim" },
+    { label: "Broken", val: "1", dot: "bg-danger" },
+  ];
+  const sample = [
+    { name: "deal-os", chip: "chip chip-success", state: "Live", dot: "bg-success", note: "Auto-captured: proposal engine + send tracking. On track." },
+    { name: "client-portal", chip: "chip chip-warn", state: "Building", dot: "bg-warn-dim", note: "Deploy building — added billing page." },
+    { name: "ops-os", chip: "chip chip-warn", state: "Drifting", dot: "bg-warn", note: "⟲ Drift: settings page is creeping past the plan." },
+    { name: "crm-os", chip: "chip chip-danger", state: "Broken", dot: "bg-danger", note: "⚠ Build failed — type error in /lib." },
+  ];
   return (
-    <main className="max-w-2xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-      <div className="panel p-8 text-center space-y-5">
-        <p className="text-4xl">🛫</p>
-        <div className="space-y-1.5">
-          <p className="eyebrow">Pro feature</p>
-          <h1 className="font-display tracking-tight text-2xl font-bold text-on-surface">Pilot keeps every build on course</h1>
-          <p className="text-sm text-on-surface-variant max-w-md mx-auto">
-            Live deploy health and drift across all your projects, auto-capture of what changed and why,
-            and launch-readiness checks — so the AI always knows your project and nothing slips.
-          </p>
+    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="mb-5">
+        <p className="eyebrow">Mission Control</p>
+        <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — every OS, on course</h1>
+        <p className="text-sm text-on-surface-variant mt-1">Live health + drift across all your projects.</p>
+      </div>
+
+      <div className="relative">
+        {/* Blurred teaser board */}
+        <div className="blur-[3px] select-none pointer-events-none space-y-4" aria-hidden>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {tiles.map((t) => (
+              <div key={t.label} className="tile">
+                <p className="tile-label flex items-center gap-1.5">{t.dot ? <span className={`dot ${t.dot}`} /> : null}{t.label}</p>
+                <p className="tile-value text-on-surface">{t.val}</p>
+              </div>
+            ))}
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {sample.map((s) => (
+              <div key={s.name} className="panel p-4">
+                <p className="font-semibold text-on-surface flex items-center gap-2"><span className={`dot ${s.dot}`} />{s.name}<span className={s.chip}>{s.state}</span></p>
+                <p className="text-xs text-on-surface-variant mt-1">{s.note}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <ul className="text-sm text-on-surface-variant space-y-1.5 inline-block text-left">
-          <li className="flex gap-2"><span className="text-brand">✓</span> Cross-project status board</li>
-          <li className="flex gap-2"><span className="text-brand">✓</span> Auto-capture + drift detection</li>
-          <li className="flex gap-2"><span className="text-brand">✓</span> Launch readiness checks</li>
-        </ul>
-        <div>
-          <Link href="/upgrade" className="btn-brand inline-block text-sm px-5 py-2.5">✨ Upgrade to Pro</Link>
+
+        {/* Upgrade overlay */}
+        <div className="absolute inset-0 grid place-items-center px-4">
+          <div className="panel p-6 sm:p-7 text-center space-y-3 max-w-sm" style={{ boxShadow: "0 10px 36px rgba(16,24,40,.16)" }}>
+            <p className="text-3xl">🛫</p>
+            <p className="eyebrow">Pro feature</p>
+            <h2 className="font-display tracking-tight text-xl font-bold text-on-surface">Unlock Pilot</h2>
+            <p className="text-sm text-on-surface-variant">
+              Live deploy health &amp; drift across every project, auto-capture of what changed, and
+              launch-readiness checks — so nothing slips between sessions.
+            </p>
+            <Link href="/upgrade" className="btn-brand inline-block text-sm px-5 py-2.5">✨ Upgrade to Pro</Link>
+          </div>
         </div>
       </div>
     </main>

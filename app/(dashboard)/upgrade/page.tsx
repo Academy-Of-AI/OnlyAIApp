@@ -1,5 +1,4 @@
 import { SubscribeButton, ManageBillingButton } from "@/components/subscribe-button";
-import { BuyCreditsButton } from "@/components/buy-credits-button";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -16,112 +15,159 @@ export default async function UpgradePage({
 
   const { data: profile } = await supabase
     .from("profiles").select("plan").eq("id", user.id).single();
-  const currentPlan = profile?.plan === "pro" ? "pro" : profile?.plan === "core" ? "core" : "free";
-  const paid = currentPlan !== "free";
+  const plan = profile?.plan === "pro" ? "pro" : profile?.plan === "core" ? "core" : "free";
 
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-12 space-y-10">
+    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-10">
       <div className="flex justify-end">
         <Link href="/dashboard" className="text-outline hover:text-on-surface transition-colors text-xl leading-none" aria-label="Close">✕</Link>
       </div>
 
       {params.upgraded && (
-        <div className="bg-success/10 border border-success/30 text-success text-sm px-4 py-3 rounded-lg text-center">
-          🎉 You&apos;re upgraded. Your new plan is active.
+        <div className="bg-success/10 border border-success/30 text-success text-sm px-4 py-3 rounded-lg text-center max-w-md mx-auto">
+          🎉 You&apos;re upgraded — your new plan is active.
         </div>
       )}
 
-      <div className="text-center space-y-2">
+      <header className="text-center space-y-3 max-w-2xl mx-auto">
         <p className="eyebrow">Plans</p>
-        <h1 className="font-display tracking-tight text-3xl font-bold text-on-surface">Simple plans. You bring your own Claude Code.</h1>
-        <p className="text-on-surface-variant max-w-xl mx-auto">
-          We never charge for tokens. You pay for projects and — on Pro — for <b className="text-on-surface">Pilot</b>,
-          the part that keeps every build on course.
+        <h1 className="font-display tracking-tight text-3xl sm:text-4xl font-bold text-on-surface">
+          Pay for outcomes, not tokens
+        </h1>
+        <p className="text-on-surface-variant text-lg leading-relaxed">
+          You bring your own Claude Code — we never bill for AI usage. Start free, grow into Core
+          when you&apos;re shipping in earnest, and add <b className="text-on-surface">Pilot</b> on Pro to
+          keep every build on course.
         </p>
-      </div>
+      </header>
 
-      <div className="grid sm:grid-cols-3 gap-6 items-start">
+      <div className="grid sm:grid-cols-3 gap-5 items-stretch">
         {/* Free */}
-        <div className="panel p-6 space-y-5">
-          <div>
-            <h2 className="font-display font-bold text-lg text-on-surface">Free</h2>
-            <p className="text-3xl font-bold mt-1 tabnum text-on-surface">$0<span className="text-sm font-normal text-on-surface-variant"> forever</span></p>
-            <p className="text-xs text-outline mt-1">See the magic</p>
-          </div>
-          <ul className="space-y-2">
-            {["1 project", "Plan Pack (PRD · architecture · sprints)", "Provision repo + database + hosting", "Hand off to Claude Code"].map((f) => (
-              <li key={f} className="flex gap-2 text-sm text-on-surface-variant"><span className="text-success">✓</span>{f}</li>
-            ))}
-            <li className="flex gap-2 text-sm text-outline"><span>—</span>Can&apos;t delete · no Pilot</li>
-          </ul>
-          <p className="text-xs text-brand">＋ Add your WhatsApp &amp; a quick intro → unlock a 2nd free project.</p>
-          {currentPlan === "free"
-            ? <div className="w-full text-center text-sm text-on-surface-variant py-2 border border-outline-variant rounded-lg">Current plan</div>
-            : <div className="w-full text-center text-sm text-outline py-2">—</div>}
-        </div>
+        <Tier
+          name="Free"
+          price="$0"
+          period="forever"
+          tagline="See it work, end to end."
+          features={[
+            "1 live project",
+            "A full Plan Pack — PRD, architecture & sprints",
+            "Repo, database & hosting set up for you",
+            "Hand off to Claude Code",
+          ]}
+          current={plan === "free"}
+          footer={
+            plan === "free"
+              ? <Link href="/dashboard" className="block text-center text-xs text-brand hover:underline">＋ Add your WhatsApp for a 2nd free project →</Link>
+              : undefined
+          }
+        />
 
         {/* Core */}
-        <div className="panel p-6 space-y-5">
-          <div>
-            <h2 className="font-display font-bold text-lg text-on-surface">Core</h2>
-            <p className="text-3xl font-bold mt-1 tabnum text-on-surface">$8<span className="text-sm font-normal text-on-surface-variant">/mo</span></p>
-            <p className="text-xs text-outline mt-1">Build a few real things</p>
-          </div>
-          <ul className="space-y-2">
-            {["Up to 8 projects", "Delete & recreate freely", "Unlimited Plan Packs", "Provision + hand off"].map((f) => (
-              <li key={f} className="flex gap-2 text-sm text-on-surface-variant"><span className="text-success">✓</span>{f}</li>
-            ))}
-            <li className="flex gap-2 text-sm text-outline"><span>—</span>No Pilot</li>
-          </ul>
-          {currentPlan === "core" ? (
-            <div className="space-y-2">
-              <div className="w-full text-center text-sm text-on-surface-variant py-2 border border-outline-variant rounded-lg">Current plan</div>
-              <ManageBillingButton label="Manage subscription →" className="block w-full text-center text-sm text-brand hover:underline py-1" />
-            </div>
-          ) : currentPlan === "free" ? (
-            <SubscribeButton label="Get Core — $8/mo" plan="core" interval="month" />
-          ) : (
-            <div className="w-full text-center text-sm text-outline py-2">—</div>
-          )}
-        </div>
+        <Tier
+          name="Core"
+          price="$8"
+          period="/month"
+          tagline="For building in earnest."
+          features={[
+            "Up to 8 live projects",
+            "Delete & recreate anytime",
+            "Unlimited Plan Packs",
+            "Everything in Free",
+          ]}
+          current={plan === "core"}
+          cta={
+            plan === "free" ? <SubscribeButton label="Choose Core" plan="core" interval="month" />
+            : plan === "core" ? <ManageBillingButton label="Manage subscription →" className="block w-full text-center text-sm text-brand hover:underline py-2" />
+            : <p className="text-center text-xs text-on-surface-variant py-2">Included in Pro</p>
+          }
+        />
 
         {/* Pro */}
-        <div className="panel p-6 space-y-5 border-brand-border relative" style={{ background: "var(--color-brand-container)" }}>
-          <span className="chip chip-brand">Most popular</span>
-          <div>
-            <h2 className="font-display font-bold text-lg text-on-surface">Pro</h2>
-            <p className="text-3xl font-bold mt-1 tabnum text-on-surface">$17<span className="text-sm font-normal text-on-surface-variant">/mo</span></p>
-            <p className="text-xs text-outline mt-1">or $11.90/mo billed yearly (−30%)</p>
-          </div>
-          <ul className="space-y-2">
-            {["Everything in Core", "🛫 Pilot — auto-capture + drift detection", "Launch readiness checks", "Keeps every build on course"].map((f) => (
-              <li key={f} className="flex gap-2 text-sm text-on-surface"><span className="text-brand">✓</span>{f}</li>
-            ))}
-          </ul>
-          {currentPlan === "pro" ? (
-            <div className="space-y-2">
-              <div className="w-full text-center text-sm text-on-surface-variant py-2 border border-outline-variant rounded-lg bg-surface-low">Current plan</div>
-              <ManageBillingButton label="Manage subscription →" className="block w-full text-center text-sm text-brand hover:underline py-1" />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <SubscribeButton label="Go Pro — $17/mo" plan="pro" interval="month" />
-              <SubscribeButton label="Yearly — $142.80/yr (save 30%)" plan="pro" interval="year" variant="outline" />
-            </div>
-          )}
-        </div>
+        <Tier
+          name="Pro"
+          price="$17"
+          period="/month"
+          tagline="Ship with a co-pilot."
+          highlight
+          badge="Most popular"
+          sub="or $11.90/mo billed yearly — save 30%"
+          features={[
+            "Everything in Core",
+            "🛫 Pilot — auto-capture & drift detection",
+            "Launch-readiness checks before you ship",
+            "Keeps every build tethered to the plan",
+          ]}
+          current={plan === "pro"}
+          cta={
+            plan === "pro"
+              ? <ManageBillingButton label="Manage subscription →" className="block w-full text-center text-sm text-brand hover:underline py-2" />
+              : (
+                <div className="space-y-2">
+                  <SubscribeButton label="Go Pro — $17/mo" plan="pro" interval="month" />
+                  <SubscribeButton label="Yearly — save 30%" plan="pro" interval="year" variant="outline" />
+                </div>
+              )
+          }
+        />
       </div>
 
-      {!paid && (
-        <p className="text-center text-sm text-on-surface-variant">
-          Just need more Plan Packs on Free? <BuyCreditsButton /> — no subscription.
-        </p>
-      )}
-      <p className="text-center text-xs text-outline max-w-xl mx-auto">
-        Cancel anytime. Your Claude Code subscription is separate — and yours. Each project gets its own
-        Supabase database in <b className="text-on-surface-variant">your</b> account; running up to 8 needs
-        Supabase Pro ($25/mo) — the free tier allows 2.
+      <p className="text-center text-xs text-outline max-w-xl mx-auto leading-relaxed">
+        Cancel anytime. Your Claude Code subscription is separate — and yours. Each project runs on its own
+        database in your own cloud account, so your data and infrastructure stay fully yours.
       </p>
     </main>
+  );
+}
+
+function Tier({
+  name, price, period, tagline, features, current, highlight = false, badge, sub, cta, footer,
+}: {
+  name: string;
+  price: string;
+  period: string;
+  tagline: string;
+  features: string[];
+  current: boolean;
+  highlight?: boolean;
+  badge?: string;
+  sub?: string;
+  cta?: React.ReactNode;
+  footer?: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`panel p-6 flex flex-col ${highlight ? "border-brand-border ring-1 ring-[var(--color-brand-border)]" : ""}`}
+      style={highlight ? { background: "var(--color-brand-container)" } : undefined}
+    >
+      {badge ? <span className="chip chip-brand self-start mb-3">{badge}</span> : null}
+      <div>
+        <h2 className="font-display font-bold text-lg text-on-surface">{name}</h2>
+        <p className="mt-1">
+          <span className="text-3xl font-bold tabnum text-on-surface">{price}</span>
+          <span className="text-sm font-normal text-on-surface-variant"> {period}</span>
+        </p>
+        <p className="text-sm text-on-surface-variant mt-1.5">{tagline}</p>
+        {sub ? <p className="text-xs text-outline mt-1">{sub}</p> : null}
+      </div>
+
+      <ul className="space-y-2.5 my-6 flex-1">
+        {features.map((f) => (
+          <li key={f} className="flex gap-2.5 text-sm text-on-surface">
+            <span className={highlight ? "text-brand" : "text-success"} aria-hidden>✓</span>
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-auto space-y-2">
+        {current ? (
+          <div className="w-full text-center text-sm text-on-surface-variant py-2 border border-outline-variant rounded-lg bg-surface-low">
+            Current plan
+          </div>
+        ) : null}
+        {!current && cta ? cta : null}
+        {footer}
+      </div>
+    </div>
   );
 }
