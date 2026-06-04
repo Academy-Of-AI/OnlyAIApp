@@ -34,7 +34,7 @@ export function VercelConnectForm({ redirectTo = "/dashboard" }: { redirectTo?: 
           type="password"
           placeholder="Paste your Vercel token here…"
           required
-          className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-green-500 min-w-0"
+          className="w-full bg-white/5 border border-white/10 text-white placeholder-neutral-500 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-violet-500 min-w-0"
         />
         <button
           type="submit"

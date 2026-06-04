@@ -314,13 +314,11 @@ export function PlanPack({
 }
 
 function PlanColumn({ title, badge, tone, items }: { title: string; badge: string; tone: "green" | "amber" | "neutral"; items?: string[] }) {
-  const toneCls =
-    tone === "green" ? "bg-green-500/[0.06] border-green-500/20"
-    : tone === "amber" ? "bg-amber-500/[0.06] border-amber-500/20"
-    : "bg-white/[0.03] border-white/10";
+  // Calm palette: these are phases, not statuses — keep them neutral. "Now" (the
+  // v1 focus) gets a subtle violet accent on its badge; that's the only color.
+  const toneCls = "bg-white/[0.02] border-white/10";
   const badgeCls =
-    tone === "green" ? "text-green-400 border-green-500/30"
-    : tone === "amber" ? "text-amber-300 border-amber-500/30"
+    tone === "green" ? "text-violet-300 border-violet-500/30"
     : "text-neutral-400 border-white/15";
   return (
     <div className={`rounded-xl p-4 border ${toneCls}`}>

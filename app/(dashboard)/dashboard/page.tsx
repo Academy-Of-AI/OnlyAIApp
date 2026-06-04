@@ -4,10 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
 const STATUS_STYLES: Record<string, string> = {
-  deployed:     "bg-green-500/20 text-green-400",
-  provisioning: "bg-yellow-500/20 text-yellow-400",
-  pending:      "bg-neutral-500/20 text-neutral-400",
-  failed:       "bg-red-500/20 text-red-400",
+  deployed:     "bg-green-500/15 text-green-400",
+  provisioning: "bg-amber-500/15 text-amber-400",
+  building:     "bg-amber-500/15 text-amber-400",
+  pending:      "bg-white/10 text-neutral-400",
+  failed:       "bg-red-500/15 text-red-400",
 };
 
 export default async function DashboardPage({
@@ -167,7 +168,7 @@ export default async function DashboardPage({
                     <span className="text-neutral-400">GitHub →</span>
                   )}
                   {p.vercel_preview_url && (
-                    <span className="text-green-400">Live URL →</span>
+                    <span className="text-neutral-400">Live URL →</span>
                   )}
                 </div>
                 {p.error && <p className="text-xs text-red-400 truncate">{p.error}</p>}

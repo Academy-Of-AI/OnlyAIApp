@@ -23,11 +23,11 @@ type Project = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  deployed:     "bg-green-500/20 text-green-400",
-  provisioning: "bg-yellow-500/20 text-yellow-400",
-  building:     "bg-blue-500/20 text-blue-400",
-  pending:      "bg-neutral-500/20 text-neutral-400",
-  failed:       "bg-red-500/20 text-red-400",
+  deployed:     "bg-green-500/15 text-green-400",
+  provisioning: "bg-amber-500/15 text-amber-400",
+  building:     "bg-amber-500/15 text-amber-400",
+  pending:      "bg-white/10 text-neutral-400",
+  failed:       "bg-red-500/15 text-red-400",
 };
 
 type View = "plan" | "pilot" | "settings";
@@ -81,7 +81,7 @@ export function ProjectTabs({
 
       {/* The 3 Ps — the only nav (no tab bar) */}
       <div className="grid grid-cols-3 gap-2 text-sm mb-8">
-        <div className="rounded-lg border border-green-500/20 bg-green-500/[0.05] px-3 py-2.5 flex items-center gap-2"><span className="text-green-400">①</span><span className="font-semibold">Provision</span><span className="ml-auto text-xs text-green-400">✓</span></div>
+        <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2.5 flex items-center gap-2"><span className="text-neutral-500">①</span><span className="font-semibold">Provision</span><span className="ml-auto text-xs text-green-400">✓</span></div>
         <button onClick={() => setView("plan")} className={pnav(view === "plan")}><span className="text-violet-300">②</span><span className="font-semibold">Plan</span></button>
         <button onClick={() => setView("pilot")} className={pnav(view === "pilot")}><span className="text-violet-300">③</span><span className="font-semibold">Pilot</span></button>
       </div>
@@ -132,15 +132,16 @@ function PilotView({
       <AutoCaptureToggle projectId={project.id} enabled={autoCapture} />
 
       {project.last_digest && (
-        <div className={`rounded-xl p-4 border ${project.last_digest.onTrack ? "border-green-500/25 bg-green-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
-          <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${project.last_digest.onTrack ? "text-green-400" : "text-amber-400"}`}>
-            {project.last_digest.onTrack ? "✓ On track" : "⟲ Heads up"}
+        <div className="rounded-xl p-4 border border-white/10 bg-white/[0.02]">
+          <p className="text-xs font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <span className={`inline-block w-1.5 h-1.5 rounded-full ${project.last_digest.onTrack ? "bg-green-500" : "bg-amber-500"}`} />
+            <span className="text-neutral-400">{project.last_digest.onTrack ? "On track" : "Heads up"}</span>
           </p>
           <p className="text-sm text-neutral-300">{project.last_digest.note}</p>
           {(project.last_digest.scopeCreep ?? []).length > 0 && (
             <ul className="mt-2 space-y-1">
               {(project.last_digest.scopeCreep ?? []).map((s, i) => (
-                <li key={i} className="text-xs text-amber-300/90">• {s}</li>
+                <li key={i} className="text-xs text-neutral-400">• {s}</li>
               ))}
             </ul>
           )}
@@ -398,7 +399,7 @@ function SettingsTab({ project }: { project: Project }) {
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="bg-white/5 border border-white/15 rounded-md px-2 py-1 text-sm text-white outline-none focus:border-green-500/50 w-48"
+                    className="bg-white/5 border border-white/15 rounded-md px-2 py-1 text-sm text-white outline-none focus:border-violet-500/50 w-48"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") save("name");
@@ -408,7 +409,7 @@ function SettingsTab({ project }: { project: Project }) {
                   <button
                     onClick={() => save("name")}
                     disabled={saving === "name"}
-                    className="text-xs bg-green-500 hover:bg-green-400 text-black font-semibold px-2.5 py-1 rounded-md transition-colors disabled:opacity-50"
+                    className="text-xs bg-violet-500 hover:bg-violet-400 text-white font-semibold px-2.5 py-1 rounded-md transition-colors disabled:opacity-50"
                   >
                     {saving === "name" ? "…" : "Save"}
                   </button>
@@ -442,7 +443,7 @@ function SettingsTab({ project }: { project: Project }) {
                   <input
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    className="bg-white/5 border border-white/15 rounded-md px-2 py-1 text-sm text-white outline-none focus:border-green-500/50 w-56"
+                    className="bg-white/5 border border-white/15 rounded-md px-2 py-1 text-sm text-white outline-none focus:border-violet-500/50 w-56"
                     autoFocus
                     placeholder="https://your-app.vercel.app"
                     onKeyDown={(e) => {
@@ -453,7 +454,7 @@ function SettingsTab({ project }: { project: Project }) {
                   <button
                     onClick={() => save("url")}
                     disabled={saving === "url"}
-                    className="text-xs bg-green-500 hover:bg-green-400 text-black font-semibold px-2.5 py-1 rounded-md transition-colors disabled:opacity-50"
+                    className="text-xs bg-violet-500 hover:bg-violet-400 text-white font-semibold px-2.5 py-1 rounded-md transition-colors disabled:opacity-50"
                   >
                     {saving === "url" ? "…" : "Save"}
                   </button>
@@ -471,7 +472,7 @@ function SettingsTab({ project }: { project: Project }) {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-green-400 hover:text-green-300 truncate transition-colors"
+                      className="text-violet-300 hover:text-violet-200 truncate transition-colors"
                     >
                       {url}
                     </a>
@@ -499,7 +500,7 @@ function SettingsTab({ project }: { project: Project }) {
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-green-400 hover:text-green-300 truncate transition-colors"
+                    className="text-violet-300 hover:text-violet-200 truncate transition-colors"
                   >
                     {value}
                   </a>
@@ -527,7 +528,7 @@ function SettingsTab({ project }: { project: Project }) {
         <p className="text-xs text-neutral-500">
           What this project is connected to. Account tokens (used to provision new projects) are
           managed in{" "}
-          <a href="/settings" className="text-green-400 hover:text-green-300">Settings ⚙</a>.
+          <a href="/settings" className="text-violet-300 hover:text-violet-200">Settings ⚙</a>.
         </p>
         <div className="border border-white/10 rounded-xl overflow-hidden divide-y divide-white/[0.06]">
           <IntegrationRow icon="" name="GitHub" ok={!!project.github_repo_url}
@@ -577,7 +578,7 @@ function IntegrationRow({
       </div>
       {href && hrefLabel && (
         <a href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined}
-          className="text-green-400 hover:text-green-300 text-xs shrink-0 transition-colors">{hrefLabel}</a>
+          className="text-violet-300 hover:text-violet-200 text-xs shrink-0 transition-colors">{hrefLabel}</a>
       )}
     </div>
   );
