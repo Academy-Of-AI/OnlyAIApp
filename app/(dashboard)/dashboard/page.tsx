@@ -42,9 +42,6 @@ export default async function DashboardPage({
   ]);
 
   const hasGitHub   = connections?.some((c) => c.provider === "github");
-  const hasVercel   = connections?.some((c) => c.provider === "vercel");
-  const hasSupabase = connections?.some((c) => c.provider === "supabase");
-  const hasResend   = connections?.some((c) => c.provider === "resend");
   // Onramp: GitHub alone is enough to create a project. Vercel/Supabase come later.
   const canCreate = hasGitHub;
   // Hide the "first app" onboarding once they've shipped — beginner framing
@@ -98,17 +95,8 @@ export default async function DashboardPage({
         </section>
       )}
 
-      {/* Optional integrations live on the Settings page now (⚙ in the top nav). */}
-      {hasGitHub && (!hasVercel || !hasSupabase || !hasResend) && (
-        <Link href="/settings"
-          className="flex items-center justify-between gap-3 border border-white/10 hover:border-white/25 rounded-xl px-5 py-4 transition-colors group">
-          <div className="min-w-0">
-            <p className="font-medium text-sm">Optional integrations</p>
-            <p className="text-xs text-neutral-500 mt-0.5">Add deploy, database &amp; email in Settings — connect once, reused everywhere</p>
-          </div>
-          <span className="text-neutral-500 text-sm shrink-0 group-hover:translate-x-0.5 transition-transform">→</span>
-        </Link>
-      )}
+      {/* Optional integrations live on the Settings page (⚙ in the top nav)
+          and inside each project's own Settings tab. */}
 
       {/* Onboarding checklist — only while still working toward the first ship */}
       {!!projects?.length && !hasShipped && (

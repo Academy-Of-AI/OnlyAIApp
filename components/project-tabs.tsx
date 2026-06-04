@@ -521,18 +521,29 @@ function SettingsTab({ project }: { project: Project }) {
         </div>
       </div>
 
-      <div className="border border-white/10 rounded-xl p-5 space-y-3">
-        <h3 className="text-sm font-semibold">Manage connections</h3>
-        <p className="text-xs text-neutral-500 leading-relaxed">
-          Need to update your Vercel token, Supabase access, or Resend key?
-          Go back to your dashboard to reconnect or update any integration.
+      {/* Per-project integrations — what THIS project is wired to */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold">Integrations</h3>
+        <p className="text-xs text-neutral-500">
+          What this project is connected to. Account tokens (used to provision new projects) are
+          managed in{" "}
+          <a href="/settings" className="text-green-400 hover:text-green-300">Settings ⚙</a>.
         </p>
-        <a
-          href="/dashboard"
-          className="inline-block text-sm text-green-400 hover:text-green-300 transition-colors"
-        >
-          ← Back to dashboard &amp; connections
-        </a>
+        <div className="border border-white/10 rounded-xl overflow-hidden divide-y divide-white/[0.06]">
+          <IntegrationRow icon="" name="GitHub" ok={!!project.github_repo_url}
+            status={project.github_repo_url ? "Connected" : "Not linked"}
+            href={project.github_repo_url ?? undefined} hrefLabel="Open repo →" />
+          <IntegrationRow icon="▲" name="Vercel" ok={!!project.vercel_preview_url}
+            status={project.vercel_preview_url ? "Deployed" : "Not deployed"}
+            href={project.vercel_preview_url ?? undefined} hrefLabel="Open live →" />
+          <IntegrationRow icon="⚡" name="Supabase" ok={!!project.supabase_project_ref}
+            status={project.supabase_project_ref ? "Provisioned" : "Not provisioned"}
+            href={project.supabase_project_ref ? `https://supabase.com/dashboard/project/${project.supabase_project_ref}` : undefined}
+            hrefLabel="Open database →" />
+          <IntegrationRow icon="✉" name="Resend" ok={false} muted
+            status="Email is injected from your account key"
+            href="/settings" hrefLabel="Manage →" />
+        </div>
       </div>
 
       <div className="border border-red-500/20 rounded-xl p-5 space-y-3">
@@ -544,6 +555,30 @@ function SettingsTab({ project }: { project: Project }) {
         </p>
         <DeleteProjectButton projectId={project.id} projectName={project.name} redirectTo="/dashboard" variant="button" />
       </div>
+    </div>
+  );
+}
+
+function IntegrationRow({
+  icon, name, status, ok, href, hrefLabel, muted = false,
+}: {
+  icon: string; name: string; status: string; ok: boolean;
+  href?: string; hrefLabel?: string; muted?: boolean;
+}) {
+  const external = href?.startsWith("http");
+  return (
+    <div className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+      <div className="flex items-center gap-2 min-w-0">
+        {icon && <span className="text-neutral-400 shrink-0">{icon}</span>}
+        <span className="font-medium">{name}</span>
+        <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide shrink-0 ${
+          ok ? "text-green-400 bg-green-500/10" : muted ? "text-neutral-500 bg-white/5" : "text-amber-300 bg-amber-500/10"
+        }`}>{status}</span>
+      </div>
+      {href && hrefLabel && (
+        <a href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined}
+          className="text-green-400 hover:text-green-300 text-xs shrink-0 transition-colors">{hrefLabel}</a>
+      )}
     </div>
   );
 }
