@@ -99,10 +99,10 @@ export function DashboardSidebar({
             ✨ Upgrade{plan === "core" ? " to Pro" : ""}
           </Link>
         )}
-        <a href="mailto:xienpuo@onlyaiwork.com?subject=OnlyAIApp%20help" className="snav text-[13px]">
+        <Link href="/help" className={`snav text-[13px] ${isActive(pathname, "/help") ? "snav-active" : ""}`}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-4 h-4 shrink-0"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinejoin="round" /></svg>
           Need help?
-        </a>
+        </Link>
 
         {/* Account — avatar · name · plan · sign out (bottom, Claude-Code style) */}
         <div className="flex items-center gap-2.5 px-2 pt-2.5 mt-1.5 border-t border-[var(--color-sidebar-border)]">

@@ -68,7 +68,7 @@ export default async function UpgradePage({
           price="$8"
           period="/month"
           tagline="For building in earnest."
-          sub="or $5.60/mo billed yearly — save 30%"
+          sub="or $6/mo billed yearly — save 25%"
           features={[
             "Everything in Free",
             "Up to 8 live projects",
@@ -80,7 +80,7 @@ export default async function UpgradePage({
             plan === "free" ? (
               <div className="space-y-2">
                 <SubscribeButton label="Choose Core — $8/mo" plan="core" interval="month" />
-                <SubscribeButton label="Yearly — save 30%" plan="core" interval="year" variant="outline" />
+                <SubscribeButton label="Yearly — save 25%" plan="core" interval="year" variant="outline" />
               </div>
             )
             : plan === "core" ? <ManageBillingButton label="Manage subscription →" className="block w-full text-center text-sm text-brand hover:underline py-2" />

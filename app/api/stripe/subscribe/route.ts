@@ -2,9 +2,9 @@ import { stripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
-/** Prices in cents. Pro $17/mo; Core $8/mo. Yearly = 30% off (×12×0.7). */
+/** Prices in cents. Core $8/mo, yearly −25% (×12×0.75). Pro $17/mo, yearly −30% (×12×0.7). */
 const PRICES = {
-  core: { month: 800,  year: 6720,  name: "Core",
+  core: { month: 800,  year: 7200,  name: "Core",
           desc: "8 projects · delete & recreate · provision + Plan Pack + hand off" },
   pro:  { month: 1700, year: 14280, name: "Pro",
           desc: "Everything in Core + advanced Pilot (auto-capture, drift, launch readiness)" },
