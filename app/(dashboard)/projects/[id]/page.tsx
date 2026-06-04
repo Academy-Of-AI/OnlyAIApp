@@ -20,6 +20,10 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
+  // Pilot is Pro-only — gate the per-project Pilot view.
+  const { data: planRow } = await supabase.from("profiles").select("plan").eq("id", user!.id).single();
+  const isPro = planRow?.plan === "pro";
+
   // Inferred context (zero-forms) — shown read-only inside the Build loop
   const { data: memoryRows } = await supabase
     .from("project_memory")
@@ -73,7 +77,7 @@ export default async function ProjectPage({
         <span className="text-on-surface truncate">{project.name}</span>
       </div>
 
-      <ProjectTabs project={project} memory={memory} liveUrl={liveUrl} initialPack={initialPack} autoCapture={!!project.auto_capture} />
+      <ProjectTabs project={project} memory={memory} liveUrl={liveUrl} initialPack={initialPack} autoCapture={!!project.auto_capture} isPro={isPro} />
     </main>
   );
 }

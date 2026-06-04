@@ -60,7 +60,7 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
 }
 
 /** Desktop left rail (dark). Hidden on mobile (mobile uses the horizontal row below). */
-export function DashboardSidebar() {
+export function DashboardSidebar({ plan = "free" }: { plan?: string }) {
   const pathname = usePathname() ?? "";
   return (
     <aside className="hidden md:flex md:flex-col w-56 shrink-0 fixed inset-y-0 left-0 z-20 bg-[var(--color-sidebar)] border-r border-[var(--color-sidebar-border)]">
@@ -84,7 +84,19 @@ export function DashboardSidebar() {
         </div>
       </nav>
 
-      <div className="p-3 border-t border-[var(--color-sidebar-border)]">
+      <div className="p-3 border-t border-[var(--color-sidebar-border)] space-y-1">
+        {plan !== "pro" ? (
+          <Link href="/upgrade"
+            className="flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-opacity hover:opacity-90"
+            style={{ background: "color-mix(in srgb, var(--color-brand) 20%, transparent)", color: "#c4b5fd", border: "1px solid color-mix(in srgb, var(--color-brand) 38%, transparent)" }}>
+            ✨ Upgrade to Pro
+          </Link>
+        ) : (
+          <div className="flex items-center justify-center gap-2 py-1.5 text-[11px]" style={{ color: "var(--color-sidebar-on-variant)" }}>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide" style={{ background: "var(--color-sidebar-active)", color: "#c4b5fd" }}>Pro</span>
+            You&apos;re on Pro
+          </div>
+        )}
         <a href="mailto:xienpuo@onlyaiwork.com?subject=OnlyAIApp%20help"
           className="snav text-[13px]">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-4 h-4 shrink-0"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinejoin="round" /></svg>

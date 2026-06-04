@@ -42,11 +42,23 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const ownerFunded = process.env.OWNER_FUNDED_BUILDS === "true";
   const anthropicKey = process.env.ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_SECRET_KEY;
   if (!anthropicKey) {
     return NextResponse.json(
       { error: "AI build not configured — add ANTHROPIC_API_KEY to your Vercel environment variables." },
       { status: 500 },
+    );
+  }
+
+  /* ── check credits (Pro = unlimited) ─────────────────────────────────── */
+  const { data: profile } = await supabase
+    .from("profiles").select("build_credits, plan").eq("id", user.id).single();
+  const isPro = profile?.plan === "pro";
+  if (!ownerFunded && !isPro && (!profile || profile.build_credits <= 0)) {
+    return NextResponse.json(
+      { error: "You're out of credits — get 3 for $10, or go Pro for unlimited.", code: "no_credits" },
+      { status: 402 },
     );
   }
 
@@ -126,6 +138,16 @@ export async function POST(
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
 
       try {
+        /* Deduct 1 credit atomically (Pro + owner-funded skip the meter) */
+        if (!ownerFunded && !isPro) {
+          const { data: deducted } = await supabase.rpc("use_build_credit", { p_user_id: user.id });
+          if (!deducted) {
+            send({ step: "error", message: "You're out of credits — get 3 for $10, or go Pro for unlimited." });
+            controller.close();
+            return;
+          }
+        }
+
         /* Step 1 — read code ──────────────────────────────────────────── */
         console.log("[build] step 1: reading code for project", id, "repo", owner + "/" + repo);
         send({ step: "reading", message: "Reading your app's code…" });
@@ -709,6 +731,7 @@ Critique it hard against the principles, then call write_files with improved ver
         const message = friendlyAiError(err) ?? (err instanceof Error ? err.message : "Build failed");
         // Best-effort cleanup — don't let these throw and swallow the real error
         try { await supabase.from("projects").update({ status: "deployed" }).eq("id", id); } catch {}
+        if (!ownerFunded && !isPro) { try { await supabase.rpc("refund_build_credit", { p_user_id: user.id }); } catch {} }
         try { send({ step: "error", message }); } catch {}
       } finally {
         controller.close();

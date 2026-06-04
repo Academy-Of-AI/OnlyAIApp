@@ -53,6 +53,20 @@ export async function POST(request: Request) {
     );
   }
 
+  // Free plan = 1 project; Pro lifts it (up to the hard cap below).
+  const { data: planRow } = await supabase
+    .from("profiles").select("plan").eq("id", user.id).single();
+  if (planRow?.plan === "free") {
+    const { count } = await supabase
+      .from("projects").select("*", { count: "exact", head: true }).eq("user_id", user.id);
+    if ((count ?? 0) >= 1) {
+      return NextResponse.json(
+        { error: "Free plan includes 1 project. Upgrade to Pro for more.", code: "plan_limit" },
+        { status: 403 },
+      );
+    }
+  }
+
   // Hard ceiling (all plans): every project provisions its OWN Supabase project,
   // so cap the total to stay under the Supabase org limit. Tune with MAX_PROJECTS.
   const MAX_PROJECTS = parseInt(process.env.MAX_PROJECTS ?? "8", 10);

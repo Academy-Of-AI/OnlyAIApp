@@ -11,9 +11,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("github_username")
+    .select("github_username, plan")
     .eq("id", user.id)
     .single();
+  const plan = profile?.plan ?? "free";
 
   async function signOut() {
     "use server";
@@ -24,7 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)] text-[var(--color-on-surface)]">
-      <DashboardSidebar />
+      <DashboardSidebar plan={plan} />
 
       {/* Main column, offset by the sidebar width on desktop */}
       <div className="md:pl-56 flex flex-col min-h-screen">

@@ -38,12 +38,14 @@ export function ProjectTabs({
   liveUrl = null,
   initialPack = null,
   autoCapture = false,
+  isPro = false,
 }: {
   project: Project;
   memory?: Array<{ kind: string; content: string }>;
   liveUrl?: string | null;
   initialPack?: PlanPackResult | null;
   autoCapture?: boolean;
+  isPro?: boolean;
 }) {
   const [view, setView] = useState<View>("plan");
   const pnav = (active: boolean) =>
@@ -85,7 +87,7 @@ export function ProjectTabs({
       </div>
 
       {view === "plan" && <PlanView project={project} initialPack={initialPack} />}
-      {view === "pilot" && <PilotView project={project} memory={memory} liveUrl={liveUrl} autoCapture={autoCapture} />}
+      {view === "pilot" && <PilotView project={project} memory={memory} liveUrl={liveUrl} autoCapture={autoCapture} isPro={isPro} />}
       {view === "settings" && <SettingsTab project={project} />}
     </div>
   );
@@ -113,9 +115,9 @@ function PlanView({
 
 /* ── Pilot view — keep it on course (auto-capture + drift + memory) & ship it ── */
 function PilotView({
-  project, memory = [], liveUrl = null, autoCapture = false,
+  project, memory = [], liveUrl = null, autoCapture = false, isPro = false,
 }: {
-  project: Project; memory?: Array<{ kind: string; content: string }>; liveUrl?: string | null; autoCapture?: boolean;
+  project: Project; memory?: Array<{ kind: string; content: string }>; liveUrl?: string | null; autoCapture?: boolean; isPro?: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -127,6 +129,18 @@ function PilotView({
         </p>
       </div>
 
+      {!isPro && (
+        <div className="panel p-6 text-center space-y-4">
+          <p className="eyebrow">Pro feature</p>
+          <p className="text-sm text-on-surface-variant max-w-md mx-auto">
+            Pilot — auto-capture, drift detection, and launch readiness — is part of Pro. Upgrade to keep
+            this build on course and let the AI always know your project.
+          </p>
+          <a href="/upgrade" className="btn-brand inline-block text-sm px-5 py-2.5">✨ Upgrade to Pro</a>
+        </div>
+      )}
+
+      {isPro && (<>
       <AutoCaptureToggle projectId={project.id} enabled={autoCapture} />
 
       {project.last_digest && (
@@ -162,6 +176,7 @@ function PilotView({
       )}
 
       <LaunchTab project={project} liveUrl={liveUrl} />
+      </>)}
     </div>
   );
 }

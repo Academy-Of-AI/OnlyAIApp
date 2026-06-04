@@ -28,6 +28,10 @@ export default async function PilotPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Pilot is a Pro feature — free users get a locked upgrade screen.
+  const { data: planRow } = await supabase.from("profiles").select("plan").eq("id", user!.id).single();
+  if (planRow?.plan !== "pro") return <PilotLocked />;
+
   const [{ data: projects }, { data: vercelConn }] = await Promise.all([
     supabase.from("projects").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }),
     supabase.from("oauth_connections").select("access_token, metadata")
@@ -162,6 +166,33 @@ export default async function PilotPage() {
           </div>
         </div>
       )}
+    </main>
+  );
+}
+
+/** Free-tier lock for Pilot (a Pro feature). */
+function PilotLocked() {
+  return (
+    <main className="max-w-2xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+      <div className="panel p-8 text-center space-y-5">
+        <p className="text-4xl">🛫</p>
+        <div className="space-y-1.5">
+          <p className="eyebrow">Pro feature</p>
+          <h1 className="font-display tracking-tight text-2xl font-bold text-on-surface">Pilot keeps every build on course</h1>
+          <p className="text-sm text-on-surface-variant max-w-md mx-auto">
+            Live deploy health and drift across all your projects, auto-capture of what changed and why,
+            and launch-readiness checks — so the AI always knows your project and nothing slips.
+          </p>
+        </div>
+        <ul className="text-sm text-on-surface-variant space-y-1.5 inline-block text-left">
+          <li className="flex gap-2"><span className="text-brand">✓</span> Cross-project status board</li>
+          <li className="flex gap-2"><span className="text-brand">✓</span> Auto-capture + drift detection</li>
+          <li className="flex gap-2"><span className="text-brand">✓</span> Launch readiness checks</li>
+        </ul>
+        <div>
+          <Link href="/upgrade" className="btn-brand inline-block text-sm px-5 py-2.5">✨ Upgrade to Pro</Link>
+        </div>
+      </div>
     </main>
   );
 }
