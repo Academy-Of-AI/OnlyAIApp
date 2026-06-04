@@ -13,7 +13,7 @@ export default function LandingPage() {
       <nav className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <div className="flex items-baseline gap-2 min-w-0">
           <span className="font-bold text-lg tracking-tight">OnlyAIApp</span>
-          <a href="https://onlyaihub.com" target="_blank" rel="noopener noreferrer"
+          <a href="https://goacademyai.com" target="_blank" rel="noopener noreferrer"
             className="hidden sm:inline text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors whitespace-nowrap">
             by Academy of AI
           </a>
@@ -82,16 +82,13 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 px-6 py-6 text-center text-xs text-neutral-600 space-y-1.5">
-        <p>OnlyAIApp — own a working AI system, built by you</p>
-        <p>
-          An{" "}
-          <a href="https://onlyaihub.com" target="_blank" rel="noopener noreferrer"
-            className="text-neutral-400 hover:text-white underline underline-offset-2">
-            Academy of AI (AOAI)
-          </a>{" "}
-          product
-        </p>
+      <footer className="border-t border-white/10 px-6 py-6 text-center text-xs text-neutral-600">
+        OnlyAIApp — own a working AI system, built by you{" "}
+        <span className="text-neutral-700">·</span>{" "}
+        <a href="https://goacademyai.com" target="_blank" rel="noopener noreferrer"
+          className="text-neutral-700 hover:text-neutral-500 transition-colors">
+          An Academy of AI (AOAI) product
+        </a>
       </footer>
     </main>
   );
