@@ -86,6 +86,13 @@ export default function NewProjectPage() {
                   body: JSON.stringify({ build_prompt: brief }),
                 }).catch(() => {});
               }
+              // Carry any uploaded docs (Start here → Upload) to THIS project so
+              // the Plan Pack can pick them up and generate in the chosen mode.
+              const upload = sessionStorage.getItem("scopeUpload");
+              if (upload && res.id) {
+                sessionStorage.setItem(`scopeUpload:${res.id}`, upload);
+                sessionStorage.removeItem("scopeUpload");
+              }
             } catch { /* ignore */ }
           } else if (event.step === "error") {
             setError((event as { step: "error"; message: string }).message);

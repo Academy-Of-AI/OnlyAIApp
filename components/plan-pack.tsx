@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { QuickMockup } from "@/components/quick-mockup";
 
@@ -21,6 +21,10 @@ export type Result = {
   summary: string;
   repoUrl: string | null;
 };
+
+// "Bring your own docs" payload handed over from the Scope (Start here) page.
+type UploadDoc = { name: string; content: string; kind: "prd" | "skill" };
+type UploadMode = "ground_truth" | "skip";
 
 const PROGRESS = [
   { key: "planning", label: "Designing the plan (PRD, architecture, sprints)" },
@@ -65,6 +69,11 @@ export function PlanPack({
   const [copied, setCopied] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
+  // Docs the user uploaded on "Start here" (optional power-user path).
+  const [uploadDocs, setUploadDocs] = useState<UploadDoc[] | null>(null);
+  const [uploadMode, setUploadMode] = useState<UploadMode>("ground_truth");
+  const consumedUpload = useRef(false);
+
   // Live timer while generating (resets when it stops).
   useEffect(() => {
     if (!running) { setElapsed(0); return; }
@@ -87,6 +96,30 @@ export function PlanPack({
     try { localStorage.setItem(`planpack:${project.id}`, JSON.stringify(result)); } catch { /* ignore */ }
   }, [result, project.id]);
 
+  // Pick up docs handed over from "Start here" (project-scoped, consumed once).
+  // We don't auto-run — the builder confirms with one click so they see the mode
+  // and don't accidentally re-spend on a project that already has a pack.
+  useEffect(() => {
+    if (consumedUpload.current || initialPack || result) return;
+    try {
+      const raw = sessionStorage.getItem(`scopeUpload:${project.id}`);
+      if (!raw) return;
+      consumedUpload.current = true;
+      sessionStorage.removeItem(`scopeUpload:${project.id}`);
+      const payload = JSON.parse(raw) as { docs?: UploadDoc[]; mode?: UploadMode };
+      const ds = (payload.docs ?? []).filter((d) => d && d.content);
+      if (ds.length === 0) return;
+      setUploadDocs(ds);
+      setUploadMode(payload.mode === "skip" ? "skip" : "ground_truth");
+      setIdea((cur) => {
+        if (cur.trim()) return cur;
+        const prd = ds.filter((d) => d.kind !== "skill");
+        return (prd.length ? prd : ds).map((d) => `# ${d.name}\n\n${d.content}`).join("\n\n---\n\n");
+      });
+      setTab("Describe");
+    } catch { /* ignore */ }
+  }, [project.id, initialPack, result]);
+
   async function generate() {
     if (!idea.trim() || running || !repo) return;
     setRunning(true); setErr(null); setResult(null); setStepIdx(0);
@@ -94,7 +127,10 @@ export function PlanPack({
       const res = await fetch(`/api/projects/${project.id}/plan-pack`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea: idea.trim() }),
+        body: JSON.stringify({
+          idea: idea.trim(),
+          ...(uploadDocs && uploadDocs.length > 0 ? { docs: uploadDocs, mode: uploadMode } : {}),
+        }),
       });
       if (!res.ok || !res.body) {
         const d = await res.json().catch(() => ({} as { error?: string }));
@@ -186,10 +222,28 @@ export function PlanPack({
         {/* DESCRIBE */}
         {tab === "Describe" && (
           <div className="space-y-3">
-            <p className="text-xs text-neutral-400">
-              Describe what you want to deliver. We turn it into a clear, well-sequenced plan and commit it to
-              <span className="text-violet-300"> /docs</span> — so your agent starts knowing exactly what to build.
-            </p>
+            {uploadDocs && uploadDocs.length > 0 && !result ? (
+              <div className="border border-violet-500/30 bg-violet-500/[0.06] rounded-lg p-3 space-y-1.5">
+                <p className="text-sm text-violet-200 font-medium">
+                  📄 Loaded {uploadDocs.length} doc{uploadDocs.length === 1 ? "" : "s"} from Start here
+                  {(() => {
+                    const p = uploadDocs.filter((d) => d.kind !== "skill").length;
+                    const s = uploadDocs.length - p;
+                    return ` (${p} plan · ${s} skill)`;
+                  })()}
+                </p>
+                <p className="text-xs text-neutral-400">
+                  {uploadMode === "skip"
+                    ? "Mode: Skip planning — we'll commit your docs as-is, set up your database from them, and put any skill specs in .claude/skills/. Fast."
+                    : "Mode: Use my docs as the source of truth — we'll structure them into the plan, fill gaps, and build your database from them."}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-400">
+                Describe what you want to deliver. We turn it into a clear, well-sequenced plan and commit it to
+                <span className="text-violet-300"> /docs</span> — so your agent starts knowing exactly what to build.
+              </p>
+            )}
             <textarea
               value={idea}
               onChange={(e) => setIdea(e.target.value)}
@@ -204,7 +258,11 @@ export function PlanPack({
                 disabled={running || !idea.trim() || !repo}
                 className="bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
               >
-                {running ? "Generating…" : result ? "✦ Change the plan" : "✦ Generate the Plan Pack"}
+                {running ? "Generating…"
+                  : result ? "✦ Change the plan"
+                  : uploadDocs && uploadMode === "skip" ? "✦ Set up repo + database from my docs"
+                  : uploadDocs ? "✦ Generate plan from my docs"
+                  : "✦ Generate the Plan Pack"}
               </button>
               {!repo && <span className="text-xs text-amber-300">Finish provisioning first.</span>}
             </div>
@@ -213,10 +271,13 @@ export function PlanPack({
               <div className="border-t border-white/10 pt-3 space-y-1.5">
                 {running && (
                   <p className="text-xs text-neutral-500 mb-1">
-                    ⏳ Generating… {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")} · this usually takes 3–5 minutes
+                    ⏳ Working… {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")} · {uploadDocs && uploadMode === "skip" ? "this is quick — usually under a minute" : "this usually takes 3–5 minutes"}
                   </p>
                 )}
-                {PROGRESS.map((st, i) => {
+                {(uploadDocs && uploadMode === "skip"
+                  ? [{ key: "planning", label: "Reading your docs" }, ...PROGRESS.slice(1)]
+                  : PROGRESS
+                ).map((st, i) => {
                   const state = stepIdx > i ? "done" : stepIdx === i && running ? "now" : stepIdx === i ? "done" : "todo";
                   const icon = state === "done" ? "✓" : state === "now" ? "●" : "○";
                   const color = state === "done" ? "text-green-400" : state === "now" ? "text-violet-400" : "text-neutral-600";

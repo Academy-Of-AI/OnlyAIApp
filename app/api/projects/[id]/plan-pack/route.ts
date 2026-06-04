@@ -17,6 +17,15 @@ const PLAN_MODEL = process.env.BUILD_MODEL ?? "claude-sonnet-4-5";
  * AGENTIC_LAYER, TASKS/sprints, SECURITY, TEST_PLAN) plus a CLAUDE.md that
  * points the agent at them — committed to the repo in ONE atomic commit, ready
  * to hand off to Claude Code / Codex. Streams SSE progress.
+ *
+ * Power-user path ("bring your own docs"): the client may also pass
+ *   - docs: [{ name, content, kind: "prd" | "skill" }]  — the builder's own files
+ *   - mode: "ground_truth" | "skip"
+ * "ground_truth" feeds the docs to the generator as the source of truth (the
+ * pack is grounded in them). "skip" does NOT regenerate the planning docs — it
+ * commits the docs verbatim and only derives the database schema from them (so
+ * the DB-first promise still holds). In both cases skill docs go to
+ * `.claude/skills/` so the coding agent uses them directly.
  */
 
 /* The proprietary method, condensed from ai_app_building_os_knowledgebase.md.
@@ -92,6 +101,22 @@ ALSO fill (for the UI, de-branded, the app's own words):
   It will be applied to a live database, so it must create EVERY object in DATA_MODEL.md, with RLS
   + owner policies, and be idempotent (safe to re-run). DATA_MODEL.md and migration_sql must agree.`;
 
+/* The exact, hard-won rules for the migration SQL — shared by the full-pack tool
+   and the "bring your own docs" schema-only tool so a live DB is set up the same
+   safe way regardless of path. */
+const MIGRATION_RULES =
+  "Executable Postgres/Supabase DDL that creates EXACTLY the app's domain schema for THIS app — " +
+  "nothing more. It will be applied to a live Supabase project, so it must run clean and be safe " +
+  "to re-run. Rules: (1) only this app's domain tables — do NOT create or alter auth.users, " +
+  "profiles, billing, or any platform tables. (2) Every table: `create table if not exists`, an " +
+  "`id uuid primary key default gen_random_uuid()`, an owner column `user_id uuid not null " +
+  "references auth.users(id) on delete cascade`, and `created_at timestamptz not null default " +
+  "now()`. (3) For any AI-generated field add value + `source text` + `confidence numeric` + " +
+  "`review_status text default 'unreviewed'` columns. (4) Enable RLS on every table (`alter table " +
+  "<t> enable row level security;`) and add owner-scoped policies using `auth.uid() = user_id`; " +
+  "make each policy idempotent by writing `drop policy if exists \"<name>\" on <table>;` immediately " +
+  "before its `create policy`. (5) No seed data, no comments, no BEGIN/COMMIT. Plain DDL only.";
+
 const WRITE_DOCS_TOOL: Anthropic.Tool = {
   name: "write_docs",
   description: "Write the methodology planning docs for the project.",
@@ -132,39 +157,67 @@ const WRITE_DOCS_TOOL: Anthropic.Tool = {
           required: ["title", "items"],
         },
       },
-      migration_sql: {
-        type: "string",
-        description:
-          "Executable Postgres/Supabase DDL that creates EXACTLY the schema in docs/DATA_MODEL.md " +
-          "for THIS app — nothing more. It will be applied to a live Supabase project, so it must run " +
-          "clean and be safe to re-run. Rules: (1) only this app's domain tables — do NOT create or " +
-          "alter auth.users, profiles, billing, or any platform tables. (2) Every table: `create table " +
-          "if not exists`, an `id uuid primary key default gen_random_uuid()`, an owner column `user_id " +
-          "uuid not null references auth.users(id) on delete cascade`, and `created_at timestamptz not " +
-          "null default now()`. (3) For any AI-generated field add value + `source text` + `confidence " +
-          "numeric` + `review_status text default 'unreviewed'` columns. (4) Enable RLS on every table " +
-          "(`alter table <t> enable row level security;`) and add owner-scoped policies using " +
-          "`auth.uid() = user_id`; make each policy idempotent by writing `drop policy if exists \"<name>\" " +
-          "on <table>;` immediately before its `create policy`. (5) No seed data, no comments, no " +
-          "BEGIN/COMMIT. Plain DDL only.",
-      },
+      migration_sql: { type: "string", description: MIGRATION_RULES },
     },
     required: ["files"],
   },
 };
+
+/* Schema-only tool for the "skip planning" path: the builder already wrote their
+   plan, so we don't regenerate docs — we only derive the database (DB-first must
+   still hold) plus a tiny summary + sequence for the UI. */
+const SEED_FROM_DOCS_TOOL: Anthropic.Tool = {
+  name: "seed_from_docs",
+  description: "Derive the database schema + a short build sequence from the builder's existing docs. Do NOT rewrite their docs.",
+  input_schema: {
+    type: "object",
+    properties: {
+      summary: { type: "string", description: "One-line summary of the app for CLAUDE.md." },
+      plan: {
+        type: "object",
+        description: "Build sequencing in the app's OWN feature words. Short bullet strings.",
+        properties: {
+          now: { type: "array", items: { type: "string" } },
+          next: { type: "array", items: { type: "string" } },
+          later: { type: "array", items: { type: "string" } },
+        },
+      },
+      migration_sql: { type: "string", description: MIGRATION_RULES },
+    },
+    required: ["migration_sql"],
+  },
+};
+
+type InDoc = { name: string; content: string; kind: "prd" | "skill" };
+
+// Keep a doc to a safe repo path: basename only, conservative charset, .md default.
+function safeDocName(name: string): string {
+  let base = (name.split(/[\\/]/).pop() || "doc").trim();
+  base = base.replace(/[^a-zA-Z0-9._-]/g, "_");
+  if (!/\.(md|markdown|txt)$/i.test(base)) base += ".md";
+  return base;
+}
+
+// Cap a doc when feeding the model (we still commit the full original to the repo).
+function truncForPrompt(s: string): string {
+  return s.length > 12000 ? s.slice(0, 12000) + "\n…[truncated for planning]" : s;
+}
 
 function claudeMd(
   projectName: string,
   summary: string,
   docPaths: string[],
   schema: { hasMigration: boolean; applied: boolean },
+  extra?: { ownDocs?: boolean; skillFiles?: string[] },
 ): string {
-  const list = docPaths.map((p) => `- \`${p}\``).join("\n");
+  const list = docPaths.length
+    ? docPaths.map((p) => `- \`${p}\``).join("\n")
+    : "- `/docs` (your provided specs)";
 
   // The data bullet adapts to what actually happened to the database, so the
   // agent never re-creates tables that already exist (or assumes none do).
   const dataBullet = schema.applied
-    ? `- **Your database is already set up.** The schema from \`docs/DATA_MODEL.md\` has been applied to
+    ? `- **Your database is already set up.** The schema from your data model has been applied to
   this project's Supabase database and committed at \`supabase/migrations/0001_init.sql\`. Build on
   the existing tables — **do not recreate them**. To change the schema, add a NEW migration file
   (\`supabase/migrations/0002_*.sql\`) and apply it; never edit \`0001\`.`
@@ -172,8 +225,19 @@ function claudeMd(
       ? `- **Database-first:** the schema is written at \`supabase/migrations/0001_init.sql\` but **not yet
   applied**. Apply it to this project's Supabase database BEFORE building features (e.g. paste it into
   the Supabase SQL editor, or \`supabase db push\`). Don't build local-only / in-memory.`
-      : `- **Database-first:** turn \`docs/DATA_MODEL.md\` into a Supabase migration and apply it BEFORE
+      : `- **Database-first:** turn your data model into a Supabase migration and apply it BEFORE
   building features. Do not build local-only / in-memory.`;
+
+  // Rule 1 differs when the builder brought their own docs (we don't generate a
+  // canonical PRD.md/DATA_MODEL.md path set in that case).
+  const rule1 = extra?.ownDocs
+    ? "**Read first:** open everything in `/docs` — these are the specs the builder wrote — before writing a single line."
+    : "**Read first:** open `docs/PRD.md`, `docs/DATA_MODEL.md`, `docs/ARCHITECTURE.md`, and\n   `docs/TASKS.md` before writing a single line.";
+
+  const skillBullet = extra?.skillFiles?.length
+    ? `\n- **Your skill specs** are in \`.claude/skills/\` (${extra.skillFiles.join(", ")}). Treat them as
+  binding instructions for how to build/behave — follow them.`
+    : "";
 
   return `# ${projectName}
 
@@ -187,15 +251,14 @@ build the wrong thing (e.g. a marketing landing page). Open the plan and build f
 ${list}
 
 ## Build rules (binding — follow in order)
-1. **Read first:** open \`docs/PRD.md\`, \`docs/DATA_MODEL.md\`, \`docs/ARCHITECTURE.md\`, and
-   \`docs/TASKS.md\` before writing a single line.
+1. ${rule1}
 2. **Confirm the plan** back to me in 2–3 lines (objects, Sprint 1 scope) BEFORE coding.
-3. **Build Sprint 1 from \`docs/TASKS.md\` only**, then stop for review. Nothing outside the PRD.
+3. **Build the first slice from the docs only**, then stop for review. Nothing outside the plan.
 4. **Database-first:** create the data model + core CRUD before any styling/polish. The core
    must work with the AI switched off.
-5. **This is the real working app** — dashboards, records, forms, the flows in the PRD.
+5. **This is the real working app** — dashboards, records, forms, the flows in the plan.
    Do **NOT** build a marketing/landing page or a front-end-only demo.
-6. Follow the **Definition of Done** in \`docs/TASKS.md\`. Never put secrets in frontend code.
+6. Never put secrets in frontend code.${skillBullet}
 
 ## Deploy & data (binding — this stack is already provisioned)
 - **Deploy by git, never by CLI.** \`git add -A && git commit -m "…" && git push\` to \`main\`;
@@ -207,8 +270,8 @@ ${list}
   env. Pull them locally: \`vercel link\` then \`vercel env pull .env.local\`. Don't invent new ones.
 ${dataBullet}
 
-Kickoff prompt: "Read everything in /docs, confirm the plan in 3 lines, then build Sprint 1
-from TASKS.md — the database schema is already applied (pull env with vercel env pull and build on
+Kickoff prompt: "Read everything in /docs, confirm the plan in 3 lines, then build the first
+slice — the database schema is already applied (pull env with vercel env pull and build on
 the existing tables), commit + push to deploy, the real working app, not a landing page."
 `;
 }
@@ -218,8 +281,27 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const body = (await request.json().catch(() => ({}))) as { idea?: string };
+  const body = (await request.json().catch(() => ({}))) as {
+    idea?: string;
+    docs?: Array<{ name?: unknown; content?: unknown; kind?: unknown }>;
+    mode?: unknown;
+  };
   const ideaOverride = typeof body?.idea === "string" && body.idea.trim() ? body.idea.trim() : null;
+
+  // Power-user "bring your own docs" payload (optional).
+  const docsInput: InDoc[] = (Array.isArray(body?.docs) ? body!.docs! : [])
+    .filter((d) => d && typeof d.name === "string" && typeof d.content === "string" && (d.content as string).trim().length > 0)
+    .slice(0, 8)
+    .map((d) => ({
+      name: String(d.name),
+      content: String(d.content),
+      kind: d.kind === "skill" ? "skill" : "prd",
+    }));
+  const mode: "none" | "ground_truth" | "skip" =
+    body?.mode === "skip" ? "skip" : docsInput.length > 0 ? "ground_truth" : "none";
+
+  const prdDocs = docsInput.filter((d) => d.kind !== "skill");
+  const skillDocs = docsInput.filter((d) => d.kind === "skill");
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -248,7 +330,12 @@ export async function POST(
     .from("projects").select("*").eq("id", id).eq("user_id", user.id).single();
   if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
-  const idea = ideaOverride ?? (project.build_prompt as string | null);
+  // The idea seeds the prompt; when the builder brought docs but no idea, build
+  // one from the docs so the schema/plan still has something to work from.
+  let idea = ideaOverride ?? (project.build_prompt as string | null);
+  if (!idea && docsInput.length > 0) {
+    idea = docsInput.map((d) => `# ${d.name}\n${truncForPrompt(d.content)}`).join("\n\n");
+  }
   if (!idea) return NextResponse.json({ error: "Describe your idea first." }, { status: 400 });
   if (!project.github_repo_url)
     return NextResponse.json({ error: "No GitHub repo linked to this project" }, { status: 400 });
@@ -278,13 +365,82 @@ export async function POST(
           creditUsed = deducted !== false;
         }
 
-        send({ step: "planning", message: "Studying your idea with the OS method…" });
         const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-        const userPrompt = `Project name: ${project.name}
+        let docs: Array<{ path: string; content: string }> = [];
+        let summary = project.name as string;
+        let plan: { now?: string[]; next?: string[]; later?: string[] } | null = null;
+        let sprints: Array<{ title: string; items: string[] }> = [];
+        let migrationSql = "";
+
+        if (mode === "skip") {
+          // ── Bring-your-own-docs, skip planning ──────────────────────────────
+          // Don't regenerate the plan; just derive the DB (DB-first still holds)
+          // plus a light summary/sequence for the UI. The builder's docs are
+          // committed verbatim below.
+          send({ step: "planning", message: "Reading your docs…" });
+          const docsBlock = docsInput
+            .map((d) => `=== ${d.name} (${d.kind}) ===\n${truncForPrompt(d.content)}`)
+            .join("\n\n");
+          const seedPrompt = `Project name: ${project.name}
+
+The builder already wrote their own plan/specs (below). Do NOT rewrite or restate them.
+Your ONLY job:
+1) migration_sql — the database schema implied by their docs (DB-first).
+2) summary — one line describing the app.
+3) plan — a short now / next / later sequence in the app's own words.
+
+${OS_METHOD}
+
+The builder's docs:
+${docsBlock}
+
+Call seed_from_docs.`;
+
+          const resp = await anthropic.messages.stream({
+            model: PLAN_MODEL,
+            max_tokens: 6000,
+            tools: [SEED_FROM_DOCS_TOOL],
+            tool_choice: { type: "tool", name: "seed_from_docs" },
+            messages: [{ role: "user", content: seedPrompt }],
+          }).finalMessage();
+
+          const toolUse = resp.content.find((c) => c.type === "tool_use");
+          if (toolUse && toolUse.type === "tool_use") {
+            const input = toolUse.input as {
+              summary?: string;
+              plan?: { now?: string[]; next?: string[]; later?: string[] };
+              migration_sql?: string;
+            };
+            if (input.summary) summary = input.summary;
+            if (input.plan) plan = input.plan;
+            if (typeof input.migration_sql === "string" && input.migration_sql.trim().length > 0)
+              migrationSql = input.migration_sql.trim();
+          }
+          send({ step: "planning_done", message: `Loaded ${docsInput.length} of your docs ✓` });
+        } else {
+          // ── Classic generate, or ground-truth (grounded in the builder's docs) ─
+          send({
+            step: "planning",
+            message: mode === "ground_truth"
+              ? "Building the plan from your docs…"
+              : "Studying your idea with the OS method…",
+          });
+
+          const sourceBlock = mode === "ground_truth" && prdDocs.length > 0
+            ? `\n\nSOURCE DOCS — the builder already wrote these. Treat them as the SOURCE OF TRUTH for
+scope, features, objects, and data. Restructure them into the pack specified below and FILL
+GAPS, but do NOT contradict or drop their decisions. Derive DATA_MODEL.md and migration_sql
+directly from their content.\n\n${prdDocs.map((d) => `=== ${d.name} ===\n${truncForPrompt(d.content)}`).join("\n\n")}`
+            : "";
+          const skillNote = skillDocs.length > 0
+            ? `\n\nThe builder also provided agent skill specs (saved to .claude/skills/: ${skillDocs.map((d) => safeDocName(d.name)).join(", ")}). Assume the agent will follow them; don't reproduce them in the docs.`
+            : "";
+
+          const userPrompt = `Project name: ${project.name}
 
 The builder's idea:
-"${idea}"
+"${idea}"${sourceBlock}${skillNote}
 
 ${OS_METHOD}
 
@@ -292,51 +448,48 @@ ${DOC_SPECS}
 
 Call write_docs with ALL the doc files (concise, specific to THIS idea) and a one-line summary.`;
 
-        let docs: Array<{ path: string; content: string }> = [];
-        let summary = project.name as string;
-        let plan: { now?: string[]; next?: string[]; later?: string[] } | null = null;
-        let sprints: Array<{ title: string; items: string[] }> = [];
-        let migrationSql = "";
-        for (let attempt = 1; attempt <= 2 && docs.length === 0; attempt++) {
-          if (attempt > 1) send({ step: "planning", message: "Tightening the plan…" });
-          const resp = await anthropic.messages.stream({
-            model: PLAN_MODEL,
-            // Capped low on purpose: concise docs finish in ~1-2 min, safely under
-            // the 300s function limit. 64k let the model run ~13 min -> timeout.
-            max_tokens: 16000,
-            tools: [WRITE_DOCS_TOOL],
-            tool_choice: { type: "tool", name: "write_docs" },
-            messages: [{ role: "user", content: userPrompt }],
-          }).finalMessage();
+          for (let attempt = 1; attempt <= 2 && docs.length === 0; attempt++) {
+            if (attempt > 1) send({ step: "planning", message: "Tightening the plan…" });
+            const resp = await anthropic.messages.stream({
+              model: PLAN_MODEL,
+              // Capped low on purpose: concise docs finish in ~1-2 min, safely under
+              // the 300s function limit. 64k let the model run ~13 min -> timeout.
+              max_tokens: 16000,
+              tools: [WRITE_DOCS_TOOL],
+              tool_choice: { type: "tool", name: "write_docs" },
+              messages: [{ role: "user", content: userPrompt }],
+            }).finalMessage();
 
-          const toolUse = resp.content.find((c) => c.type === "tool_use");
-          if (toolUse && toolUse.type === "tool_use") {
-            const input = toolUse.input as {
-              files?: Array<{ path: string; content: string }>;
-              summary?: string;
-              plan?: { now?: string[]; next?: string[]; later?: string[] };
-              sprints?: Array<{ title: string; items: string[] }>;
-              migration_sql?: string;
-            };
-            docs = (Array.isArray(input.files) ? input.files : []).filter(
-              (f) => f && typeof f.path === "string" && typeof f.content === "string"
-                && f.content.trim().length > 0 && f.path.startsWith("docs/") && f.path.endsWith(".md"),
-            );
-            if (input.summary) summary = input.summary;
-            if (input.plan) plan = input.plan;
-            if (Array.isArray(input.sprints)) sprints = input.sprints;
-            if (typeof input.migration_sql === "string" && input.migration_sql.trim().length > 0)
-              migrationSql = input.migration_sql.trim();
+            const toolUse = resp.content.find((c) => c.type === "tool_use");
+            if (toolUse && toolUse.type === "tool_use") {
+              const input = toolUse.input as {
+                files?: Array<{ path: string; content: string }>;
+                summary?: string;
+                plan?: { now?: string[]; next?: string[]; later?: string[] };
+                sprints?: Array<{ title: string; items: string[] }>;
+                migration_sql?: string;
+              };
+              docs = (Array.isArray(input.files) ? input.files : []).filter(
+                (f) => f && typeof f.path === "string" && typeof f.content === "string"
+                  && f.content.trim().length > 0 && f.path.startsWith("docs/") && f.path.endsWith(".md"),
+              );
+              if (input.summary) summary = input.summary;
+              if (input.plan) plan = input.plan;
+              if (Array.isArray(input.sprints)) sprints = input.sprints;
+              if (typeof input.migration_sql === "string" && input.migration_sql.trim().length > 0)
+                migrationSql = input.migration_sql.trim();
+            }
+            if (resp.stop_reason === "max_tokens") console.warn("[plan-pack] hit max_tokens, attempt", attempt);
           }
-          if (resp.stop_reason === "max_tokens") console.warn("[plan-pack] hit max_tokens, attempt", attempt);
+
+          if (docs.length === 0) throw new Error("The plan came back empty — please try again.");
+          send({ step: "planning_done", message: `Drafted ${docs.length} planning docs ✓`, detail: docs.map((d) => d.path).join(", ") });
         }
 
-        if (docs.length === 0) throw new Error("The plan came back empty — please try again.");
-        send({ step: "planning_done", message: `Drafted ${docs.length} planning docs ✓`, detail: docs.map((d) => d.path).join(", ") });
-
-        // Wire the database: apply the generated schema to the project's already-
-        // provisioned Supabase so the app has real tables from day one (database-
-        // first, done for you). Best-effort — a failure here must NOT lose the pack.
+        // Wire the database: apply the generated/derived schema to the project's
+        // already-provisioned Supabase so the app has real tables from day one
+        // (database-first, done for you). Best-effort — a failure here must NOT
+        // lose the pack.
         const supabaseRef = (project.supabase_project_ref as string | null) ?? null;
         let schemaApplied = false;
         if (migrationSql) {
@@ -363,17 +516,34 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
           }
         }
 
-        // Add the SQL migration (so git is the source of truth + the agent can see
-        // it) and the CLAUDE.md handoff file. CLAUDE.md reflects whether the schema
-        // was actually applied, so the agent never recreates existing tables.
+        // The builder's own files (preserved). In ground-truth mode the generated
+        // pack is canonical, so originals live under docs/source/. In skip mode
+        // the builder's docs ARE the docs. Skill specs always go to .claude/skills/.
+        const skillFiles = skillDocs.map((d) => ({
+          path: `.claude/skills/${safeDocName(d.name)}`, content: d.content,
+        }));
+        const userDocFiles = mode === "skip"
+          ? prdDocs.map((d) => ({ path: `docs/${safeDocName(d.name)}`, content: d.content }))
+          : prdDocs.map((d) => ({ path: `docs/source/${safeDocName(d.name)}`, content: d.content }));
+
+        // docPaths drives the "open these" list in CLAUDE.md.
+        const docPathsForClaude = mode === "skip"
+          ? userDocFiles.map((f) => f.path)
+          : docs.map((d) => d.path);
+
         const allFiles = [
           ...docs,
+          ...userDocFiles,
+          ...skillFiles,
           ...(migrationSql ? [{ path: "supabase/migrations/0001_init.sql", content: migrationSql }] : []),
           {
             path: "CLAUDE.md",
-            content: claudeMd(project.name as string, summary, docs.map((d) => d.path), {
+            content: claudeMd(project.name as string, summary, docPathsForClaude, {
               hasMigration: !!migrationSql,
               applied: schemaApplied,
+            }, {
+              ownDocs: mode === "skip",
+              skillFiles: skillFiles.map((f) => f.path.split("/").pop() as string),
             }),
           },
         ];
@@ -397,12 +567,20 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
         const { data: newTree } = await octokit.git.createTree({
           owner, repo, base_tree: latestCommit.tree.sha, tree: treeItems,
         });
+        const commitMessage =
+          mode === "skip"
+            ? (migrationSql
+                ? "docs: add your specs + database schema migration"
+                : "docs: add your specs")
+            : mode === "ground_truth"
+              ? (migrationSql
+                  ? "docs: add plan pack (grounded in your specs) + database schema migration"
+                  : "docs: add plan pack (grounded in your specs)")
+              : (migrationSql
+                  ? "docs: add plan pack (PRD, architecture, sprints) + database schema migration"
+                  : "docs: add plan pack (PRD, architecture, sprints)");
         const { data: newCommit } = await octokit.git.createCommit({
-          owner, repo,
-          message: migrationSql
-            ? "docs: add plan pack (PRD, architecture, sprints) + database schema migration"
-            : "docs: add plan pack (PRD, architecture, sprints)",
-          tree: newTree.sha, parents: [latestCommitSha],
+          owner, repo, message: commitMessage, tree: newTree.sha, parents: [latestCommitSha],
         });
         await octokit.git.updateRef({ owner, repo, ref: `heads/${branch}`, sha: newCommit.sha });
 
