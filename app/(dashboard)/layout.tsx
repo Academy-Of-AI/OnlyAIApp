@@ -25,7 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)] text-[var(--color-on-surface)]">
-      <DashboardSidebar plan={plan} />
+      <DashboardSidebar plan={plan} username={profile?.github_username ?? user.email ?? ""} signOut={signOut} />
 
       {/* Main column, offset by the sidebar width on desktop */}
       <div className="md:pl-56 flex flex-col min-h-screen">
@@ -38,7 +38,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <div className="flex items-center gap-3 shrink-0">
             <NotificationsBell />
             <Link href="/settings" title="Account &amp; settings"
-              className="hidden sm:flex items-center gap-2 min-w-0 group">
+              className="flex md:hidden items-center gap-2 min-w-0 group">
               <span className="w-7 h-7 rounded-full grid place-items-center text-white text-[11px] font-semibold shrink-0" style={{ background: "linear-gradient(135deg, var(--color-brand), #9333ea)" }}>
                 {(profile?.github_username ?? user.email ?? "?").slice(0, 2).toUpperCase()}
               </span>
@@ -46,7 +46,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 {profile?.github_username ?? user.email}
               </span>
             </Link>
-            <form action={signOut}>
+            <form action={signOut} className="md:hidden">
               <button type="submit" className="text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)] transition-colors text-xs">
                 Sign out
               </button>

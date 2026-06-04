@@ -68,15 +68,21 @@ export default async function UpgradePage({
           price="$8"
           period="/month"
           tagline="For building in earnest."
+          sub="or $5.60/mo billed yearly — save 30%"
           features={[
+            "Everything in Free",
             "Up to 8 live projects",
             "Delete & recreate anytime",
-            "Unlimited Plan Packs",
-            "Everything in Free",
+            "Unlimited Plan Packs — generate a fresh plan (PRD · architecture · sprints) for any project, any time",
           ]}
           current={plan === "core"}
           cta={
-            plan === "free" ? <SubscribeButton label="Choose Core" plan="core" interval="month" />
+            plan === "free" ? (
+              <div className="space-y-2">
+                <SubscribeButton label="Choose Core — $8/mo" plan="core" interval="month" />
+                <SubscribeButton label="Yearly — save 30%" plan="core" interval="year" variant="outline" />
+              </div>
+            )
             : plan === "core" ? <ManageBillingButton label="Manage subscription →" className="block w-full text-center text-sm text-brand hover:underline py-2" />
             : <p className="text-center text-xs text-on-surface-variant py-2">Included in Pro</p>
           }

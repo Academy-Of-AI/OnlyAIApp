@@ -63,7 +63,11 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
 }
 
 /** Desktop left rail (dark). Hidden on mobile (mobile uses the horizontal row below). */
-export function DashboardSidebar({ plan = "free" }: { plan?: string }) {
+export function DashboardSidebar({
+  plan = "free", username = "", signOut,
+}: {
+  plan?: string; username?: string; signOut?: () => void | Promise<void>;
+}) {
   const pathname = usePathname() ?? "";
   return (
     <aside className="hidden md:flex md:flex-col w-56 shrink-0 fixed inset-y-0 left-0 z-20 bg-[var(--color-sidebar)] border-r border-[var(--color-sidebar-border)]">
@@ -88,23 +92,35 @@ export function DashboardSidebar({ plan = "free" }: { plan?: string }) {
       </nav>
 
       <div className="p-3 border-t border-[var(--color-sidebar-border)] space-y-1">
-        {plan !== "pro" ? (
+        {plan !== "pro" && (
           <Link href="/upgrade"
-            className="flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-opacity hover:opacity-90"
+            className="flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-opacity hover:opacity-90 mb-1"
             style={{ background: "color-mix(in srgb, var(--color-brand) 20%, transparent)", color: "#c4b5fd", border: "1px solid color-mix(in srgb, var(--color-brand) 38%, transparent)" }}>
-            ✨ Upgrade to Pro
+            ✨ Upgrade{plan === "core" ? " to Pro" : ""}
           </Link>
-        ) : (
-          <div className="flex items-center justify-center gap-2 py-1.5 text-[11px]" style={{ color: "var(--color-sidebar-on-variant)" }}>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide" style={{ background: "var(--color-sidebar-active)", color: "#c4b5fd" }}>Pro</span>
-            You&apos;re on Pro
-          </div>
         )}
-        <a href="mailto:xienpuo@onlyaiwork.com?subject=OnlyAIApp%20help"
-          className="snav text-[13px]">
+        <a href="mailto:xienpuo@onlyaiwork.com?subject=OnlyAIApp%20help" className="snav text-[13px]">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-4 h-4 shrink-0"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinejoin="round" /></svg>
           Need help?
         </a>
+
+        {/* Account — avatar · name · plan · sign out (bottom, Claude-Code style) */}
+        <div className="flex items-center gap-2.5 px-2 pt-2.5 mt-1.5 border-t border-[var(--color-sidebar-border)]">
+          <span className="w-7 h-7 rounded-full grid place-items-center text-white text-[11px] font-semibold shrink-0" style={{ background: "linear-gradient(135deg, var(--color-brand), #9333ea)" }}>
+            {(username || "?").slice(0, 2).toUpperCase()}
+          </span>
+          <div className="min-w-0 flex-1 leading-tight">
+            <p className="text-[13px] font-medium truncate" style={{ color: "var(--color-sidebar-on)" }}>{username || "Account"}</p>
+            <p className="text-[10px] uppercase tracking-wide" style={{ color: "var(--color-sidebar-on-variant)" }}>{plan}</p>
+          </div>
+          {signOut && (
+            <form action={signOut}>
+              <button type="submit" title="Sign out" className="p-1 rounded-md hover:opacity-80 transition-opacity" style={{ color: "var(--color-sidebar-on-variant)" }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-4 h-4"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </aside>
   );
