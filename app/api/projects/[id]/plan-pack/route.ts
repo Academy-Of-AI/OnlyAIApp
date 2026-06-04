@@ -5,6 +5,7 @@ import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
 import { friendlyAiError } from "@/lib/ai-errors";
 import { runMigration } from "@/lib/supabase-mgmt";
+import { getCommitIdentity } from "@/lib/github";
 
 export const maxDuration = 300;
 
@@ -208,7 +209,7 @@ function claudeMd(
   summary: string,
   docPaths: string[],
   schema: { hasMigration: boolean; applied: boolean },
-  extra?: { ownDocs?: boolean; skillFiles?: string[] },
+  extra?: { ownDocs?: boolean; skillFiles?: string[]; commit?: { email: string; name: string } | null },
 ): string {
   const list = docPaths.length
     ? docPaths.map((p) => `- \`${p}\``).join("\n")
@@ -237,6 +238,19 @@ function claudeMd(
   const skillBullet = extra?.skillFiles?.length
     ? `\n- **Your skill specs** are in \`.claude/skills/\` (${extra.skillFiles.join(", ")}). Treat them as
   binding instructions for how to build/behave — follow them.`
+    : "";
+
+  // Without this, Vercel blocks the deploy: "commit email could not be matched to
+  // a GitHub account." Pin the repo's commit identity to a GitHub-matched email.
+  const commitBullet = extra?.commit
+    ? `\n- **Commit as your GitHub identity, or Vercel will block the deploy.** Vercel verifies that
+  every commit's author email belongs to your GitHub account. Your machine's default git email
+  often isn't, so the very first local commit gets rejected. Pin this repo's identity once
+  (already correct for your account) — before your first commit:
+  \`\`\`
+  git config user.email "${extra.commit.email}"
+  git config user.name "${extra.commit.name}"
+  \`\`\``
     : "";
 
   return `# ${projectName}
@@ -268,7 +282,7 @@ ${list}
   the next deploy.
 - **The Supabase database is already provisioned** and its keys are in this project's Vercel
   env. Pull them locally: \`vercel link\` then \`vercel env pull .env.local\`. Don't invent new ones.
-${dataBullet}
+${dataBullet}${commitBullet}
 
 Kickoff prompt: "Read everything in /docs, confirm the plan in 3 lines, then build the first
 slice — the database schema is already applied (pull env with vercel env pull and build on
@@ -351,6 +365,12 @@ export async function POST(
   if (!githubConn) return NextResponse.json({ error: "GitHub not connected" }, { status: 400 });
   const githubToken = await decrypt(githubConn.access_token as string);
   const octokit = new Octokit({ auth: githubToken });
+
+  // The git identity the handed-off project must commit with, or Vercel blocks
+  // the deploy ("commit email could not be matched to a GitHub account").
+  // Best-effort — never block plan generation over it.
+  let commitIdent: { email: string; name: string } | null = null;
+  try { commitIdent = await getCommitIdentity(githubToken); } catch { /* non-fatal */ }
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -544,6 +564,7 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
             }, {
               ownDocs: mode === "skip",
               skillFiles: skillFiles.map((f) => f.path.split("/").pop() as string),
+              commit: commitIdent,
             }),
           },
         ];
@@ -590,6 +611,8 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
         const packJson = {
           files: allFiles.map((f) => ({ path: f.path, content: f.content })),
           plan, sprints, summary, repoUrl: project.github_repo_url,
+          commitEmail: commitIdent?.email ?? null,
+          commitName: commitIdent?.name ?? null,
         };
         try {
           await supabase.from("projects").update({ build_prompt: idea, plan_pack: packJson }).eq("id", id);
@@ -606,6 +629,8 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
           summary,
           repoUrl: project.github_repo_url,
           schemaApplied,
+          commitEmail: commitIdent?.email ?? null,
+          commitName: commitIdent?.name ?? null,
         });
       } catch (err) {
         console.error("[plan-pack] error:", err);

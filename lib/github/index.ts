@@ -58,6 +58,22 @@ export async function getGithubUser(token: string) {
 }
 
 /**
+ * The git identity a handed-off project MUST commit with, or Vercel blocks the
+ * deploy: "commit email could not be matched to a GitHub account."
+ *
+ * Vercel verifies that the commit author's email belongs to a GitHub account
+ * with access to the repo. A user's machine git email (e.g. a personal address)
+ * often isn't on their GitHub account, so local commits made by Claude Code
+ * after handoff get blocked. The account's GitHub `noreply` email
+ * (`<id>+<login>@users.noreply.github.com`) is ALWAYS associated with the
+ * account, so we hand that back to use as the commit identity.
+ */
+export async function getCommitIdentity(token: string): Promise<{ email: string; name: string }> {
+  const { login, id } = await getGithubUser(token);
+  return { email: `${id}+${login}@users.noreply.github.com`, name: login };
+}
+
+/**
  * Rename a GitHub repository.
  * Returns the new repo URL and full name.
  */

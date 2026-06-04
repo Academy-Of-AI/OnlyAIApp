@@ -19,6 +19,8 @@ type ProvisionResult = {
   githubRepoUrl: string;
   vercelPreviewUrl: string;
   supabaseProjectRef?: string;
+  commitEmail?: string;
+  commitName?: string;
 };
 
 export default function NewProjectPage() {
@@ -28,6 +30,18 @@ export default function NewProjectPage() {
   const [steps, setSteps] = useState<StepEvent[]>([]);
   const [result, setResult] = useState<ProvisionResult | null>(null);
   const [error, setError] = useState("");
+
+  // The clone command bakes in the git identity (when known) so Claude Code's
+  // first local commit is authored by an email on the user's GitHub account —
+  // otherwise Vercel blocks the deploy ("commit email could not be matched").
+  const repoDir = result?.githubRepoUrl
+    ? (result.githubRepoUrl.replace(/\.git$/, "").split("/").pop() || "app")
+    : "app";
+  const cloneCmd = result
+    ? (result.commitEmail && result.commitName
+        ? `git clone ${result.githubRepoUrl} && cd ${repoDir} && git config user.email "${result.commitEmail}" && git config user.name "${result.commitName}"`
+        : `git clone ${result.githubRepoUrl}`)
+    : "";
 
   async function provision(e: React.FormEvent) {
     e.preventDefault();
@@ -260,19 +274,20 @@ export default function NewProjectPage() {
           <details className="bg-white/5 border border-white/10 rounded-lg px-4 py-3">
             <summary className="text-sm font-medium text-white cursor-pointer list-none">Prefer your own editor? Take the wheel →</summary>
             <div className="mt-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <code className="text-xs text-green-400 bg-black/30 px-2 py-1 rounded flex-1 truncate font-mono">
-                  git clone {result.githubRepoUrl}
+              <div className="flex items-start gap-2">
+                <code className="text-xs text-green-400 bg-black/30 px-2 py-1 rounded flex-1 font-mono whitespace-pre-wrap break-all leading-relaxed">
+                  {cloneCmd}
                 </code>
                 <button
-                  onClick={() => navigator.clipboard.writeText(`git clone ${result.githubRepoUrl}`)}
-                  className="text-xs text-neutral-400 hover:text-white px-2 py-1 rounded border border-white/10 hover:border-white/30 transition-colors whitespace-nowrap"
+                  onClick={() => navigator.clipboard.writeText(cloneCmd)}
+                  className="text-xs text-neutral-400 hover:text-white px-2 py-1 rounded border border-white/10 hover:border-white/30 transition-colors whitespace-nowrap shrink-0"
                 >
                   Copy
                 </button>
               </div>
               <p className="text-xs text-neutral-600">
                 Open the folder in Claude Code / Cursor and keep building — your <code className="text-neutral-400">CLAUDE.md</code> is pre-loaded.
+                {result.commitEmail && " The git identity is set so Vercel won't block your deploys."}
               </p>
             </div>
           </details>

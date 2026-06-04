@@ -20,6 +20,8 @@ export type Result = {
   sprints: Sprint[];
   summary: string;
   repoUrl: string | null;
+  commitEmail?: string | null;
+  commitName?: string | null;
 };
 
 // "Bring your own docs" payload handed over from the Scope (Start here) page.
@@ -56,8 +58,6 @@ export function PlanPack({
   const repo = project.github_repo_url;
   const cleanRepo = repo ? repo.replace(/\.git$/, "") : "";
   const repoDir = cleanRepo ? (cleanRepo.split("/").pop() || project.name) : project.name;
-  // One paste: clone, enter the folder, and launch the agent with the kickoff baked in.
-  const handoffCmd = repo ? `git clone ${cleanRepo} && cd ${repoDir} && claude '${KICKOFF}'` : "";
 
   const [idea, setIdea] = useState(project.build_prompt ?? "");
   const [running, setRunning] = useState(false);
@@ -73,6 +73,16 @@ export function PlanPack({
   const [uploadDocs, setUploadDocs] = useState<UploadDoc[] | null>(null);
   const [uploadMode, setUploadMode] = useState<UploadMode>("ground_truth");
   const consumedUpload = useRef(false);
+
+  // One paste: clone, enter the folder, pin the git identity (so Vercel doesn't
+  // block deploys), then launch the agent with the kickoff baked in. The identity
+  // comes from the pack (server-derived GitHub no-reply email).
+  const commitEmail = result?.commitEmail ?? initialPack?.commitEmail ?? null;
+  const commitName = result?.commitName ?? initialPack?.commitName ?? null;
+  const gitIdentCmd = commitEmail && commitName
+    ? ` && git config user.email "${commitEmail}" && git config user.name "${commitName}"`
+    : "";
+  const handoffCmd = repo ? `git clone ${cleanRepo} && cd ${repoDir}${gitIdentCmd} && claude '${KICKOFF}'` : "";
 
   // Live timer while generating (resets when it stops).
   useEffect(() => {
@@ -151,6 +161,7 @@ export function PlanPack({
           let evt: {
             step?: string; message?: string;
             files?: DocFile[]; plan?: Plan; sprints?: Sprint[]; summary?: string; repoUrl?: string | null;
+            commitEmail?: string | null; commitName?: string | null;
           };
           try { evt = JSON.parse(line.slice(5).trim()); } catch { continue; }
           const s = evt.step ?? "";
@@ -163,6 +174,8 @@ export function PlanPack({
               sprints: evt.sprints ?? [],
               summary: evt.summary ?? project.name,
               repoUrl: evt.repoUrl ?? repo,
+              commitEmail: evt.commitEmail ?? null,
+              commitName: evt.commitName ?? null,
             });
             setActiveDoc(0);
             setTab("Plan");
@@ -362,6 +375,12 @@ export function PlanPack({
               <code className="flex-1 text-xs font-mono bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-violet-300 leading-relaxed break-words whitespace-pre-wrap">{handoffCmd}</code>
               <button onClick={() => copy(handoffCmd)} className="text-xs border border-white/10 hover:border-white/30 px-3 py-2 rounded-lg transition-colors shrink-0">{copied ? "Copied" : "Copy"}</button>
             </div>
+            {commitEmail && (
+              <p className="text-xs text-neutral-600">
+                Sets your git identity to <span className="font-mono text-neutral-500">{commitEmail}</span> so Vercel
+                won&apos;t block your first deploy (a commit email it can&apos;t match to your GitHub account).
+              </p>
+            )}
             {result.repoUrl && (
               <a href={`${result.repoUrl.replace(/\.git$/, "")}/tree/main/docs`} target="_blank" rel="noopener noreferrer"
                 className="inline-block text-sm text-violet-300 hover:underline">View the pack on GitHub →</a>

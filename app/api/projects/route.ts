@@ -1,5 +1,5 @@
 import { decrypt } from "@/lib/crypto";
-import { registerPushWebhook } from "@/lib/github";
+import { registerPushWebhook, getCommitIdentity } from "@/lib/github";
 import { provisionProject, type ProgressEvent } from "@/lib/provisioning";
 import { createClient } from "@/lib/supabase/server";
 import { getTemplate } from "@/lib/templates";
@@ -200,6 +200,19 @@ export async function POST(request: Request) {
           console.warn("[provision] default-on auto-capture failed (non-fatal):", e);
         }
 
+        // The git identity the handed-off project must commit with so Vercel
+        // doesn't block deploys ("commit email could not be matched to a GitHub
+        // account"). Best-effort — never fail provisioning over it.
+        let commitEmail: string | undefined;
+        let commitName: string | undefined;
+        try {
+          const ident = await getCommitIdentity(githubToken);
+          commitEmail = ident.email;
+          commitName = ident.name;
+        } catch (e) {
+          console.warn("[provision] commit identity lookup failed (non-fatal):", e);
+        }
+
         // Track event
         await supabase.from("events").insert({
           user_id: user.id,
@@ -214,6 +227,8 @@ export async function POST(request: Request) {
             githubRepoUrl: result.githubRepoUrl,
             vercelPreviewUrl: result.vercelPreviewUrl,
             supabaseProjectRef: result.supabaseProjectRef,
+            commitEmail,
+            commitName,
           },
         });
       } catch (err) {
