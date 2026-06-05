@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PlanPack, type Result as PlanPackResult } from "@/components/plan-pack";
+import { PlanProgress } from "@/components/plan-progress";
 import { AutoCaptureToggle } from "@/components/auto-capture-toggle";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 
@@ -20,6 +21,7 @@ type Project = {
   deployed_at: string | null;
   build_prompt: string | null;
   last_digest: { onTrack: boolean; note: string; scopeCreep?: string[] } | null;
+  plan_progress?: string[] | null;
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -87,7 +89,7 @@ export function ProjectTabs({
       </div>
 
       {view === "plan" && <PlanView project={project} initialPack={initialPack} />}
-      {view === "pilot" && <PilotView project={project} memory={memory} liveUrl={liveUrl} autoCapture={autoCapture} isPro={isPro} />}
+      {view === "pilot" && <PilotView project={project} memory={memory} liveUrl={liveUrl} autoCapture={autoCapture} isPro={isPro} plan={initialPack?.plan ?? null} sprints={initialPack?.sprints ?? []} />}
       {view === "settings" && <SettingsTab project={project} />}
     </div>
   );
@@ -115,19 +117,29 @@ function PlanView({
 
 /* ── Pilot view — keep it on course (auto-capture + drift + memory) & ship it ── */
 function PilotView({
-  project, memory = [], liveUrl = null, autoCapture = false, isPro = false,
+  project, memory = [], liveUrl = null, autoCapture = false, isPro = false, plan = null, sprints = [],
 }: {
   project: Project; memory?: Array<{ kind: string; content: string }>; liveUrl?: string | null; autoCapture?: boolean; isPro?: boolean;
+  plan?: { now?: string[]; next?: string[]; later?: string[] } | null; sprints?: Array<{ title: string; items: string[] }>;
 }) {
+  const broken = project.status === "failed";
+  const drifting = project.last_digest?.onTrack === false;
+  const verdict = broken
+    ? { dot: "bg-danger", head: `${project.name} needs you`, sub: "The last build failed — fix it to keep moving." }
+    : drifting
+      ? { dot: "bg-warn", head: "Heads up — drifting from your plan", sub: project.last_digest?.note ?? "Some recent work looks off-plan." }
+      : { dot: "bg-success", head: "On track", sub: "Building on plan. Tick items off as they ship." };
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-display tracking-tight text-lg font-semibold text-on-surface mb-1">Pilot — keep it on course &amp; ship it</h2>
-        <p className="text-sm text-on-surface-variant">
-          As you build, Pilot quietly tracks what changed and why, flags drift from your plan, and helps
-          you launch — so you never write anything down, and the AI always knows your project.
-        </p>
-      </div>
+      {!isPro && (
+        <div>
+          <h2 className="font-display tracking-tight text-lg font-semibold text-on-surface mb-1">Pilot — keep it on course &amp; ship it</h2>
+          <p className="text-sm text-on-surface-variant">
+            As you build, Pilot quietly tracks what changed and why, flags drift from your plan, and helps
+            you launch — so you never write anything down, and the AI always knows your project.
+          </p>
+        </div>
+      )}
 
       {!isPro && (
         <div className="relative">
@@ -156,6 +168,41 @@ function PilotView({
       )}
 
       {isPro && (<>
+      {/* Verdict — on course vs the plan? */}
+      <div>
+        <p className="eyebrow">Pilot · on course?</p>
+        <h2 className="font-display tracking-tight text-lg font-bold text-on-surface flex items-center gap-2">
+          <span className={`dot ${verdict.dot}`} />{verdict.head}
+        </h2>
+        <p className="text-sm text-on-surface-variant mt-0.5">{verdict.sub}</p>
+      </div>
+
+      {/* The spine — progress vs the plan (Now / Next / Later + sprints) */}
+      <PlanProgress projectId={project.id} plan={plan} sprints={sprints} initialDone={project.plan_progress ?? []} />
+
+      {/* Instruments — supporting gauges */}
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-wider mb-1.5 text-on-surface-variant">Instruments</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className={`rounded-lg border p-3 bg-surface-low ${broken ? "border-danger/40" : "border-outline-variant"}`}>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">Deploy</p>
+            <p className={`text-sm font-semibold mt-0.5 ${broken ? "text-danger" : liveUrl ? "text-success" : "text-on-surface-variant"}`}>{broken ? "Broken" : liveUrl ? "Live" : "—"}</p>
+          </div>
+          <div className="rounded-lg border border-outline-variant p-3 bg-surface-low">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">What changed</p>
+            <p className="text-sm font-semibold mt-0.5 text-on-surface tabnum">{memory.length} captured</p>
+          </div>
+          <div className="rounded-lg border border-outline-variant p-3 bg-surface-low">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">On plan</p>
+            <p className={`text-sm font-semibold mt-0.5 ${drifting ? "text-warn" : "text-success"}`}>{drifting ? "Drifting" : "On track"}</p>
+          </div>
+          <div className="rounded-lg border border-outline-variant p-3 bg-surface-low">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">Launch ready</p>
+            <p className="text-sm font-semibold mt-0.5 text-on-surface-variant">Check below</p>
+          </div>
+        </div>
+      </div>
+
       <AutoCaptureToggle projectId={project.id} enabled={autoCapture} />
 
       {project.last_digest && (

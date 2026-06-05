@@ -73,9 +73,19 @@ export async function PATCH(
     name?: string;
     vercel_preview_url?: string;
     build_prompt?: string;
+    plan_progress?: unknown;
   };
 
   const updates: Record<string, string> = {};
+
+  // Plan progress (array of completed Now-task labels) — saved on its own since
+  // it's a jsonb array, not a string field.
+  if (Array.isArray(body.plan_progress)) {
+    const prog = (body.plan_progress as unknown[]).filter((s) => typeof s === "string").slice(0, 200);
+    const { error } = await supabase.from("projects")
+      .update({ plan_progress: prog }).eq("id", id).eq("user_id", user.id);
+    if (error) return NextResponse.json({ error: "Couldn't save progress" }, { status: 500 });
+  }
 
   if (body.name !== undefined) {
     if (!body.name?.match(/^[a-z0-9-]{3,40}$/)) {
@@ -103,6 +113,7 @@ export async function PATCH(
   }
 
   if (Object.keys(updates).length === 0) {
+    if (Array.isArray(body.plan_progress)) return NextResponse.json({ ok: true });
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
