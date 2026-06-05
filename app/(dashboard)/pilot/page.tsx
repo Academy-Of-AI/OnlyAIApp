@@ -66,6 +66,8 @@ export default async function PilotPage() {
     id: string; name: string;
     vercel_project_id: string | null; vercel_preview_url: string | null;
     last_digest: { onTrack?: boolean; note?: string } | null;
+    plan_pack: { plan?: { now?: string[] } } | null;
+    plan_progress: string[] | null;
   };
   type Row = {
     project: Proj;
@@ -103,6 +105,23 @@ export default async function PilotPage() {
           </div>
           {r.status?.createdAt && <span className="text-[11px] text-outline shrink-0">{timeAgo(r.status.createdAt)}</span>}
         </div>
+        {(() => {
+          const now = p.plan_pack?.plan?.now ?? [];
+          if (now.length === 0) return null;
+          const doneSet = new Set(p.plan_progress ?? []);
+          const doneCount = now.filter((i) => doneSet.has(i)).length;
+          const pct = Math.round((doneCount / now.length) * 100);
+          return (
+            <div className="mt-2.5">
+              <div className="flex items-center justify-between text-[11px] text-on-surface-variant mb-1">
+                <span>v1 progress</span><span className="tabnum">{doneCount}/{now.length}{doneCount === now.length ? " · ready to ship" : ""}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-surface-high overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "var(--color-success)" }} />
+              </div>
+            </div>
+          );
+        })()}
         {r.status?.state === "ERROR" && (
           <p className="mt-2 text-xs text-on-surface-variant"><span className="text-danger">⚠</span> {r.errorLine ?? "Deploy failed — open to see the build log."}</p>
         )}
