@@ -65,6 +65,13 @@ CORE ENGINE FIRST: every app has ONE core engine/verb — its main action (e.g. 
 quote/simulation, log a change and act on it). Sprint 1 must deliver that engine working end-to-end against
 the database, BEFORE breadth. A polished read-only dashboard of seeded data is NOT a working app.
 
+DEMO-FIRST, AUTH LATER: build the core screens VIEWABLE WITHOUT A LOGIN WALL in early sprints — seed a few
+realistic demo rows and let the main pages render for anonymous visitors, so the app is instantly demoable and
+a screenshot shows the real product, not a sign-in page. The homepage is the working app (with seed data), NOT
+a redirect to /login. Schedule login/signup + per-user data isolation (RLS owner policies) as a dedicated LATER
+"Lock it down" sprint, BEFORE real users or sensitive data go in. Do NOT gate the whole app behind auth in
+Sprint 1. (The SECURITY model below is the END state, reached at the lock-down sprint.)
+
 SCOPE NOTE: this is a personal/internal OS for the builder + their agent to deliver their
 own expertise — NOT a multi-tenant SaaS for resale, unless the idea explicitly says so.
 Keep v1 ruthlessly small. Put everything else in non-goals or later phases.
@@ -97,34 +104,41 @@ docs/AGENTIC_LAYER.md — Draftable actions; executable-after-approval actions; 
   actions; named tools; audit-log fields; v1 vs later, tagged by risk level.
 docs/SECURITY.md — Secret handling; permission model; approved-tools rule; audit principle.
 docs/TASKS.md — Sprints 1..N. Each sprint: goal + a checklist of tasks + its Definition of
-  Done. Order them so the DB + core CRUD come first, intelligence/agentic later. Mark the sprint
-  at which the app FIRST works end-to-end (the success scenario is usable) as the "v1 functional"
-  milestone — everything up to and including it should be built in the FIRST handoff pass (do not
-  stop at an auth/setup dashboard). Include a simple text Gantt (which sprint each task lands in).
+  Done. Order them so the DB + core CRUD + the one core engine come first, VIEWABLE WITHOUT A LOGIN
+  WALL (seed demo data). Login/signup + per-user RLS is NOT Sprint 1 — put it in a later "Lock it
+  down" sprint, after the app works and is demoable. Mark the sprint at which the app FIRST works
+  end-to-end (the success scenario is usable) as the "v1 functional" milestone — everything up to
+  and including it should be built in the FIRST handoff pass (do not stop at an auth/setup dashboard).
+  Include a simple text Gantt (which sprint each task lands in).
 docs/TEST_PLAN.md — Manual test steps for the v1 success scenario + empty/error cases.
 
 ALSO fill (for the UI, de-branded, the app's own words):
 - plan: now / next / later — short bullets a non-technical owner understands.
 - sprints: the same sprints as docs/TASKS.md, as {title, items[]}, ordered.
 - migration_sql: the executable SQL for docs/DATA_MODEL.md (see the tool field for exact rules).
-  It will be applied to a live database, so it must create EVERY object in DATA_MODEL.md, with RLS
-  + owner policies, and be idempotent (safe to re-run). DATA_MODEL.md and migration_sql must agree.`;
+  It will be applied to a live database, so it must create EVERY object in DATA_MODEL.md, seed a few
+  realistic demo rows, be demo-first (viewable without login) and idempotent. DATA_MODEL.md and
+  migration_sql must agree.`;
 
 /* The exact, hard-won rules for the migration SQL — shared by the full-pack tool
    and the "bring your own docs" schema-only tool so a live DB is set up the same
    safe way regardless of path. */
 const MIGRATION_RULES =
   "Executable Postgres/Supabase DDL that creates EXACTLY the app's domain schema for THIS app — " +
-  "nothing more. It will be applied to a live Supabase project, so it must run clean and be safe " +
-  "to re-run. Rules: (1) only this app's domain tables — do NOT create or alter auth.users, " +
-  "profiles, billing, or any platform tables. (2) Every table: `create table if not exists`, an " +
-  "`id uuid primary key default gen_random_uuid()`, an owner column `user_id uuid not null " +
-  "references auth.users(id) on delete cascade`, and `created_at timestamptz not null default " +
-  "now()`. (3) For any AI-generated field add value + `source text` + `confidence numeric` + " +
-  "`review_status text default 'unreviewed'` columns. (4) Enable RLS on every table (`alter table " +
-  "<t> enable row level security;`) and add owner-scoped policies using `auth.uid() = user_id`; " +
-  "make each policy idempotent by writing `drop policy if exists \"<name>\" on <table>;` immediately " +
-  "before its `create policy`. (5) No seed data, no comments, no BEGIN/COMMIT. Plain DDL only.";
+  "nothing more. It is applied to a live Supabase project, so it must run clean and be safe to re-run. " +
+  "DEMO-FIRST: the app must render for anonymous visitors in v1 (no login wall yet), so seed data and " +
+  "keep reads/writes open until the lock-down sprint. Rules: (1) only this app's domain tables — do NOT " +
+  "create or alter auth.users, profiles, billing, or any platform tables. (2) Every table: `create table " +
+  "if not exists`, an `id uuid primary key default gen_random_uuid()`, a NULLABLE `user_id uuid` (for " +
+  "owner-scoping at lock-down — no FK / NOT NULL yet, so demo rows exist without a logged-in user), and " +
+  "`created_at timestamptz not null default now()`. (3) For any AI-generated field add value + `source " +
+  "text` + `confidence numeric` + `review_status text default 'unreviewed'`. (4) Enable RLS on every table " +
+  "(`alter table <t> enable row level security;`) and add PERMISSIVE v1 policies so the demo works without " +
+  "login — for each table: `drop policy if exists \"<t>_v1_read\" on <t>; create policy \"<t>_v1_read\" on " +
+  "<t> for select using (true); drop policy if exists \"<t>_v1_write\" on <t>; create policy \"<t>_v1_write\" " +
+  "on <t> for all using (true) with check (true);`. The 'Lock it down' sprint replaces these with " +
+  "owner-scoped (`auth.uid() = user_id`) policies. (5) Seed 3-6 realistic demo rows per core table so the " +
+  "app looks alive on first load. No comments, no BEGIN/COMMIT.";
 
 const WRITE_DOCS_TOOL: Anthropic.Tool = {
   name: "write_docs",
@@ -288,7 +302,10 @@ ${list}
 5. **This is the real working app** — real forms, lists, detail views, and the end-to-end flow from
    the PRD's success scenario. Do **NOT** build a marketing/landing page, a front-end-only demo, or
    a connection-status dashboard.
-6. Never put secrets in frontend code.${skillBullet}
+6. **Demo-first — no login wall in v1.** The homepage IS the working app (with seed data), reachable by
+   anyone — do NOT redirect to /login or gate the app behind auth yet. Login/signup + per-user lockdown
+   is a LATER "Lock it down" sprint, before real users/data. (Keeps the app demoable + screenshot-able.)
+7. Never put secrets in frontend code.${skillBullet}
 
 ## Deploy & data (binding — this stack is already provisioned)
 - **Deploy by git, never by CLI.** \`git add -A && git commit -m "…" && git push\` to \`main\`;
