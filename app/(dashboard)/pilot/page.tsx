@@ -32,10 +32,11 @@ export default async function PilotPage() {
   const { data: planRow } = await supabase.from("profiles").select("plan").eq("id", user!.id).single();
   if (planRow?.plan !== "pro") return <PilotLocked />;
 
-  const [{ data: projects }, { data: vercelConn }] = await Promise.all([
+  const [{ data: projects }, { data: vercelConn }, { count: memoryCount }] = await Promise.all([
     supabase.from("projects").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }),
     supabase.from("oauth_connections").select("access_token, metadata")
       .eq("user_id", user!.id).eq("provider", "vercel").single(),
+    supabase.from("project_memory").select("*", { count: "exact", head: true }).eq("user_id", user!.id),
   ]);
 
   let vercelToken: string | null = null;
@@ -82,8 +83,19 @@ export default async function PilotPage() {
   };
   const needsAttention = rows.filter((r) => r.status?.state === "ERROR" || drifting(r.project));
   const onTrack = rows.filter((r) => !(r.status?.state === "ERROR" || drifting(r.project)));
-  const broken = rows.filter((r) => r.status?.state === "ERROR").length;
   const building = rows.filter((r) => ["BUILDING", "QUEUED", "INITIALIZING"].includes(r.status?.state ?? "")).length;
+  const live = rows.filter((r) => r.status?.state === "READY" || (!!r.project.vercel_preview_url && r.status?.state !== "ERROR")).length;
+
+  // Portfolio v1 progress (aggregate Now-tasks shipped across all projects).
+  let v1Done = 0, v1Total = 0;
+  for (const r of rows) {
+    const now = r.project.plan_pack?.plan?.now ?? [];
+    const doneSet = new Set(r.project.plan_progress ?? []);
+    v1Total += now.length;
+    v1Done += now.filter((i) => doneSet.has(i)).length;
+  }
+  const v1Pct = v1Total ? Math.round((v1Done / v1Total) * 100) : 0;
+  const onTrackPct = rows.length ? Math.round((onTrack.length / rows.length) * 100) : 100;
 
   function Card({ r }: { r: Row }) {
     const p = r.project;
@@ -138,36 +150,47 @@ export default async function PilotPage() {
         <div>
           <p className="eyebrow">Mission Control</p>
           <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — every OS, on course</h1>
-          <p className="text-sm text-on-surface-variant mt-1">Live health + drift across all your projects.</p>
+          <p className="text-sm text-on-surface-variant mt-1">
+            Your whole portfolio at a glance — health, progress vs plan, and drift across every build.
+          </p>
         </div>
-        <Link href="/new-project"
-          className="btn-brand text-sm px-4 py-2">
-          ＋ New project
-        </Link>
+        <Link href="/new-project" className="btn-brand text-sm px-4 py-2">＋ New project</Link>
       </div>
 
-      {/* summary strip */}
-      <div className="flex items-stretch gap-3 flex-wrap">
-        <div className="tile flex-1 min-w-[120px]">
+      {/* macro KPIs — the portfolio at a glance */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="tile">
           <p className="tile-label">OSes</p>
           <p className="tile-value text-on-surface">{rows.length}</p>
+          <p className="text-[11px] text-outline mt-0.5">projects</p>
         </div>
-        <div className="tile flex-1 min-w-[120px]">
-          <p className="tile-label flex items-center gap-1.5"><span className="dot bg-success" />On track</p>
-          <p className="tile-value text-on-surface">{onTrack.length}</p>
+        <div className="tile">
+          <p className="tile-label flex items-center gap-1.5"><span className="dot bg-success" />Live</p>
+          <p className="tile-value text-on-surface">{live}</p>
+          <p className="text-[11px] text-outline mt-0.5">deployed{building ? ` · ${building} building` : ""}</p>
         </div>
-        {building > 0 && (
-          <div className="tile flex-1 min-w-[120px]">
-            <p className="tile-label flex items-center gap-1.5"><span className="dot bg-warn-dim" />Building</p>
-            <p className="tile-value text-on-surface">{building}</p>
-          </div>
-        )}
-        <div className="tile flex-1 min-w-[120px]">
-          <p className="tile-label flex items-center gap-1.5"><span className="dot bg-danger" />Broken</p>
-          <p className="tile-value text-on-surface">{broken}</p>
+        <div className="tile">
+          <p className="tile-label">On track</p>
+          <p className="tile-value text-on-surface">{onTrackPct}<span className="text-base font-semibold">%</span></p>
+          <p className="text-[11px] text-outline mt-0.5 tabnum">{onTrack.length}/{rows.length} projects</p>
         </div>
-        {!vercelToken && <span className="text-outline self-center ml-auto text-xs">Connect Vercel for live status</span>}
+        <div className="tile">
+          <p className="tile-label">v1 shipped</p>
+          <p className="tile-value" style={{ color: "var(--color-brand-dim)" }}>{v1Pct}<span className="text-base font-semibold">%</span></p>
+          <p className="text-[11px] text-outline mt-0.5 tabnum">{v1Done}/{v1Total} features</p>
+        </div>
+        <div className="tile">
+          <p className="tile-label">Changes captured</p>
+          <p className="tile-value text-on-surface tabnum">{memoryCount ?? 0}</p>
+          <p className="text-[11px] text-outline mt-0.5">auto-logged for the AI</p>
+        </div>
+        <div className="tile">
+          <p className="tile-label flex items-center gap-1.5"><span className={`dot ${needsAttention.length ? "bg-danger" : "bg-success"}`} />Needs you</p>
+          <p className="tile-value" style={{ color: needsAttention.length ? "var(--color-danger)" : "var(--color-on-surface)" }}>{needsAttention.length}</p>
+          <p className="text-[11px] text-outline mt-0.5">{needsAttention.length ? "to act on" : "all clear"}</p>
+        </div>
       </div>
+      {!vercelToken && <p className="text-xs text-outline">Connect Vercel for live deploy status.</p>}
 
       {rows.length === 0 ? (
         <div className="text-center py-24 text-on-surface-variant space-y-2 panel"><p className="text-3xl">🛫</p><p>No projects yet.</p></div>
