@@ -35,9 +35,9 @@ export default async function UpgradePage({
           Pay for outcomes, not tokens
         </h1>
         <p className="text-on-surface-variant text-lg leading-relaxed">
-          You bring your own Claude Code — we never bill for AI usage. Start free, grow into Core
-          when you&apos;re shipping in earnest, and add <b className="text-on-surface">Pilot</b> on Pro to
-          keep every build on course.
+          You bring your own Claude — we never bill for AI usage. Start free, grow into Core when
+          you&apos;re shipping in earnest, and go <b className="text-on-surface">Pro</b> to turn your
+          builds into career proof.
         </p>
       </header>
 
@@ -93,15 +93,15 @@ export default async function UpgradePage({
           name="Pro"
           price="$17"
           period="/month"
-          tagline="Ship with a co-pilot."
+          tagline="Turn builds into career proof."
           highlight
-          badge="Most popular"
+          badge="Build your career"
           sub="or $11.90/mo billed yearly — save 30%"
           features={[
             "Everything in Core",
-            "🛫 Pilot — auto-capture & drift detection",
-            "Launch-readiness checks before you ship",
-            "Keeps every build tethered to the plan",
+            "🎖️ Full Portfolio — public profile & proof",
+            "AI career artifacts — case study, LinkedIn, résumé",
+            "Advanced build tracking (drift & auto-capture)",
           ]}
           current={plan === "pro"}
           cta={

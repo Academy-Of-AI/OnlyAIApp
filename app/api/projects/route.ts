@@ -56,10 +56,10 @@ export async function POST(request: Request) {
 
   // Per-tier project limit (free = 1, +1 with the data opt-in; core/pro = 8).
   const { data: planRow } = await supabase
-    .from("profiles").select("plan, phone, marketing_consent, github_id").eq("id", user.id).single();
+    .from("profiles").select("plan, phone, marketing_consent, github_id, bonus_projects").eq("id", user.id).single();
   const { count: ownedCount } = await supabase
     .from("projects").select("*", { count: "exact", head: true }).eq("user_id", user.id);
-  const limit = projectLimit(planRow?.plan, hasOptInBonus(planRow));
+  const limit = projectLimit(planRow?.plan, hasOptInBonus(planRow), planRow?.bonus_projects ?? 0);
   if ((ownedCount ?? 0) >= limit) {
     const tier = normalizePlan(planRow?.plan);
     return NextResponse.json(

@@ -16,7 +16,7 @@ export async function isProUser(db: SupabaseClient, userId: string): Promise<boo
 }
 
 export const PRO_REQUIRED = {
-  error: "This is a Pro feature — it runs AI on us. Upgrade to let Launchpad keep your agent on track automatically.",
+  error: "This is a Pro feature. Upgrade to unlock your Portfolio, AI career artifacts, and advanced build tracking.",
   code: "pro_required",
 } as const;
 
@@ -40,10 +40,19 @@ export function hasOptInBonus(
   return !!(profile?.marketing_consent && profile?.phone && String(profile.phone).trim().length > 0);
 }
 
-/** How many projects this user may provision (free gets +1 with the opt-in). */
-export function projectLimit(plan: string | null | undefined, optInBonus: boolean): number {
+/**
+ * How many projects this user may provision.
+ * Free gets +1 with the data opt-in; everyone gets +1 per successful referral
+ * (bonus_projects, granted when a referee ships their first app).
+ */
+export function projectLimit(
+  plan: string | null | undefined,
+  optInBonus: boolean,
+  bonusProjects: number = 0,
+): number {
   const tier = normalizePlan(plan);
-  return tier === "free" && optInBonus ? PROJECT_LIMITS.free + 1 : PROJECT_LIMITS[tier];
+  const base = tier === "free" && optInBonus ? PROJECT_LIMITS.free + 1 : PROJECT_LIMITS[tier];
+  return base + Math.max(0, bonusProjects | 0);
 }
 
 /** Free users can't delete their project (so they can't recycle the slot). */

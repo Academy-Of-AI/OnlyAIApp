@@ -1,7 +1,9 @@
 import { decrypt, encrypt } from "@/lib/crypto";
 import { getGithubUser } from "@/lib/github";
 import { track } from "@/lib/analytics";
+import { attributeReferral } from "@/lib/referrals";
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 /**
@@ -59,5 +61,11 @@ export async function GET(request: Request) {
 
   await track("github_connected", user.id, { github_login: login });
 
-  return NextResponse.redirect(`${origin}/dashboard?connected=github`);
+  // Referral attribution — if they arrived via /r/[code], record it once, then clear the cookie.
+  const ref = (await cookies()).get("ref")?.value;
+  if (ref) await attributeReferral(user.id, ref);
+
+  const res = NextResponse.redirect(`${origin}/dashboard?connected=github`);
+  if (ref) res.cookies.set("ref", "", { maxAge: 0, path: "/" });
+  return res;
 }

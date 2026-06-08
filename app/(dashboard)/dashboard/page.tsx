@@ -1,8 +1,8 @@
-import { GettingStarted } from "@/components/getting-started";
-import { DeleteProjectButton } from "@/components/delete-project-button";
 import { OptInNudge } from "@/components/optin-nudge";
+import { ReferralCard } from "@/components/referral-card";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePlan, hasOptInBonus } from "@/lib/plan";
+import { reconcileReferralReward } from "@/lib/referrals";
 import Link from "next/link";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -13,191 +13,182 @@ const STATUS_STYLES: Record<string, string> = {
   failed:       "chip chip-danger",
 };
 
-export default async function DashboardPage({
+export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<{ connected?: string; error?: string }>;
 }) {
   const params = await searchParams;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: projects }, { data: connections }, { count: planCount }, { count: memoryCount }, { data: profile }] = await Promise.all([
-    supabase
-      .from("projects")
-      .select("*")
-      .eq("user_id", user!.id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("oauth_connections")
-      .select("provider")
-      .eq("user_id", user!.id),
-    supabase
-      .from("project_plans")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user!.id),
-    supabase
-      .from("project_memory")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user!.id),
-    supabase
-      .from("profiles")
-      .select("plan, phone, marketing_consent")
-      .eq("id", user!.id)
-      .single(),
+  const [{ data: projects }, { data: connections }, { data: profile }, { data: wall }] = await Promise.all([
+    supabase.from("projects").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }),
+    supabase.from("oauth_connections").select("provider").eq("user_id", user!.id),
+    supabase.from("profiles").select("plan, phone, marketing_consent, github_username").eq("id", user!.id).single(),
+    supabase.from("wall_submissions").select("title, tagline, builder_name, demo_url").order("created_at", { ascending: false }).limit(1),
   ]);
 
-  // Free users who haven't done the data opt-in see a "+1 project" nudge.
+  const hasGitHub = connections?.some((c) => c.provider === "github");
   const showOptInNudge = normalizePlan(profile?.plan) === "free" && !hasOptInBonus(profile);
 
-  const hasGitHub   = connections?.some((c) => c.provider === "github");
-  // Onramp: GitHub alone is enough to create a project. Vercel/Supabase come later.
-  const canCreate = hasGitHub;
-  // Hide the "first app" onboarding once they've shipped — beginner framing
-  // shouldn't follow an experienced builder around.
-  const hasShipped = projects?.some((p) => p.status === "deployed") ?? false;
+  const list = projects ?? [];
+  const shipped = list.filter((p) => p.status === "deployed").length;
+  // Grant the referral reward once this user has shipped their first app (idempotent).
+  if (user) await reconcileReferralReward(user.id, shipped > 0);
+  const inProgress = list.filter((p) => p.status !== "deployed").length;
+  const milestones = list.reduce((n, p) => n + (Array.isArray(p.plan_progress) ? p.plan_progress.length : 0), 0);
+  const activeBuild = list.find((p) => p.status !== "deployed") ?? list[0] ?? null;
+  const firstName = (profile?.github_username || user?.email || "there").split(/[@ ]/)[0];
+  const highlight = wall?.[0] ?? null;
 
   function connectedLabel(provider: string) {
-    if (provider === "github")   return "GitHub";
-    if (provider === "vercel")   return "Vercel";
-    if (provider === "supabase") return "Supabase";
-    if (provider === "resend")   return "Resend";
-    if (provider === "stripe")   return "Stripe";
-    return provider;
+    return ({ github: "GitHub", vercel: "Vercel", supabase: "Supabase", resend: "Resend", stripe: "Stripe" } as Record<string, string>)[provider] ?? provider;
   }
 
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8 sm:space-y-10">
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6">
       {/* Alerts */}
       {params.connected && (
-        <div className="panel border-l-2 border-l-success text-success text-sm px-4 py-3">
-          ✓ {connectedLabel(params.connected)} connected successfully.
-        </div>
+        <div className="panel border-l-2 border-l-success text-success text-sm px-4 py-3">✓ {connectedLabel(params.connected)} connected successfully.</div>
       )}
       {params.error && (
-        <div className="panel border-l-2 border-l-danger text-danger text-sm px-4 py-3">
-          Connection failed. Please try again.
-        </div>
+        <div className="panel border-l-2 border-l-danger text-danger text-sm px-4 py-3">Connection failed. Please try again.</div>
       )}
 
-      {/* Required: connect GitHub (the only thing needed to start) */}
+      {/* Header */}
+      <div>
+        <p className="eyebrow">👋 Today</p>
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-on-surface mt-1.5">
+          Hey {firstName} — let’s ship something 🚀
+        </h1>
+        <p className="text-sm text-on-surface-variant mt-1">
+          Build real things. Show them off. Level up your career. <span className="opacity-80">(yes, it’s allowed to be fun.)</span>
+        </p>
+      </div>
+
+      {/* Connect GitHub (only thing needed to start) */}
       {!hasGitHub && (
         <section className="panel border-brand-border bg-brand-container p-5 sm:p-6 space-y-4">
           <div>
             <h2 className="font-display tracking-tight font-semibold text-lg text-on-surface">Connect GitHub to start</h2>
-            <p className="text-sm text-on-surface-variant mt-1">
-              Your projects get a private repo, created automatically. It&apos;s the only thing you need to begin.
-            </p>
+            <p className="text-sm text-on-surface-variant mt-1">Your builds get a private repo, created automatically. It’s the only thing you need to begin.</p>
           </div>
-          <a href="/api/github/connect"
-            className="btn-brand flex items-center justify-center gap-2 text-sm px-4 py-2.5 w-full sm:w-auto">
-            <GHIcon /> Connect GitHub →
-          </a>
+          <a href="/api/github/connect" className="btn-brand flex items-center justify-center gap-2 text-sm px-4 py-2.5 w-full sm:w-auto"><GHIcon /> Connect GitHub →</a>
           <p className="text-xs text-outline">
             No GitHub account?{" "}
-            <a href="https://github.com/signup" target="_blank" rel="noopener noreferrer"
-              className="text-on-surface-variant hover:text-on-surface underline underline-offset-2">
-              Create one free →
-            </a>{" "}
+            <a href="https://github.com/signup" target="_blank" rel="noopener noreferrer" className="text-on-surface-variant hover:text-on-surface underline underline-offset-2">Create one free →</a>{" "}
             — it takes a minute, then come back and connect.
           </p>
         </section>
       )}
 
-      {/* Optional integrations live on the Settings page (⚙ in the top nav)
-          and inside each project's own Settings tab. */}
-
-      {/* Free-tier data opt-in nudge → +1 project */}
+      {/* Free-tier opt-in nudge → +1 project */}
       {hasGitHub && showOptInNudge && <OptInNudge />}
 
-      {/* Onboarding checklist — only while still working toward the first ship */}
-      {!!projects?.length && !hasShipped && (
-        <GettingStarted
-          accountsConnected={!!canCreate}
-          hasProject={!!projects?.length}
-          hasPlan={(planCount ?? 0) > 0}
-          hasMemory={(memoryCount ?? 0) > 0}
-          firstProjectId={projects?.[0]?.id ?? null}
-        />
-      )}
-
-      {/* Projects header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="eyebrow">Workspace</p>
-          <h1 className="text-xl font-bold font-display tracking-tight text-on-surface">Your projects</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {!!projects?.length && (
-            <Link
-              href="/mission-control"
-              className="btn-ghost text-sm px-4 py-2"
-            >
-              ▦ Mission Control
-            </Link>
-          )}
-          {canCreate && (
-            <Link
-              href="/new-project"
-              className="btn-brand text-sm px-4 py-2"
-            >
-              + New project
-            </Link>
-          )}
-        </div>
-      </div>
-
-      {/* Project list */}
-      {!projects?.length ? (
-        <div className="text-center py-20 text-on-surface-variant space-y-2">
-          <p className="text-3xl">🚀</p>
-          <p>No projects yet.</p>
-          {canCreate && (
-            <Link href="/new-project" className="text-brand hover:underline text-sm">
-              Create your first project →
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="grid sm:grid-cols-2 gap-4">
-          {projects.map((p) => (
-            <div
-              key={p.id}
-              className="panel p-5 space-y-3 hover:border-outline transition-all"
-            >
-              <Link href={`/projects/${p.id}`} className="block space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <span className="font-semibold truncate text-on-surface">{p.name}</span>
-                  <span
-                    className={`shrink-0 ${
-                      STATUS_STYLES[p.status] ?? STATUS_STYLES.pending
-                    }`}
-                  >
-                    {p.status}
-                  </span>
+      {/* Continue building / start first build */}
+      {hasGitHub && (
+        activeBuild ? (
+          <div>
+            <p className="eyebrow">▶ Pick up where you left off</p>
+            <div className="panel p-5 sm:p-[18px] mt-2 border-l-[3px] border-l-brand">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className={STATUS_STYLES[activeBuild.status] ?? STATUS_STYLES.pending}>{activeBuild.status}</span>
+                  <span className="font-display font-semibold text-base sm:text-lg truncate text-on-surface">{activeBuild.name}</span>
                 </div>
-                <p className="text-xs text-outline">{p.template_id}</p>
-                <div className="flex gap-3 text-xs">
-                  {p.github_repo_url && (
-                    <span className="text-on-surface-variant">GitHub →</span>
-                  )}
-                  {p.vercel_preview_url && (
-                    <span className="text-on-surface-variant">Live URL →</span>
-                  )}
+                {Array.isArray(activeBuild.plan_progress) && activeBuild.plan_progress.length > 0 && (
+                  <span className="text-xs text-on-surface-variant tabnum">✓ {activeBuild.plan_progress.length} milestone{activeBuild.plan_progress.length === 1 ? "" : "s"} done</span>
+                )}
+              </div>
+              <div className="mt-4 flex items-center justify-between gap-3 flex-wrap rounded-lg bg-surface-dim border border-outline-variant px-3 py-3">
+                <div className="min-w-0">
+                  <p className="eyebrow">🎯 Your one next move</p>
+                  <p className="text-sm text-on-surface mt-0.5">
+                    {activeBuild.status === "deployed" ? "It’s live — add the next feature or polish it." : "Open it and keep building toward your v1."}
+                  </p>
                 </div>
-                {p.error && <p className="text-xs text-danger truncate">{p.error}</p>}
-              </Link>
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs text-outline">{new Date(p.created_at).toLocaleDateString()}</p>
-                <DeleteProjectButton projectId={p.id} projectName={p.name} />
+                <Link href={`/projects/${activeBuild.id}`} className="btn-brand text-sm px-4 py-2 shrink-0">Open build →</Link>
               </div>
             </div>
-          ))}
+          </div>
+        ) : (
+          <div className="panel p-6 text-center space-y-3">
+            <p className="text-3xl">🚀</p>
+            <h2 className="font-display font-semibold text-lg text-on-surface">Build your first real app</h2>
+            <p className="text-sm text-on-surface-variant max-w-md mx-auto">Pick an outcome — a portfolio project, a side-income tool, killing your busywork — and we’ll spin up a live app to start from.</p>
+            <Link href="/tracks" className="btn-brand text-sm px-5 py-2.5 inline-flex">Pick a track →</Link>
+          </div>
+        )
+      )}
+
+      {/* Quick actions */}
+      {hasGitHub && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Link href="/tracks" className="panel p-4 hover:border-outline transition-all">
+            <div className="text-xl">🧭</div>
+            <p className="font-display font-semibold text-on-surface mt-2">Start a new build</p>
+            <p className="text-xs text-on-surface-variant">Pick a track → ship a real thing</p>
+          </Link>
+          <Link href="/portfolio" className="panel p-4 hover:border-outline transition-all">
+            <div className="text-xl">🎖️</div>
+            <p className="font-display font-semibold text-on-surface mt-2">Your proof</p>
+            <p className="text-xs text-on-surface-variant">Portfolio you can show anyone</p>
+          </Link>
+          <Link href="/directory" className="panel p-4 hover:border-outline transition-all">
+            <div className="text-xl">✨</div>
+            <p className="font-display font-semibold text-on-surface mt-2">See what’s shipped</p>
+            <p className="text-xs text-on-surface-variant">Real apps from real builders</p>
+          </Link>
+        </div>
+      )}
+
+      {/* Momentum */}
+      {hasGitHub && (
+        <div>
+          <p className="eyebrow">🔥 Your momentum</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+            <Stat label="Apps shipped" value={shipped} foot="live & owned by you" />
+            <Stat label="In progress" value={inProgress} foot="builds underway" />
+            <Stat label="Milestones" value={milestones} foot="v1 steps done" />
+            <Stat label="On showcase" value={shipped} foot="public proof" />
+          </div>
+        </div>
+      )}
+
+      {/* Referral — free marketing loop */}
+      {hasGitHub && <ReferralCard code={profile?.github_username || "you"} />}
+
+      {/* Showcase highlight */}
+      {highlight && (
+        <div>
+          <div className="flex items-center justify-between">
+            <p className="eyebrow">✨ Fresh from the Showcase</p>
+            <Link href="/directory" className="text-xs text-brand-dim hover:underline">See all →</Link>
+          </div>
+          <div className="panel p-4 mt-2 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-lg shrink-0 grid place-items-center text-brand-dim bg-brand-container font-bold text-sm">{(highlight.title || "App").slice(0, 2)}</div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2"><span className="chip chip-success">Live</span><span className="font-display font-semibold text-on-surface truncate">{highlight.title}</span></div>
+              <p className="text-xs text-on-surface-variant mt-0.5 truncate">{highlight.tagline}{highlight.builder_name ? ` · by ${highlight.builder_name}` : ""}</p>
+            </div>
+            {highlight.demo_url && (
+              <a href={highlight.demo_url} target="_blank" rel="noopener noreferrer" className="btn-ghost text-xs px-3 py-1.5 shrink-0">Visit →</a>
+            )}
+          </div>
         </div>
       )}
     </main>
+  );
+}
+
+function Stat({ label, value, foot }: { label: string; value: number; foot: string }) {
+  return (
+    <div className="tile">
+      <div className="tile-label">{label}</div>
+      <div className="tile-value tabnum">{value}</div>
+      <div className="text-[11px] text-on-surface-variant mt-1">{foot}</div>
+    </div>
   );
 }
 

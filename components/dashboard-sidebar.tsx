@@ -6,13 +6,14 @@ import { usePathname } from "next/navigation";
 type NavItem = { href: string; label: string; icon: React.ReactNode };
 
 const ICON = {
-  star: <path d="M12 3l2.09 5.26L20 9l-4 3.5L17 19l-5-3-5 3 1-6.5L3 9l5.91-.74z" strokeLinejoin="round" />,
+  home: <path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10" strokeLinejoin="round" strokeLinecap="round" />,
   grid: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>,
-  plane: <path d="M3 12l18-7-7 18-2.5-8L3 12z" strokeLinejoin="round" />,
-  bank: <path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6" strokeLinejoin="round" />,
+  compass: <><circle cx="12" cy="12" r="9" /><path d="M15.5 8.5l-2.2 5.3-5.3 2.2 2.2-5.3 5.3-2.2z" strokeLinejoin="round" /></>,
+  star: <path d="M12 3l2.09 5.26L20 9l-4 3.5L17 19l-5-3-5 3 1-6.5L3 9l5.91-.74z" strokeLinejoin="round" />,
+  award: <><circle cx="12" cy="9" r="5" /><path d="M9 13.4L8 22l4-2.2L16 22l-1-8.6" strokeLinejoin="round" /></>,
+  gift: <><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M5 12v9h14v-9M12 8v13M12 8S11 3 8.5 3 6 5.5 8 8M12 8s1-5 3.5-5S18 5.5 16 8" strokeLinejoin="round" /></>,
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 113.5 2.3c-.8.4-1 1-1 1.7M12 17h.01" strokeLinecap="round" /></>,
   gear: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.6 1.6 0 00.3 1.8M4.6 9a1.6 1.6 0 00-.3-1.8M9 4.6A1.6 1.6 0 0010.6 3M15 19.4a1.6 1.6 0 00-1.6 1.6M19.4 9a1.6 1.6 0 00.3-1.8M4.6 15a1.6 1.6 0 00-.3 1.8M9 19.4A1.6 1.6 0 0010.6 21M15 4.6A1.6 1.6 0 0013.4 3" strokeLinecap="round" /></>,
-  bulb: <><path d="M9 18h6M10 21.5h4M12 2.5a6.5 6.5 0 00-3.7 11.8c.6.5 1 1.2 1 2v.7h5.4v-.7c0-.8.4-1.5 1-2A6.5 6.5 0 0012 2.5z" strokeLinejoin="round" /></>,
   book: <path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 006.5 22H20V2H6.5A2.5 2.5 0 004 4.5v15z" strokeLinejoin="round" />,
 } as const;
 
@@ -24,13 +25,17 @@ function Icon({ children }: { children: React.ReactNode }) {
   );
 }
 
-const WORKSPACE: NavItem[] = [
-  { href: "/scope", label: "Start here", icon: <Icon>{ICON.star}</Icon> },
-  { href: "/dashboard", label: "Projects", icon: <Icon>{ICON.grid}</Icon> },
-  { href: "/pilot", label: "Pilot", icon: <Icon>{ICON.plane}</Icon> },
-  { href: "/directory", label: "Inspiration", icon: <Icon>{ICON.bulb}</Icon> },
+// Studio = where you build. Proof = what you walk away with.
+const STUDIO: NavItem[] = [
+  { href: "/dashboard", label: "Home", icon: <Icon>{ICON.home}</Icon> },
+  { href: "/projects", label: "Projects", icon: <Icon>{ICON.grid}</Icon> },
+  { href: "/tracks", label: "Tracks", icon: <Icon>{ICON.compass}</Icon> },
 ];
-const ACCOUNT: NavItem[] = [
+const PROOF: NavItem[] = [
+  { href: "/directory", label: "Showcase", icon: <Icon>{ICON.star}</Icon> },
+  { href: "/portfolio", label: "Portfolio", icon: <Icon>{ICON.award}</Icon> },
+];
+const MORE: NavItem[] = [
   { href: "/guide", label: "How it works", icon: <Icon>{ICON.help}</Icon> },
   { href: "/basics", label: "Basics (101)", icon: <Icon>{ICON.book}</Icon> },
   { href: "/settings", label: "Settings", icon: <Icon>{ICON.gear}</Icon> },
@@ -47,7 +52,10 @@ function Logo() {
       <span className="w-7 h-7 rounded-lg grid place-items-center" style={{ background: "linear-gradient(135deg, var(--color-brand), #9333ea)" }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" className="w-4 h-4"><path d="M5 12l4 4L19 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </span>
-      <span className="font-display font-bold text-[15px] text-[var(--color-sidebar-on)]">OnlyAIApp</span>
+      <span className="flex flex-col leading-none">
+        <span className="font-display font-bold text-[15px] text-[var(--color-sidebar-on)]">OnlyAIApp</span>
+        <span className="text-[8.5px] font-bold tracking-[0.16em] uppercase text-[var(--color-brand)] mt-0.5">Build Studio</span>
+      </span>
     </Link>
   );
 }
@@ -74,20 +82,24 @@ export function DashboardSidebar({
       <Logo />
 
       <div className="px-3 pt-4">
-        <Link href="/new-project" className="btn-brand flex items-center justify-center gap-2 px-3 py-2.5 text-sm">
+        <Link href="/tracks" className="btn-brand flex items-center justify-center gap-2 px-3 py-2.5 text-sm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M12 5v14M5 12h14" strokeLinecap="round" /></svg>
-          New project
+          New build
         </Link>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
         <div className="space-y-0.5">
-          <p className="seclabel px-3 pb-1.5">Workspace</p>
-          {WORKSPACE.map((n) => <NavLink key={n.href} item={n} pathname={pathname} />)}
+          <p className="seclabel px-3 pb-1.5">Studio</p>
+          {STUDIO.map((n) => <NavLink key={n.href} item={n} pathname={pathname} />)}
         </div>
         <div className="space-y-0.5">
-          <p className="seclabel px-3 pb-1.5">Account</p>
-          {ACCOUNT.map((n) => <NavLink key={n.href} item={n} pathname={pathname} />)}
+          <p className="seclabel px-3 pb-1.5">Proof</p>
+          {PROOF.map((n) => <NavLink key={n.href} item={n} pathname={pathname} />)}
+        </div>
+        <div className="space-y-0.5">
+          <p className="seclabel px-3 pb-1.5">More</p>
+          {MORE.map((n) => <NavLink key={n.href} item={n} pathname={pathname} />)}
         </div>
       </nav>
 
@@ -99,6 +111,10 @@ export function DashboardSidebar({
             ✨ Upgrade{plan === "core" ? " to Pro" : ""}
           </Link>
         )}
+        <Link href="/dashboard#invite" className="snav text-[13px]">
+          <Icon>{ICON.gift}</Icon>
+          Invite &amp; earn
+        </Link>
         <Link href="/help" className={`snav text-[13px] ${isActive(pathname, "/help") ? "snav-active" : ""}`}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-4 h-4 shrink-0"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinejoin="round" /></svg>
           Need help?
@@ -129,17 +145,17 @@ export function DashboardSidebar({
 /** Mobile horizontal nav row (md:hidden) — light, sits under the top bar. */
 export function MobileNav() {
   const pathname = usePathname() ?? "";
-  const all = [...WORKSPACE, ...ACCOUNT];
+  const all = [...STUDIO, ...PROOF, ...MORE];
   return (
     <nav className="md:hidden flex gap-1 px-3 py-2 border-b border-[var(--color-outline-variant)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <Link href="/new-project" className="btn-brand flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">
-        ＋ New
+      <Link href="/tracks" className="btn-brand flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap shrink-0">
+        ＋ New build
       </Link>
       {all.map((n) => {
         const active = isActive(pathname, n.href);
         return (
           <Link key={n.href} href={n.href}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap shrink-0 transition-colors ${
               active ? "bg-[var(--color-brand-container)] text-[var(--color-brand-dim)]" : "text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)]"
             }`}>
             {n.label}
