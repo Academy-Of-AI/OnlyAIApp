@@ -34,16 +34,18 @@ export default async function PortfolioPage() {
 
       {/* Profile header */}
       <div className="panel p-4 sm:p-[18px] flex items-center gap-4 flex-wrap">
-        <span className="w-13 h-13 sm:w-[52px] sm:h-[52px] rounded-xl grid place-items-center text-white text-lg font-bold shrink-0" style={{ background: "linear-gradient(135deg, var(--color-brand), #d946ef)", width: 52, height: 52 }}>{initials}</span>
+        <span className="rounded-xl grid place-items-center text-white text-lg font-bold shrink-0" style={{ background: "linear-gradient(135deg, var(--color-brand), #d946ef)", width: 52, height: 52 }}>{initials}</span>
         <div className="flex-1 min-w-[160px]">
           <p className="font-display font-semibold text-lg text-on-surface">{name}</p>
           <p className="text-sm text-on-surface-variant">AI builder — {shipped.length} app{shipped.length === 1 ? "" : "s"} shipped{building.length ? `, ${building.length} building` : ""}</p>
         </div>
-        {profile?.github_username && (
+        {profile?.github_username && isPro ? (
           <div className="flex gap-2 flex-wrap">
             <CopyLinkButton username={profile.github_username} />
             <a href={`/u/${profile.github_username}`} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-3 py-1.5">View public ↗</a>
           </div>
+        ) : (
+          <Link href="/upgrade" className="btn-ghost text-sm px-3 py-1.5" title="Public profile is a Pro feature">🔗 Public profile (Pro)</Link>
         )}
       </div>
 

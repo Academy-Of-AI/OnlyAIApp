@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { normalizePlan } from "@/lib/plan";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -12,12 +13,15 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const admin = await createAdminClient();
 
   const { data: profile } = await admin
-    .from("profiles").select("id, github_username").eq("github_username", slug).maybeSingle();
+    .from("profiles").select("id, github_username, plan").eq("github_username", slug).maybeSingle();
   if (!profile) notFound();
+  // Public profiles are a Pro feature (and opt-in by being Pro) — keeps private
+  // builds private by default.
+  if (normalizePlan(profile.plan) !== "pro") notFound();
 
   const { data: projects } = await admin
     .from("projects")
-    .select("name, vercel_preview_url, build_prompt, status")
+    .select("name, vercel_preview_url, status")
     .eq("user_id", profile.id)
     .eq("status", "deployed")
     .order("created_at", { ascending: false })
@@ -58,7 +62,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {apps.map((p) => {
                 const src = shotSrc(p.vercel_preview_url);
-                const tag = (p.build_prompt ?? "").trim().split(/\n|\.\s/)[0].slice(0, 100);
                 return (
                   <a key={p.name} href={p.vercel_preview_url ?? "#"} target="_blank" rel="noopener noreferrer"
                     className="panel overflow-hidden flex flex-col hover:bg-surface-high transition-colors group">
@@ -75,7 +78,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                         <h3 className="font-display font-semibold text-on-surface truncate">{p.name}</h3>
                         <span className="chip chip-success shrink-0"><span className="dot" style={{ background: "var(--color-success)" }} />Live</span>
                       </div>
-                      {tag && <p className="text-xs text-on-surface-variant line-clamp-2">{tag}</p>}
                       <span className="text-xs text-brand group-hover:text-brand-dim mt-auto pt-2">Visit →</span>
                     </div>
                   </a>

@@ -16,7 +16,7 @@ export async function isProUser(db: SupabaseClient, userId: string): Promise<boo
 }
 
 export const PRO_REQUIRED = {
-  error: "This is a Pro feature — it runs AI on us. Upgrade to let Launchpad keep your agent on track automatically.",
+  error: "This is a Pro feature. Upgrade to unlock your Portfolio, AI career artifacts, and advanced build tracking.",
   code: "pro_required",
 } as const;
 
