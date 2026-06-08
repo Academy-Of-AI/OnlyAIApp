@@ -2,6 +2,7 @@ import { OptInNudge } from "@/components/optin-nudge";
 import { ReferralCard } from "@/components/referral-card";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePlan, hasOptInBonus } from "@/lib/plan";
+import { reconcileReferralReward } from "@/lib/referrals";
 import Link from "next/link";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -33,6 +34,8 @@ export default async function HomePage({
 
   const list = projects ?? [];
   const shipped = list.filter((p) => p.status === "deployed").length;
+  // Grant the referral reward once this user has shipped their first app (idempotent).
+  if (user) await reconcileReferralReward(user.id, shipped > 0);
   const inProgress = list.filter((p) => p.status !== "deployed").length;
   const milestones = list.reduce((n, p) => n + (Array.isArray(p.plan_progress) ? p.plan_progress.length : 0), 0);
   const activeBuild = list.find((p) => p.status !== "deployed") ?? list[0] ?? null;
