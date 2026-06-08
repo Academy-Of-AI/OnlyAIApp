@@ -104,9 +104,11 @@ function parseBrief(bp?: string | null): { summary?: string; problem?: string } 
   // Reject filenames, markdown headings/lists, and too-short fragments — they make ugly artifacts.
   const clean = (s: string) => {
     const v = (s || "").replace(/^#+\s*/, "").trim();
-    if (/\.(md|txt|pdf|docx?|json)\b/i.test(v)) return "";
-    if (/^[#>*\-`|]/.test(v)) return "";
-    if (v.length < 10) return "";
+    if (/\.(md|txt|pdf|docx?|json)\b/i.test(v)) return "";        // filename
+    if (/^[#>*\-`|]/.test(v)) return "";                          // markdown / list
+    if (v.length < 10) return "";                                // too short
+    if (/requirements?\s*document|\bPRD\b|specification|\bspec\b|architecture\s*(doc|document)|data\s*model|read\s?me|gantt|sprint\s*plan/i.test(v)) return ""; // doc title
+    if (/\b(document|doc|spec|plan|prd|readme)\s*$/i.test(v)) return ""; // ends like a doc title
     return v;
   };
   const problem = clean(grab(/Problem:\s*(.+)/i));

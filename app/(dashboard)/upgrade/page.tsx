@@ -38,7 +38,7 @@ export default async function UpgradePage({
         <p className="text-on-surface-variant text-lg leading-relaxed">
           Bring your own AI agent — Claude Code, Codex, whatever you use; we never mark up AI.
           Start free with your full Portfolio &amp; proof, grow into Core to build more, and go
-          <b className="text-on-surface"> Pro</b> to ship a real product — payments, custom domains &amp; more.
+          <b className="text-on-surface"> Pro</b> to harden &amp; monetize your app — payments, monitoring &amp; more.
         </p>
       </header>
 
@@ -91,17 +91,17 @@ export default async function UpgradePage({
           name="Pro"
           price="$17"
           period="/month"
-          tagline="Ship a real, monetizable product."
+          tagline="Harden your app & get paid."
           highlight
-          badge="Ship for real"
+          badge="Power up"
           sub="or $11.90/mo billed yearly — save 30%"
           features={[
             "Everything in Core",
-            "✍️ Unlimited AI career artifacts",
-            "💳 Accept payments in your apps (Stripe)",
-            "🌐 Custom domains for your apps",
-            "🔌 Add-ons: Sentry, PostHog & Upstash (your keys)",
+            "💳 Accept payments — your app can charge (Stripe)",
+            "🛡️ Production hardening — error monitoring, analytics & caching (Sentry · PostHog · Upstash)",
             "🛫 Advanced build tracking (drift & auto-capture)",
+            "✍️ Unlimited AI career artifacts",
+            "+ custom domains",
           ]}
           current={plan === "pro"}
           cta={
