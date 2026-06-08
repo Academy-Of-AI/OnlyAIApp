@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { OptInForm } from "@/components/optin-form";
 
 // Client-safe template list (owner/repo resolved server-side from the registry)
 const TEMPLATES = [
@@ -141,18 +140,20 @@ export default function NewProjectPage() {
         </p>
       </div>
 
-      {/* Project limit wall — data opt-in (free +1) or upgrade */}
+      {/* Project limit wall — refer for a bonus, or upgrade */}
       {!result && limitWall && (
         <div className="panel p-5 space-y-4 border-brand-border" style={{ background: "var(--color-brand-container)" }}>
           <div>
             <p className="eyebrow">Project limit</p>
             <p className="text-sm text-on-surface mt-1">{limitWall}</p>
           </div>
-          <OptInForm cta="Unlock my 2nd free project" onDone={() => setLimitWall(null)} />
           <p className="text-xs text-on-surface-variant">
-            Want up to 8 projects and the ability to delete &amp; recreate?{" "}
-            <Link href="/upgrade" className="text-brand hover:underline">Upgrade to Core ($8/mo)</Link>.
+            🎁 Refer a friend — when they ship their first app, you both get a bonus project. Or upgrade for up to 8 projects + delete/recreate.
           </p>
+          <div className="flex gap-2 flex-wrap">
+            <Link href="/dashboard#invite" className="btn-ghost text-sm px-4 py-2">🎁 Get your invite link</Link>
+            <Link href="/upgrade" className="btn-brand text-sm px-4 py-2">Upgrade to Core ($8/mo) →</Link>
+          </div>
         </div>
       )}
 

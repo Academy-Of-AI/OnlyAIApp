@@ -3,7 +3,7 @@ import { registerPushWebhook, getCommitIdentity, getGithubUser } from "@/lib/git
 import { provisionProject, type ProgressEvent } from "@/lib/provisioning";
 import { createClient } from "@/lib/supabase/server";
 import { getTemplate } from "@/lib/templates";
-import { projectLimit, normalizePlan, hasOptInBonus } from "@/lib/plan";
+import { projectLimit, normalizePlan } from "@/lib/plan";
 import { NextResponse } from "next/server";
 
 export const maxDuration = 300;
@@ -59,12 +59,12 @@ export async function POST(request: Request) {
     .from("profiles").select("plan, phone, marketing_consent, github_id, bonus_projects").eq("id", user.id).single();
   const { count: ownedCount } = await supabase
     .from("projects").select("*", { count: "exact", head: true }).eq("user_id", user.id);
-  const limit = projectLimit(planRow?.plan, hasOptInBonus(planRow), planRow?.bonus_projects ?? 0);
+  const limit = projectLimit(planRow?.plan, planRow?.bonus_projects ?? 0);
   if ((ownedCount ?? 0) >= limit) {
     const tier = normalizePlan(planRow?.plan);
     return NextResponse.json(
       tier === "free"
-        ? { error: "Free includes 1 project. Add your WhatsApp + a quick intro to unlock a 2nd free one, or upgrade to Core.", code: "plan_limit" }
+        ? { error: "Free includes 1 project. Refer a friend to earn a bonus project, or upgrade to Core for up to 8.", code: "plan_limit" }
         : { error: `Your plan includes ${limit} projects. Delete one you don't need to free a slot.`, code: "plan_limit" },
       { status: 403 },
     );

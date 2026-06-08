@@ -1,7 +1,7 @@
 import { OptInNudge } from "@/components/optin-nudge";
 import { ReferralCard } from "@/components/referral-card";
 import { createClient } from "@/lib/supabase/server";
-import { normalizePlan, hasOptInBonus } from "@/lib/plan";
+import { normalizePlan, hasOptedIn } from "@/lib/plan";
 import { reconcileReferralReward } from "@/lib/referrals";
 import Link from "next/link";
 
@@ -30,7 +30,7 @@ export default async function HomePage({
   ]);
 
   const hasGitHub = connections?.some((c) => c.provider === "github");
-  const showOptInNudge = normalizePlan(profile?.plan) === "free" && !hasOptInBonus(profile);
+  const showOptInNudge = normalizePlan(profile?.plan) === "free" && !hasOptedIn(profile);
 
   const list = projects ?? [];
   const shipped = list.filter((p) => p.status === "deployed").length;

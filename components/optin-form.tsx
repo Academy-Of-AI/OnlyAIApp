@@ -4,11 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 /**
- * Data opt-in — phone/WhatsApp + a short intro + marketing consent (PDPA/GDPR).
- * Saving it grants a free user a 2nd project. Used at the project limit wall and
- * as a dashboard nudge.
+ * Product-updates opt-in — phone/WhatsApp + a short intro + marketing consent
+ * (PDPA/GDPR). Subscribes the user to updates & tips. Used as a dashboard nudge.
  */
-export function OptInForm({ onDone, cta = "Unlock my 2nd free project" }: { onDone?: () => void; cta?: string }) {
+export function OptInForm({ onDone, cta = "Keep me posted" }: { onDone?: () => void; cta?: string }) {
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState("");
@@ -38,7 +37,7 @@ export function OptInForm({ onDone, cta = "Unlock my 2nd free project" }: { onDo
     } catch { setErr("Couldn't save."); setBusy(false); }
   }
 
-  if (done) return <p className="text-sm text-success">✓ Thanks! Your 2nd free project is unlocked — hit Provision again.</p>;
+  if (done) return <p className="text-sm text-success">✓ Thanks — you&apos;re subscribed. We&apos;ll keep you posted.</p>;
 
   return (
     <div className="space-y-3">

@@ -21,10 +21,9 @@ export const PRO_REQUIRED = {
 } as const;
 
 /* ── Tiers ───────────────────────────────────────────────────────────────
-   free  — 1 project, can't delete (anti-recycle), no Pilot. +1 project if the
-           user does the data opt-in (WhatsApp + consent + short intro).
-   core  — $8/mo · 8 projects · delete/recreate · no Pilot.
-   pro   — $17/mo (yearly −30%) · 8 projects · advanced Pilot.            */
+   free  — 1 project, can't delete (anti-recycle). +1 per successful referral.
+   core  — $8/mo · 8 projects · delete/recreate.
+   pro   — $17/mo (yearly −30%) · 8 projects · Portfolio + career artifacts + Pilot. */
 export type PlanTier = "free" | "core" | "pro";
 
 export const PROJECT_LIMITS: Record<PlanTier, number> = { free: 1, core: 8, pro: 8 };
@@ -33,8 +32,8 @@ export function normalizePlan(plan: string | null | undefined): PlanTier {
   return plan === "pro" ? "pro" : plan === "core" ? "core" : "free";
 }
 
-/** The data opt-in (WhatsApp number + marketing consent) that grants the free bonus project. */
-export function hasOptInBonus(
+/** Has the user opted in to product updates (WhatsApp + marketing consent)? Used to gate the nudge. */
+export function hasOptedIn(
   profile: { phone?: string | null; marketing_consent?: boolean | null } | null | undefined,
 ): boolean {
   return !!(profile?.marketing_consent && profile?.phone && String(profile.phone).trim().length > 0);
@@ -42,17 +41,11 @@ export function hasOptInBonus(
 
 /**
  * How many projects this user may provision.
- * Free gets +1 with the data opt-in; everyone gets +1 per successful referral
- * (bonus_projects, granted when a referee ships their first app).
+ * Base per tier + 1 per successful referral (bonus_projects, granted when a
+ * referee ships their first app).
  */
-export function projectLimit(
-  plan: string | null | undefined,
-  optInBonus: boolean,
-  bonusProjects: number = 0,
-): number {
-  const tier = normalizePlan(plan);
-  const base = tier === "free" && optInBonus ? PROJECT_LIMITS.free + 1 : PROJECT_LIMITS[tier];
-  return base + Math.max(0, bonusProjects | 0);
+export function projectLimit(plan: string | null | undefined, bonusProjects: number = 0): number {
+  return PROJECT_LIMITS[normalizePlan(plan)] + Math.max(0, bonusProjects | 0);
 }
 
 /** Free users can't delete their project (so they can't recycle the slot). */

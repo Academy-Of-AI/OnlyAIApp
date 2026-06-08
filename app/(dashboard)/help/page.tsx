@@ -49,11 +49,11 @@ const sections: FaqSection[] = [
     items: [
       {
         q: "What's the difference between Free, Core, and Pro?",
-        a: "Free gives you 1 project (which you can't delete) and no Pilot. Core is $8/mo and gives you up to 8 projects, the ability to delete and recreate projects, and unlimited Plan Packs. Pro is $17/mo and includes everything in Core plus Pilot. Pay yearly and Core saves you 25%, Pro saves you 30%.",
+        a: "Free gives you 1 project (which you can't delete). Core is $8/mo — up to 8 projects, delete & recreate, and unlimited Plan Packs. Pro is $17/mo — everything in Core plus your full Portfolio (public profile + AI career artifacts) and advanced build tracking (Pilot). Pay yearly and Core saves 25%, Pro saves 30%.",
       },
       {
-        q: "How do I get a 2nd free project?",
-        a: "Free includes one project to start. You can unlock a second free project by adding your WhatsApp number and a short intro about what you're building, with your consent. If you'd rather not, upgrading to Core lifts the limit to 8 projects right away.",
+        q: "How do I get more projects?",
+        a: "Free includes one project. Refer a friend — when they ship their first app, you both get a bonus project. Or upgrade to Core ($8/mo) for up to 8 projects right away.",
       },
       {
         q: "Why can't I delete my project on Free?",
@@ -154,11 +154,11 @@ const sections: FaqSection[] = [
     items: [
       {
         q: "What data do you collect?",
-        a: "We collect your GitHub email and username so you can sign in and we can connect your projects. If you choose to unlock a second free project, we also store the WhatsApp number and short intro you give us — only with your consent. For the full details, see the Privacy Policy.",
+        a: "We collect your GitHub email and username so you can sign in and we can connect your projects. If you opt in to product updates, we also store the WhatsApp number and short intro you give us — only with your consent. For the full details, see the Privacy Policy.",
       },
       {
         q: "Is my WhatsApp number required?",
-        a: "No. It's only used if you opt in to unlock a second free project by sharing a short intro about what you're building. If you'd rather not share it, you can simply upgrade to Core instead, which lifts the project limit without any of that.",
+        a: "No. It's only used if you opt in to product updates by sharing your number and a short intro — only with your consent. You don't need it to use the app, and you can upgrade to Core anytime for more projects.",
       },
       {
         q: "How do I get help from a human?",
