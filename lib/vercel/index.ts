@@ -76,6 +76,25 @@ export async function addVercelEnvVars({
   }
 }
 
+/** Attach a custom domain to a Vercel project. Returns verification records. */
+export async function addVercelDomain({
+  token, projectId, domain, teamId,
+}: { token: string; projectId: string; domain: string; teamId?: string }): Promise<{
+  name: string; verified: boolean; verification: { type: string; domain: string; value: string }[];
+}> {
+  const qs = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
+  const res = await fetch(`${VERCEL_API}/v10/projects/${projectId}/domains${qs}`, {
+    method: "POST",
+    headers: vercelHeaders(token),
+    body: JSON.stringify({ name: domain }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error((data?.error?.message as string) || (data?.error as string) || "Vercel addDomain failed");
+  }
+  return { name: data.name, verified: !!data.verified, verification: data.verification ?? [] };
+}
+
 /**
  * Get the latest deployment URL for a project.
  */

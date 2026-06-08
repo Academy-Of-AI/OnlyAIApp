@@ -1,6 +1,8 @@
 import { OpsPanel } from "@/components/ops-panel";
+import { DomainForm } from "@/components/domain-form";
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
+import { normalizePlan } from "@/lib/plan";
 import { listVercelEnvVars } from "@/lib/vercel";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -15,6 +17,9 @@ export default async function OpsPage({ params }: { params: Promise<{ id: string
   const { data: project } = await supabase
     .from("projects").select("*").eq("id", id).eq("user_id", user!.id).single();
   if (!project) notFound();
+
+  const { data: profile } = await supabase.from("profiles").select("plan").eq("id", user!.id).single();
+  const isPro = normalizePlan(profile?.plan) === "pro";
 
   // Load current env vars (keys only) for display
   let envs: { key: string; target: string[]; type: string }[] = [];
@@ -47,6 +52,15 @@ export default async function OpsPage({ params }: { params: Promise<{ id: string
       <p className="text-sm text-on-surface-variant mb-8">Environment variables and deploy rollback.</p>
 
       <OpsPanel projectId={id} initialEnvs={envs} />
+
+      {/* Custom domain (Pro) */}
+      <section className="mt-10 space-y-3">
+        <h2 className="font-semibold text-on-surface flex items-center gap-2">Custom domain <span className="chip chip-brand">Pro</span></h2>
+        <p className="text-sm text-on-surface-variant">Point your own domain at this app (e.g. app.yoursite.com).</p>
+        {isPro
+          ? <DomainForm projectId={id} />
+          : <Link href="/upgrade" className="btn-ghost inline-flex text-sm px-4 py-2">✨ Pro feature — upgrade</Link>}
+      </section>
     </main>
   );
 }

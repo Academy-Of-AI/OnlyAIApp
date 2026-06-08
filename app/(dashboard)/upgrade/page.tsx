@@ -99,6 +99,7 @@ export default async function UpgradePage({
             "🎖️ Full Portfolio — public profile & proof",
             "AI career artifacts — case study, LinkedIn, résumé",
             "💳 Accept payments in your apps (Stripe)",
+            "🌐 Custom domains for your apps",
             "Advanced build tracking (drift & auto-capture)",
           ]}
           current={plan === "pro"}
