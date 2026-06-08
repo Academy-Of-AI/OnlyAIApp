@@ -1,7 +1,10 @@
 /**
  * Outcome-mapped build tracks. Each ends with a real, deployed artifact the user owns.
- * Shared by /tracks (display) and the new-build seeding flow (Phase 2).
+ * Shared by /tracks (display) and the scope → Plan Pack flow (each track prefills
+ * the scope form distinctly, so picking a track is a tailored on-ramp).
  */
+export type ScopeField = "problem" | "who" | "things" | "workflow" | "success" | "notV1";
+
 export type Track = {
   key: string;
   icon: string;
@@ -11,8 +14,8 @@ export type Track = {
   time: string;
   difficulty: "Beginner" | "Intermediate";
   why: string;
-  /** Seed brief handed to the scope → Plan Pack flow. */
-  seed: string;
+  /** Per-track starter values that prefill the scope form (user edits to their specifics). */
+  prefill: Partial<Record<ScopeField, string>>;
 };
 
 export const TRACKS: Track[] = [
@@ -25,7 +28,11 @@ export const TRACKS: Track[] = [
     time: "~1 day",
     difficulty: "Beginner",
     why: "real proof beats a résumé line",
-    seed: "A polished portfolio web app that demonstrates real product thinking and shipping ability, suitable to show employers.",
+    prefill: {
+      problem: "A standout portfolio project that proves I can ship a real, working app with AI.",
+      workflow: "A visitor opens the live app and sees it working end-to-end.",
+      success: "I have a deployed app + a short case study I can show employers.",
+    },
   },
   {
     key: "income",
@@ -36,7 +43,11 @@ export const TRACKS: Track[] = [
     time: "~2 days",
     difficulty: "Intermediate",
     why: "side income, fully owned",
-    seed: "A small paid micro-SaaS tool that solves one specific problem and can take payment for access.",
+    prefill: {
+      problem: "A small paid tool that solves one specific problem people will pay for.",
+      workflow: "A user signs up, uses the core feature, and pays for access.",
+      success: "The tool is live and can take a real payment.",
+    },
   },
   {
     key: "busywork",
@@ -47,7 +58,11 @@ export const TRACKS: Track[] = [
     time: "~1 day",
     difficulty: "Beginner",
     why: "hours back every week",
-    seed: "An internal tool that automates a repetitive manual workflow for a small team.",
+    prefill: {
+      problem: "Automate a repetitive manual workflow I (or my team) do every week.",
+      workflow: "I enter the inputs once and the tool produces the result automatically.",
+      success: "The task that took hours now takes minutes.",
+    },
   },
   {
     key: "mvp",
@@ -58,7 +73,11 @@ export const TRACKS: Track[] = [
     time: "~3 days",
     difficulty: "Intermediate",
     why: "test demand for real",
-    seed: "A minimum viable product for a new business idea that real users can sign up for and use.",
+    prefill: {
+      problem: "An MVP for my business idea that real users can try this week.",
+      workflow: "A new user signs up and completes the core action.",
+      success: "Real people are signing up and using it.",
+    },
   },
   {
     key: "brand",
@@ -69,7 +88,11 @@ export const TRACKS: Track[] = [
     time: "~1 day",
     difficulty: "Beginner",
     why: "own your audience",
-    seed: "A personal site or content tool the owner fully controls, for growing an audience.",
+    prefill: {
+      problem: "My own site or content tool that I fully own (not a rented platform).",
+      workflow: "I publish/manage my content and visitors can view it.",
+      success: "It’s live on my own domain and I control it.",
+    },
   },
   {
     key: "explore",
@@ -80,7 +103,11 @@ export const TRACKS: Track[] = [
     time: "~30 min",
     difficulty: "Beginner",
     why: "fun first → proof follows",
-    seed: "A small experimental app to explore an idea quickly and learn by building.",
+    prefill: {
+      problem: "A small experiment to try an idea quickly and learn by building.",
+      workflow: "The core idea works end-to-end, even if it’s rough.",
+      success: "It’s deployed and I learned something.",
+    },
   },
 ];
 

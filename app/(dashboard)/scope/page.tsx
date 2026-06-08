@@ -33,7 +33,7 @@ export default async function ScopePage({
         </div>
       )}
 
-      <ScopeForm initialProblem={track?.seed ?? ""} />
+      <ScopeForm initial={track?.prefill ?? {}} />
     </main>
   );
 }

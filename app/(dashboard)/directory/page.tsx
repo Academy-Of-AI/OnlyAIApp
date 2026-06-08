@@ -46,17 +46,6 @@ export default async function InspirationPage() {
         </p>
       </div>
 
-      {/* Filters (visual) */}
-      <div className="flex gap-2 flex-wrap">
-        {["All", "Live & working", "Tools", "MVPs", "Portfolios"].map((f, i) => (
-          <span key={f}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${
-              i === 0 ? "bg-brand-container text-brand-dim border-brand-border" : "bg-surface-low text-on-surface-variant border-outline-variant"
-            }`}>
-            {f}
-          </span>
-        ))}
-      </div>
 
       {apps.length === 0 ? (
         <div className="text-center py-24 text-on-surface-variant space-y-3 panel">

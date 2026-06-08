@@ -118,8 +118,12 @@ export default async function UpgradePage({
       </div>
 
       <p className="text-center text-xs text-outline max-w-xl mx-auto leading-relaxed">
-        Cancel anytime. Your Claude Code subscription is separate — and yours. Each project runs on its own
+        Cancel anytime. Your Claude subscription is separate — and yours. Each project runs on its own
         database in your own cloud account, so your data and infrastructure stay fully yours.
+        <br />
+        <span className="text-on-surface-variant">Heads up:</span> running multiple live projects (Core &amp; Pro)
+        needs a <b className="text-on-surface-variant">Supabase Pro plan</b> — each project provisions its own
+        database, billed by Supabase, separate from this.
       </p>
     </main>
   );

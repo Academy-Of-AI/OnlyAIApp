@@ -21,10 +21,13 @@ type PlanningMode = "ground_truth" | "skip";
 // PRD/plan vs skill spec — guess from the filename, the user can override.
 const guessKind = (name: string): DocKind => (/skill/i.test(name) ? "skill" : "prd");
 
-export function ScopeForm({ initialProblem = "" }: { initialProblem?: string } = {}) {
+export function ScopeForm({ initial = {} }: { initial?: Partial<Record<Key, string>> } = {}) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("describe");
-  const [v, setV] = useState<Record<Key, string>>({ problem: initialProblem, who: "", things: "", workflow: "", success: "", notV1: "" });
+  const [v, setV] = useState<Record<Key, string>>({
+    problem: initial.problem ?? "", who: initial.who ?? "", things: initial.things ?? "",
+    workflow: initial.workflow ?? "", success: initial.success ?? "", notV1: initial.notV1 ?? "",
+  });
   const [docs, setDocs] = useState<Doc[]>([]);
   const [planningMode, setPlanningMode] = useState<PlanningMode>("ground_truth");
   const [dragActive, setDragActive] = useState(false);
