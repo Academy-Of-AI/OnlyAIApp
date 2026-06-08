@@ -6,6 +6,29 @@ const steps = [
   { n: "03", title: "Own it — it runs without you", body: "A real system on your own infrastructure that keeps working reliably. Yours to keep." },
 ];
 
+const pillars = [
+  {
+    icon: "🔑",
+    title: "You own it — zero lock-in",
+    body: "The code, the data, the hosting — all in your name from day one. Walk away anytime and it keeps running. No platform holding your work hostage.",
+  },
+  {
+    icon: "🧱",
+    title: "Set up for you, built to last",
+    body: "We wire up everything — database, hosting, the lot — in one go. It's built on a solid foundation that keeps working reliably, not a fragile demo that breaks next week.",
+  },
+  {
+    icon: "🎯",
+    title: "Builds the right thing, kept on course",
+    body: "A clear plan guides every build, and we keep your agent on track so it ships what you actually need. Bring your own Claude — we never mark up what you pay for AI.",
+  },
+  {
+    icon: "🧠",
+    title: "Built to get smart & act — not just store",
+    body: "Your app doesn't stop at holding data. It's built to grow into one that surfaces what matters and safely does the work — drafting the busywork, asking before anything risky. Most tools hand you a screen; yours becomes a system that gets things done.",
+  },
+];
+
 export default function LandingPage() {
   return (
     <main className="min-h-screen flex flex-col">
@@ -74,6 +97,34 @@ export default function LandingPage() {
               <p className="text-on-surface-variant text-sm leading-relaxed">{s.body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Why it's different */}
+      <section className="border-t border-outline-variant px-5 sm:px-6 py-14 sm:py-16 bg-surface-dim">
+        <div className="max-w-5xl mx-auto">
+          <div className="max-w-2xl mb-10">
+            <h2 className="font-display font-semibold text-2xl sm:text-3xl text-on-surface tracking-tight">
+              Why it&apos;s different
+            </h2>
+            <p className="text-on-surface-variant mt-2 leading-relaxed">
+              Most tools hand you a screen. You walk away owning a real system — set up for you,
+              kept on course, and built to actually do the work.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {pillars.map((p) => (
+              <div key={p.title} className="panel p-5 sm:p-6">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl leading-none mt-0.5" aria-hidden>{p.icon}</span>
+                  <div>
+                    <h3 className="font-display font-semibold text-lg text-on-surface">{p.title}</h3>
+                    <p className="text-on-surface-variant text-sm leading-relaxed mt-1.5">{p.body}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
