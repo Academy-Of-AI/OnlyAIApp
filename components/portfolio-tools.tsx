@@ -10,8 +10,9 @@ const ARTIFACTS = [
 
 type ArtifactType = (typeof ARTIFACTS)[number]["type"];
 
-export function ArtifactStudio() {
+export function ArtifactStudio({ apps = [] }: { apps?: { id: string; name: string }[] }) {
   const [active, setActive] = useState<ArtifactType | null>(null);
+  const [appId, setAppId] = useState<string>(apps.length === 1 ? apps[0].id : "");
   const [busy, setBusy] = useState(false);
   const [text, setText] = useState("");
   const [error, setError] = useState("");
@@ -21,7 +22,8 @@ export function ArtifactStudio() {
     setActive(type); setBusy(true); setError(""); setText(""); setCopied(false);
     try {
       const res = await fetch("/api/portfolio/artifact", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, projectId: appId || undefined }),
       });
       const data = await res.json();
       if (!res.ok) setError(data.error ?? "Couldn’t generate — try again.");
@@ -39,6 +41,15 @@ export function ArtifactStudio() {
 
   return (
     <div className="space-y-3">
+      {apps.length > 1 && (
+        <div>
+          <label className="text-xs text-on-surface-variant">Write about</label>
+          <select value={appId} onChange={(e) => setAppId(e.target.value)} className="cap-input mt-1">
+            <option value="">All my apps</option>
+            {apps.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
         {ARTIFACTS.map((a) => (
           <button key={a.type} onClick={() => generate(a.type)} disabled={busy}

@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { type } = (await request.json().catch(() => ({}))) as { type?: ArtifactType };
+  const { type, projectId } = (await request.json().catch(() => ({}))) as { type?: ArtifactType; projectId?: string };
   if (!type || !(type in PROMPTS)) return NextResponse.json({ error: "Unknown artifact type" }, { status: 400 });
 
   const { data: profile } = await supabase
@@ -33,10 +33,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Career artifacts are a Pro feature." }, { status: 403 });
   }
 
-  const { data: projects } = await supabase
-    .from("projects").select("name, status, build_prompt, plan_progress").eq("user_id", user.id);
-  const shipped = (projects ?? []).filter((p) => p.status === "deployed");
-  if (shipped.length === 0) {
+  let query = supabase
+    .from("projects").select("id, name, status, build_prompt, plan_progress")
+    .eq("user_id", user.id).eq("status", "deployed");
+  if (projectId) query = query.eq("id", projectId); // write about one specific app
+  const { data: shipped } = await query;
+  if (!shipped || shipped.length === 0) {
     return NextResponse.json({ error: "Ship at least one app first — then we can write your proof." }, { status: 400 });
   }
 

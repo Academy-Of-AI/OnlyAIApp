@@ -69,7 +69,7 @@ export default async function UpgradePage({
             "Everything in Free",
             "Up to 8 live projects",
             "Delete & recreate anytime",
-            "Unlimited Plan Packs — generate a fresh plan (PRD · architecture · sprints) for any project, any time",
+            "Unlimited re-plans — regenerate a fresh build plan for any project, anytime (separate from the 8-project limit)",
           ]}
           current={plan === "core"}
           cta={

@@ -88,7 +88,7 @@ export default async function PortfolioPage() {
       <div>
         <p className="eyebrow">Career-ready artifacts</p>
         {isPro ? (
-          <div className="mt-2"><ArtifactStudio /></div>
+          <div className="mt-2"><ArtifactStudio apps={shipped.map((p) => ({ id: p.id, name: p.name }))} /></div>
         ) : (
           <div className="panel p-5 mt-2 relative overflow-hidden">
             <div className="blur-[3px] select-none pointer-events-none">
