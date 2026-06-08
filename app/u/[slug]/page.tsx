@@ -13,14 +13,23 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   // private. Any infra error (e.g. admin client unavailable) resolves to a clean
   // 404, never a 500.
   type Pub = { name: string; vercel_preview_url: string | null };
+  type Prof = { display_name: string | null; headline: string | null; avatar_url: string | null; linkedin_url: string | null; website_url: string | null };
   let apps: Pub[] = [];
+  let prof: Prof | null = null;
   let found = false;
   try {
     const admin = await createAdminClient();
     const { data: profile } = await admin
-      .from("profiles").select("id").eq("github_username", slug).maybeSingle();
+      .from("profiles").select("id, display_name, headline, avatar_url, linkedin_url, website_url").eq("github_username", slug).maybeSingle();
     if (profile) {
       found = true;
+      prof = {
+        display_name: profile.display_name ?? null,
+        headline: profile.headline ?? null,
+        avatar_url: profile.avatar_url ?? null,
+        linkedin_url: profile.linkedin_url ?? null,
+        website_url: profile.website_url ?? null,
+      };
       const { data: projects } = await admin
         .from("projects")
         .select("name, vercel_preview_url, status")
@@ -35,6 +44,8 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   }
   if (!found) notFound();
 
+  const displayName = prof?.display_name?.trim() || slug;
+
   return (
     <main className="min-h-screen flex flex-col">
       {/* Top bar */}
@@ -48,13 +59,25 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
       {/* Header */}
       <header className="px-5 sm:px-6 py-12 text-center">
-        <span className="w-16 h-16 rounded-2xl grid place-items-center text-white text-2xl font-bold mx-auto" style={{ background: "linear-gradient(135deg, var(--color-brand), #d946ef)" }}>
-          {slug.slice(0, 2).toUpperCase()}
-        </span>
-        <h1 className="font-display font-extrabold text-3xl tracking-tight text-on-surface mt-4">{slug}</h1>
+        {prof?.avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={prof.avatar_url} alt={displayName} className="w-16 h-16 rounded-2xl object-cover mx-auto" />
+        ) : (
+          <span className="w-16 h-16 rounded-2xl grid place-items-center text-white text-2xl font-bold mx-auto" style={{ background: "linear-gradient(135deg, var(--color-brand), #d946ef)" }}>
+            {displayName.slice(0, 2).toUpperCase()}
+          </span>
+        )}
+        <h1 className="font-display font-extrabold text-3xl tracking-tight text-on-surface mt-4">{displayName}</h1>
+        {prof?.headline ? <p className="text-on-surface mt-1.5 font-medium">{prof.headline}</p> : null}
         <p className="text-on-surface-variant mt-1">
           AI builder · {apps.length} real app{apps.length === 1 ? "" : "s"} shipped &amp; live
         </p>
+        {(prof?.linkedin_url || prof?.website_url) && (
+          <div className="flex gap-2 justify-center mt-4 flex-wrap">
+            {prof?.linkedin_url && <a href={prof.linkedin_url} target="_blank" rel="noopener noreferrer" className="btn-ghost text-sm px-4 py-1.5">in · LinkedIn ↗</a>}
+            {prof?.website_url && <a href={prof.website_url} target="_blank" rel="noopener noreferrer" className="btn-ghost text-sm px-4 py-1.5">🔗 Website ↗</a>}
+          </div>
+        )}
       </header>
 
       {/* Apps */}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TRACKS } from "@/lib/tracks";
+import { createClient } from "@/lib/supabase/server";
 
 const steps = [
   { n: "01", icon: "🧭", title: "Pick a track", body: "Choose an outcome — land a role, a side-income tool, kill your busywork. We spin up a real, live app to start from." },
@@ -21,7 +22,14 @@ const artifacts = [
   { icon: "🔗", title: "Public profile", sub: "One link with your live apps — send it to anyone." },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  // Auth-aware CTAs — a logged-in visitor (e.g. opening the site in a new tab)
+  // shouldn't be nudged to "sign in" as if logged out.
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const authed = !!user;
+  const ctaHref = authed ? "/dashboard" : "/sign-in";
+
   return (
     <main className="min-h-screen flex flex-col">
       {/* Nav */}
@@ -35,7 +43,7 @@ export default function LandingPage() {
             <a href="#how" className="hidden sm:inline hover:text-on-surface transition-colors">How it works</a>
             <a href="#showcase" className="hidden sm:inline hover:text-on-surface transition-colors">Showcase</a>
             <a href="#pricing" className="hidden sm:inline hover:text-on-surface transition-colors">Pricing</a>
-            <Link href="/sign-in" className="btn-brand text-sm px-4 py-1.5">Start building →</Link>
+            <Link href={ctaHref} className="btn-brand text-sm px-4 py-1.5">{authed ? "Open Studio →" : "Start building →"}</Link>
           </div>
         </div>
       </nav>
@@ -55,7 +63,7 @@ export default function LandingPage() {
             Learn AI by <b>doing</b> — pick an outcome, build a real app with your AI agent, and end up owning a live product <i>and</i> a portfolio you can actually show. Fun first. Proof second. Career third.
           </p>
           <div className="flex gap-3 flex-wrap justify-center">
-            <Link href="/sign-in" className="btn-brand font-semibold px-6 py-3">Start building — free →</Link>
+            <Link href={ctaHref} className="btn-brand font-semibold px-6 py-3">{authed ? "Open your Studio →" : "Start building — free →"}</Link>
             <a href="#showcase" className="btn-ghost font-semibold px-6 py-3">See what people shipped</a>
           </div>
           <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-on-surface-variant mt-1">
@@ -182,7 +190,7 @@ export default function LandingPage() {
       <section className="border-t border-outline-variant px-5 sm:px-6 py-16 text-center">
         <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight text-on-surface">Your first real app is one click away.</h2>
         <p className="text-on-surface-variant text-base mt-2">Pick a track. Build it. Show it off. Let’s go. 🚀</p>
-        <Link href="/sign-in" className="btn-brand font-semibold px-6 py-3 mt-6 inline-flex">Start building — free →</Link>
+        <Link href={ctaHref} className="btn-brand font-semibold px-6 py-3 mt-6 inline-flex">{authed ? "Open your Studio →" : "Start building — free →"}</Link>
       </section>
 
       {/* Footer */}

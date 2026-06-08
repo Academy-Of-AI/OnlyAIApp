@@ -1,4 +1,6 @@
 import { signInWithGitHub, signInWithEmail } from "./actions";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export default async function SignInPage({
   searchParams,
@@ -6,6 +8,12 @@ export default async function SignInPage({
   searchParams: Promise<{ auth_error?: string; sent?: string }>;
 }) {
   const params = await searchParams;
+  // Already signed in (e.g. opened the app in a new tab)? Don't make them
+  // re-authenticate — send them straight into the Studio.
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect("/dashboard");
+
   const authError = params?.auth_error;
   const sent = params?.sent;
 

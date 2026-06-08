@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { artifactLimit } from "@/lib/plan";
-import { ArtifactStudio, CopyLinkButton } from "@/components/portfolio-tools";
+import { ArtifactStudio } from "@/components/portfolio-tools";
+import { ProfileCard } from "@/components/profile-card";
 import { ShowcaseControls } from "@/components/showcase-controls";
 import Link from "next/link";
 
@@ -12,7 +13,7 @@ export default async function PortfolioPage() {
 
   const [{ data: projects }, { data: profile }] = await Promise.all([
     supabase.from("projects").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }),
-    supabase.from("profiles").select("plan, github_username, artifacts_used, artifacts_period").eq("id", user!.id).single(),
+    supabase.from("profiles").select("plan, github_username, artifacts_used, artifacts_period, avatar_url, display_name, headline, linkedin_url, website_url").eq("id", user!.id).single(),
   ]);
 
   const list = projects ?? [];
@@ -23,8 +24,6 @@ export default async function PortfolioPage() {
   const aiUsed = profile?.artifacts_period === period ? (profile?.artifacts_used ?? 0) : 0;
   const aiLimit = artifactLimit(profile?.plan);
   const aiRemaining = Number.isFinite(aiLimit) ? Math.max(0, aiLimit - aiUsed) : null;
-  const name = profile?.github_username || user?.email?.split("@")[0] || "Builder";
-  const initials = name.slice(0, 2).toUpperCase();
 
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6">
@@ -36,20 +35,20 @@ export default async function PortfolioPage() {
         </p>
       </div>
 
-      {/* Profile header */}
-      <div className="panel p-4 sm:p-[18px] flex items-center gap-4 flex-wrap">
-        <span className="rounded-xl grid place-items-center text-white text-lg font-bold shrink-0" style={{ background: "linear-gradient(135deg, var(--color-brand), #d946ef)", width: 52, height: 52 }}>{initials}</span>
-        <div className="flex-1 min-w-[160px]">
-          <p className="font-display font-semibold text-lg text-on-surface">{name}</p>
-          <p className="text-sm text-on-surface-variant">AI builder — {shipped.length} app{shipped.length === 1 ? "" : "s"} shipped{building.length ? `, ${building.length} building` : ""}</p>
-        </div>
-        {profile?.github_username && (
-          <div className="flex gap-2 flex-wrap">
-            <CopyLinkButton username={profile.github_username} />
-            <a href={`/u/${profile.github_username}`} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-3 py-1.5">View public ↗</a>
-          </div>
-        )}
-      </div>
+      {/* Profile header — editable identity (photo, name, headline, links) */}
+      <ProfileCard
+        githubUsername={profile?.github_username ?? null}
+        email={user?.email ?? null}
+        shipped={shipped.length}
+        building={building.length}
+        initial={{
+          avatar_url: profile?.avatar_url ?? null,
+          display_name: profile?.display_name ?? null,
+          headline: profile?.headline ?? null,
+          linkedin_url: profile?.linkedin_url ?? null,
+          website_url: profile?.website_url ?? null,
+        }}
+      />
 
       {/* Proof stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
