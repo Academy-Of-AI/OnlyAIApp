@@ -50,13 +50,13 @@ function isActive(pathname: string, href: string) {
 
 function Logo() {
   return (
-    <Link href="/dashboard" className="h-16 flex items-center gap-2.5 px-5 border-b border-[var(--color-sidebar-border)] hover:opacity-90 transition-opacity shrink-0">
-      <span className="w-7 h-7 rounded-lg grid place-items-center" style={{ background: "linear-gradient(135deg, var(--color-brand), #9333ea)" }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" className="w-4 h-4"><path d="M5 12l4 4L19 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+    <Link href="/dashboard" className="flex items-center gap-3 px-5 py-4 border-b border-[var(--color-sidebar-border)] hover:opacity-90 transition-opacity shrink-0">
+      <span className="w-8 h-8 rounded-lg grid place-items-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-brand), #9333ea)" }}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" className="w-[18px] h-[18px]"><path d="M5 12l4 4L19 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </span>
-      <span className="flex flex-col leading-none">
-        <span className="font-display font-bold text-[15px] text-[var(--color-sidebar-on)]">OnlyAIApp</span>
-        <span className="text-[8.5px] font-bold tracking-[0.16em] uppercase text-[var(--color-brand)] mt-0.5">Build Studio</span>
+      <span className="flex flex-col leading-tight">
+        <span className="font-display font-bold text-base text-[var(--color-sidebar-on)]">OnlyAIApp</span>
+        <span className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--color-brand)] mt-1">Build Studio</span>
       </span>
     </Link>
   );

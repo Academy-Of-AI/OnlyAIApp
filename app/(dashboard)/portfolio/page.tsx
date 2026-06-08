@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { artifactLimit } from "@/lib/plan";
 import { ArtifactStudio, CopyLinkButton } from "@/components/portfolio-tools";
 import Link from "next/link";
 
@@ -10,13 +11,17 @@ export default async function PortfolioPage() {
 
   const [{ data: projects }, { data: profile }] = await Promise.all([
     supabase.from("projects").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }),
-    supabase.from("profiles").select("plan, github_username").eq("id", user!.id).single(),
+    supabase.from("profiles").select("plan, github_username, artifacts_used, artifacts_period").eq("id", user!.id).single(),
   ]);
 
   const list = projects ?? [];
   const shipped = list.filter((p) => p.status === "deployed");
   const building = list.filter((p) => p.status !== "deployed");
   const milestones = list.reduce((n, p) => n + (Array.isArray(p.plan_progress) ? p.plan_progress.length : 0), 0);
+  const period = new Date().toISOString().slice(0, 7);
+  const aiUsed = profile?.artifacts_period === period ? (profile?.artifacts_used ?? 0) : 0;
+  const aiLimit = artifactLimit(profile?.plan);
+  const aiRemaining = Number.isFinite(aiLimit) ? Math.max(0, aiLimit - aiUsed) : null;
   const name = profile?.github_username || user?.email?.split("@")[0] || "Builder";
   const initials = name.slice(0, 2).toUpperCase();
 
@@ -84,7 +89,7 @@ export default async function PortfolioPage() {
       <div>
         <h2 className="font-display font-semibold text-base text-on-surface flex items-center gap-2">🎖️ Career-ready artifacts</h2>
         <p className="text-sm text-on-surface-variant mt-0.5">Auto-drafted from what you built — pick an app, copy, post.</p>
-        <div className="panel p-5 mt-3"><ArtifactStudio apps={shipped.map((p) => ({ id: p.id, name: p.name, ...parseBrief(p.build_prompt) }))} /></div>
+        <div className="panel p-5 mt-3"><ArtifactStudio apps={shipped.map((p) => ({ id: p.id, name: p.name, ...parseBrief(p.build_prompt) }))} remaining={aiRemaining} /></div>
         <p className="text-xs text-on-surface-variant mt-3">💡 This turns “I’m learning AI” into “here’s what I’ve built.” Proof &gt; promises.</p>
       </div>
     </main>

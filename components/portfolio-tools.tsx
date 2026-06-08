@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 const ARTIFACTS = [
   { type: "case_study", icon: "📄", title: "Case study", sub: "1-page story of what you built" },
@@ -41,18 +42,40 @@ function buildArtifact(type: ArtifactType, app: App): string {
     `Built with ${SITE}`;
 }
 
-export function ArtifactStudio({ apps = [] }: { apps?: App[] }) {
+export function ArtifactStudio({ apps = [], remaining = null }: { apps?: App[]; remaining?: number | null }) {
   const [active, setActive] = useState<ArtifactType | null>(null);
   const [appId, setAppId] = useState<string>(apps[0]?.id ?? "");
   const [text, setText] = useState("");
   const [copied, setCopied] = useState(false);
+  const [aiLeft, setAiLeft] = useState<number | null>(remaining);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiMsg, setAiMsg] = useState<{ err?: boolean; text: string } | null>(null);
 
   const selectedApp = apps.find((a) => a.id === appId) ?? apps[0];
 
   function generate(type: ArtifactType) {
     setActive(type);
     if (selectedApp) setText(buildArtifact(type, selectedApp));
-    setCopied(false);
+    setCopied(false); setAiMsg(null);
+  }
+
+  async function improveWithAI() {
+    if (!active || !selectedApp || aiBusy) return;
+    if (aiLeft !== null && aiLeft <= 0) return;
+    setAiBusy(true); setAiMsg(null);
+    try {
+      const res = await fetch("/api/portfolio/artifact", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: active, projectId: selectedApp.id }),
+      });
+      const d = await res.json();
+      if (!res.ok) setAiMsg({ err: true, text: d.error ?? "Couldn't write — try again." });
+      else { setText(d.text); setAiLeft(d.remaining); setCopied(false); }
+    } catch {
+      setAiMsg({ err: true, text: "Network error — try again." });
+    } finally {
+      setAiBusy(false);
+    }
   }
 
   async function copy() {
@@ -92,8 +115,12 @@ export function ArtifactStudio({ apps = [] }: { apps?: App[] }) {
             className="cap-input resize-none font-data text-sm leading-relaxed" />
           <div className="flex items-center gap-2 flex-wrap">
             <button onClick={copy} className="btn-brand text-sm px-4 py-2">{copied ? "✓ Copied" : "📋 Copy"}</button>
-            <span className="text-[11px] text-on-surface-variant">Tweak the [bracketed] bits before you post — and the {SITE} link stays in for the win 😉</span>
+            {(aiLeft === null || aiLeft > 0)
+              ? <button onClick={improveWithAI} disabled={aiBusy} className="btn-ghost text-sm px-4 py-2">{aiBusy ? "✨ Writing…" : `✨ Write it with AI${aiLeft === null ? "" : ` · ${aiLeft} left`}`}</button>
+              : <Link href="/upgrade" className="btn-ghost text-sm px-4 py-2">✨ Out of AI writes — upgrade</Link>}
+            {aiMsg && <span className={`text-[11px] ${aiMsg.err ? "text-danger" : "text-success"}`}>{aiMsg.text}</span>}
           </div>
+          <p className="text-[11px] text-on-surface-variant">Instant template above — or let AI rewrite it better. Tweak the [bracketed] bits; the {SITE} link stays in for the win 😉</p>
         </div>
       )}
     </div>

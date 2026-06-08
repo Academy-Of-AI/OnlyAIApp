@@ -52,7 +52,7 @@ export default async function UpgradePage({
           features={[
             "1 live project",
             "Repo, database & hosting set up for you",
-            "🎖️ Full Portfolio — public profile, proof & career artifacts",
+            "🎖️ Full Portfolio + career artifacts (3 AI writes/mo)",
             "Hand off to your AI agent (Claude Code, Codex…)",
           ]}
           current={plan === "free"}
@@ -70,6 +70,7 @@ export default async function UpgradePage({
             "Everything in Free",
             "Up to 8 live projects",
             "Delete & recreate anytime",
+            "✍️ 15 AI artifact writes / month",
             "Unlimited re-plans — regenerate a fresh build plan for any project, anytime (separate from the 8-project limit)",
           ]}
           current={plan === "core"}
@@ -96,6 +97,7 @@ export default async function UpgradePage({
           sub="or $11.90/mo billed yearly — save 30%"
           features={[
             "Everything in Core",
+            "✍️ Unlimited AI career artifacts",
             "💳 Accept payments in your apps (Stripe)",
             "🌐 Custom domains for your apps",
             "🔌 Add-ons: Sentry, PostHog & Upstash (your keys)",

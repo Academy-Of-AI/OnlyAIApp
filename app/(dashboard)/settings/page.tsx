@@ -133,6 +133,11 @@ export default async function SettingsPage({
               ? <ConnectedNote text="Connected — your apps can take payments." />
               : <StripeConnectButton />}
         </IntegrationCard>
+
+        <p className="text-xs text-on-surface-variant px-1 pt-1">
+          Need <b className="text-on-surface">Sentry, PostHog, Upstash</b> or a <b className="text-on-surface">custom domain</b> for a specific app?
+          Those are per-app — open it from <Link href="/projects" className="text-brand-dim hover:underline">Projects</Link> → the <b className="text-on-surface">Ops</b> tab. (Pro)
+        </p>
       </section>
     </main>
   );

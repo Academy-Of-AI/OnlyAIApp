@@ -28,6 +28,12 @@ export type PlanTier = "free" | "core" | "pro";
 
 export const PROJECT_LIMITS: Record<PlanTier, number> = { free: 1, core: 8, pro: 8 };
 
+/** Monthly AI-written career artifacts per tier. (Instant templates are unlimited & free.) */
+export const ARTIFACT_LIMITS: Record<PlanTier, number> = { free: 3, core: 15, pro: Infinity };
+export function artifactLimit(plan: string | null | undefined): number {
+  return ARTIFACT_LIMITS[normalizePlan(plan)];
+}
+
 export function normalizePlan(plan: string | null | undefined): PlanTier {
   return plan === "pro" ? "pro" : plan === "core" ? "core" : "free";
 }
