@@ -226,28 +226,26 @@ export default function NewProjectPage() {
         </div>
       )}
 
-      {/* Scaffolded to the OS-as-SaaS doctrine */}
+      {/* Why it's built to last (high-level differentiation — no method details) */}
       {!result && (
         <div className="panel p-5 space-y-3">
-          <p className="eyebrow">
-            Scaffolded the reliable way (by default)
-          </p>
+          <p className="eyebrow">Built to last, by default</p>
           <div className="space-y-2.5">
-            <div className="border-l-2 border-info pl-3">
-              <p className="text-sm font-medium text-on-surface">🗄 Database first</p>
-              <p className="text-xs text-on-surface-variant mt-0.5">A real data model is laid before any behavior.</p>
+            <div className="border-l-2 border-brand-border pl-3">
+              <p className="text-sm font-medium text-on-surface">🧱 A solid foundation, not a fragile demo</p>
+              <p className="text-xs text-on-surface-variant mt-0.5">Set up the proven way, so it stays reliable as it grows.</p>
             </div>
-            <div className="border-l-2 border-success pl-3">
-              <p className="text-sm font-medium text-on-surface">⚙️ Coded logic second</p>
-              <p className="text-xs text-on-surface-variant mt-0.5">Business rules in real, debuggable code — not trapped in prompts.</p>
+            <div className="border-l-2 border-brand-border pl-3">
+              <p className="text-sm font-medium text-on-surface">🔌 Keeps working even if the AI is off</p>
+              <p className="text-xs text-on-surface-variant mt-0.5">Real, dependable software — not magic that breaks when a prompt changes.</p>
             </div>
-            <div className="border-l-2 border-warn pl-3">
-              <p className="text-sm font-medium text-on-surface">✨ Intelligence on top</p>
-              <p className="text-xs text-on-surface-variant mt-0.5">The agent uses the database as truth — and the core runs without it.</p>
+            <div className="border-l-2 border-brand-border pl-3">
+              <p className="text-sm font-medium text-on-surface">🔑 Yours to own &amp; grow</p>
+              <p className="text-xs text-on-surface-variant mt-0.5">Real code in your own accounts — never locked in.</p>
             </div>
           </div>
           <p className="text-xs text-outline">
-            Your project starts <span className="text-on-surface-variant">reliable</span> — not blank, not agent-first.
+            Your project starts <span className="text-on-surface-variant">reliable</span> — not a flimsy throwaway.
           </p>
         </div>
       )}

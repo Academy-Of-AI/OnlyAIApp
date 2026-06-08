@@ -318,7 +318,7 @@ export function PlanPack({
                 <PlanColumn title="Next" badge="soon" tone="amber" items={result.plan?.next} />
                 <PlanColumn title="Later" badge="when ready" tone="neutral" items={result.plan?.later} />
               </div>
-              <p className="text-xs text-outline">Built data-first, so the core keeps working reliably — even with the AI switched off.</p>
+              <p className="text-xs text-outline">Built to keep working reliably — even with the AI switched off.</p>
             </div>
             <div className="space-y-2 border-t border-outline-variant pt-3">
               <p className="text-xs text-on-surface-variant uppercase tracking-wider">The pack — committed to <span className="font-mono">/docs</span></p>
