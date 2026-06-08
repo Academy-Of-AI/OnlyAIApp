@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
+import { isProUser } from "@/lib/plan";
 import { createAccountLink, createConnectedAccount } from "@/lib/stripe";
 
 /**
@@ -14,6 +15,9 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isProUser(supabase, user.id))) {
+    return NextResponse.json({ error: "Accepting payments is a Pro feature.", code: "pro_required" }, { status: 403 });
+  }
 
   const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://onlyaiapp.com";
 

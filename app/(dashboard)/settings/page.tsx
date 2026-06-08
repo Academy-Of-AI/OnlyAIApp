@@ -1,6 +1,7 @@
 import { VercelConnectForm } from "@/components/vercel-connect-form";
 import { SupabaseConnectForm } from "@/components/supabase-connect-form";
 import { ResendConnectForm } from "@/components/resend-connect-form";
+import { StripeConnectButton } from "@/components/stripe-connect-button";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -10,6 +11,7 @@ const LABELS: Record<string, string> = {
   vercel: "Vercel",
   supabase: "Supabase",
   resend: "Resend",
+  stripe: "Stripe",
 };
 
 export default async function SettingsPage({
@@ -32,7 +34,9 @@ export default async function SettingsPage({
   const hasVercel = has("vercel");
   const hasSupabase = has("supabase");
   const hasResend = has("resend");
+  const hasStripe = has("stripe");
   const plan = profile?.plan ?? "free";
+  const isPro = plan === "pro";
 
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
@@ -118,6 +122,16 @@ export default async function SettingsPage({
           {hasResend
             ? <ConnectedNote text="Connected — new projects can send email automatically." />
             : <ResendConnectForm redirectTo="/settings" />}
+        </IntegrationCard>
+
+        {/* Stripe payments (Pro) — let the user's apps accept payments */}
+        <IntegrationCard icon="💳" name="Stripe payments" connected={hasStripe}
+          desc="Let your apps accept payments — one Stripe account, reused across your projects. (Pro)">
+          {!isPro
+            ? <Link href="/upgrade" className="btn-ghost inline-flex items-center justify-center text-sm px-4 py-2">✨ Pro feature — upgrade</Link>
+            : hasStripe
+              ? <ConnectedNote text="Connected — your apps can take payments." />
+              : <StripeConnectButton />}
         </IntegrationCard>
       </section>
     </main>
