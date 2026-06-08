@@ -16,14 +16,14 @@ export default async function ShowcasePage({ searchParams }: { searchParams: Pro
   const nameById = new Map<string, string>();
   try {
     const admin = await createAdminClient();
-    const { data: pros } = await admin.from("profiles").select("id, github_username").eq("plan", "pro");
-    const proList = (pros ?? []).filter((p) => p.github_username);
-    proList.forEach((p) => nameById.set(p.id, p.github_username as string));
-    if (proList.length) {
+    const { data: builders } = await admin.from("profiles").select("id, github_username").not("github_username", "is", null);
+    const builderList = builders ?? [];
+    builderList.forEach((p) => nameById.set(p.id, p.github_username as string));
+    if (builderList.length) {
       let q = admin
         .from("projects")
         .select("name, vercel_preview_url, user_id, track, created_at, status")
-        .in("user_id", proList.map((p) => p.id))
+        .in("user_id", builderList.map((p) => p.id))
         .eq("status", "deployed")
         .not("vercel_preview_url", "is", null);
       if (trackFilter) q = q.eq("track", trackFilter);
@@ -64,8 +64,8 @@ export default async function ShowcasePage({ searchParams }: { searchParams: Pro
       {apps.length === 0 ? (
         <div className="text-center py-24 text-on-surface-variant space-y-3 panel">
           <p className="text-4xl">✦</p>
-          <p>{trackFilter ? "No public builds in this track yet." : "No public builds yet."}</p>
-          <p className="text-sm">Ship an app and publish your Portfolio (Pro) to appear here.</p>
+          <p>{trackFilter ? "No live builds in this track yet." : "No live builds yet."}</p>
+          <p className="text-sm">Ship an app and it shows up here automatically.</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -104,7 +104,7 @@ export default async function ShowcasePage({ searchParams }: { searchParams: Pro
       )}
 
       <p className="text-center text-xs text-outline">
-        Want your apps here? Ship them and publish your Portfolio on Pro.
+        Want your app here? Ship one and it appears automatically.
       </p>
     </main>
   );

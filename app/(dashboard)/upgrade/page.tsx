@@ -36,9 +36,9 @@ export default async function UpgradePage({
           Pay for outcomes, not tokens
         </h1>
         <p className="text-on-surface-variant text-lg leading-relaxed">
-          You bring your own Claude — we never bill for AI usage. Start free, grow into Core when
-          you&apos;re shipping in earnest, and go <b className="text-on-surface">Pro</b> to turn your
-          builds into career proof.
+          Bring your own AI agent — Claude Code, Codex, whatever you use; we never mark up AI.
+          Start free with your full Portfolio &amp; proof, grow into Core to build more, and go
+          <b className="text-on-surface"> Pro</b> to ship a real product — payments, custom domains &amp; more.
         </p>
       </header>
 
@@ -51,9 +51,9 @@ export default async function UpgradePage({
           tagline="See it work, end to end."
           features={[
             "1 live project",
-            "A full Plan Pack — PRD, architecture & sprints",
             "Repo, database & hosting set up for you",
-            "Hand off to Claude Code",
+            "🎖️ Full Portfolio — public profile, proof & career artifacts",
+            "Hand off to your AI agent (Claude Code, Codex…)",
           ]}
           current={plan === "free"}
           cta={<Link href="/tracks" className="block w-full text-center text-sm font-semibold rounded-lg py-2.5 border border-outline-variant text-on-surface hover:border-outline transition-colors">Start building →</Link>}
@@ -90,17 +90,15 @@ export default async function UpgradePage({
           name="Pro"
           price="$17"
           period="/month"
-          tagline="Turn builds into career proof."
+          tagline="Ship a real, monetizable product."
           highlight
-          badge="Build your career"
+          badge="Ship for real"
           sub="or $11.90/mo billed yearly — save 30%"
           features={[
             "Everything in Core",
-            "🎖️ Full Portfolio — public profile & proof",
-            "AI career artifacts — case study, LinkedIn, résumé",
             "💳 Accept payments in your apps (Stripe)",
             "🌐 Custom domains for your apps",
-            "Advanced build tracking (drift & auto-capture)",
+            "🛫 Advanced build tracking (drift & auto-capture)",
           ]}
           current={plan === "pro"}
           cta={
@@ -116,21 +114,20 @@ export default async function UpgradePage({
         />
       </div>
 
+      <p className="text-center text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
+        Cancel anytime. Your AI agent subscription (Claude Code, Codex, etc.) is separate — and yours.
+        Each project runs on its own database in your own cloud account, so your data and infrastructure stay fully yours.
+        <br />
+        <span className="font-medium text-on-surface">Heads up:</span> running multiple live projects (Core &amp; Pro)
+        needs a <b className="text-on-surface">Supabase Pro plan</b> — each project provisions its own database, billed by Supabase, separate from this.
+      </p>
+
       {plan !== "free" && (
         <section className="max-w-2xl mx-auto w-full space-y-3">
           <h2 className="font-display font-semibold text-on-surface">Invoices &amp; receipts</h2>
           <Invoices />
         </section>
       )}
-
-      <p className="text-center text-xs text-outline max-w-xl mx-auto leading-relaxed">
-        Cancel anytime. Your Claude subscription is separate — and yours. Each project runs on its own
-        database in your own cloud account, so your data and infrastructure stay fully yours.
-        <br />
-        <span className="text-on-surface-variant">Heads up:</span> running multiple live projects (Core &amp; Pro)
-        needs a <b className="text-on-surface-variant">Supabase Pro plan</b> — each project provisions its own
-        database, billed by Supabase, separate from this.
-      </p>
     </main>
   );
 }

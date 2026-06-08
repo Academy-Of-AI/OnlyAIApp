@@ -1,5 +1,4 @@
 import { createAdminClient } from "@/lib/supabase/server";
-import { normalizePlan } from "@/lib/plan";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -19,8 +18,8 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   try {
     const admin = await createAdminClient();
     const { data: profile } = await admin
-      .from("profiles").select("id, plan").eq("github_username", slug).maybeSingle();
-    if (profile && normalizePlan(profile.plan) === "pro") {
+      .from("profiles").select("id").eq("github_username", slug).maybeSingle();
+    if (profile) {
       found = true;
       const { data: projects } = await admin
         .from("projects")

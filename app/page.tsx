@@ -60,7 +60,7 @@ export default function LandingPage() {
           </div>
           <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-on-surface-variant mt-1">
             <span>✓ You own the code &amp; hosting</span>
-            <span>✓ Built with Claude</span>
+            <span>✓ Bring your own AI agent</span>
             <span>✓ No setup, no config</span>
           </div>
         </div>
@@ -169,11 +169,11 @@ export default function LandingPage() {
       <section id="pricing" className="border-t border-outline-variant px-5 sm:px-6 py-14 sm:py-16 bg-surface-dim scroll-mt-16">
         <div className="max-w-5xl mx-auto">
           <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-on-surface text-center">Simple pricing 💸</h2>
-          <p className="text-on-surface-variant text-center mt-2 max-w-lg mx-auto">Always bring your own Claude — we never mark up what you pay for AI.</p>
+          <p className="text-on-surface-variant text-center mt-2 max-w-lg mx-auto">Bring your own AI agent — Claude Code, Codex, or any. We never mark up what you pay for AI.</p>
           <div className="grid sm:grid-cols-3 gap-4 mt-10 items-stretch">
-            <Tier name="Free" price="$0" cta="Start free" feats={["Ship 1 real app", "All tracks + provisioning", "Appears on the Showcase", "Progress + next-step"]} />
+            <Tier name="Free" price="$0" cta="Start free" feats={["Ship 1 real app", "Full Portfolio + career artifacts", "Public profile + Showcase", "Progress + next-step"]} />
             <Tier name="Core" price="$8" per="/mo" cta="Choose Core" feats={["Up to 8 projects", "Delete & recreate freely", "Everything in Free"]} note="or save 25% billed yearly" />
-            <Tier name="Pro" price="$17" per="/mo" pop cta="Go Pro" feats={["Everything in Core", "Full Portfolio + career artifacts", "Public profile & case studies", "Advanced build tracking"]} note="or save 30% billed yearly" badge="Build your career" />
+            <Tier name="Pro" price="$17" per="/mo" pop cta="Go Pro" feats={["Everything in Core", "Accept payments (Stripe)", "Custom domains", "Advanced build tracking"]} note="or save 30% billed yearly" badge="Ship for real" />
           </div>
         </div>
       </section>

@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { normalizePlan } from "@/lib/plan";
 import { ArtifactStudio, CopyLinkButton } from "@/components/portfolio-tools";
 import Link from "next/link";
 
@@ -18,7 +17,6 @@ export default async function PortfolioPage() {
   const shipped = list.filter((p) => p.status === "deployed");
   const building = list.filter((p) => p.status !== "deployed");
   const milestones = list.reduce((n, p) => n + (Array.isArray(p.plan_progress) ? p.plan_progress.length : 0), 0);
-  const isPro = normalizePlan(profile?.plan) === "pro";
   const name = profile?.github_username || user?.email?.split("@")[0] || "Builder";
   const initials = name.slice(0, 2).toUpperCase();
 
@@ -39,13 +37,11 @@ export default async function PortfolioPage() {
           <p className="font-display font-semibold text-lg text-on-surface">{name}</p>
           <p className="text-sm text-on-surface-variant">AI builder — {shipped.length} app{shipped.length === 1 ? "" : "s"} shipped{building.length ? `, ${building.length} building` : ""}</p>
         </div>
-        {profile?.github_username && isPro ? (
+        {profile?.github_username && (
           <div className="flex gap-2 flex-wrap">
             <CopyLinkButton username={profile.github_username} />
             <a href={`/u/${profile.github_username}`} target="_blank" rel="noopener noreferrer" className="btn-brand text-sm px-3 py-1.5">View public ↗</a>
           </div>
-        ) : (
-          <Link href="/upgrade" className="btn-ghost text-sm px-3 py-1.5" title="Public profile is a Pro feature">🔗 Public profile (Pro)</Link>
         )}
       </div>
 
@@ -88,23 +84,7 @@ export default async function PortfolioPage() {
       <div>
         <h2 className="font-display font-semibold text-base text-on-surface flex items-center gap-2">🎖️ Career-ready artifacts</h2>
         <p className="text-sm text-on-surface-variant mt-0.5">Auto-drafted from what you built — pick an app, copy, post.</p>
-        {isPro ? (
-          <div className="panel p-5 mt-3"><ArtifactStudio apps={shipped.map((p) => ({ id: p.id, name: p.name, ...parseBrief(p.build_prompt) }))} /></div>
-        ) : (
-          <div className="panel p-5 mt-3 relative overflow-hidden">
-            <div className="blur-[3px] select-none pointer-events-none">
-              <ul className="space-y-2.5">
-                <ArtifactRow icon="📄" title="Case study" sub="“How I built & shipped a real app” — 1-page PDF" />
-                <ArtifactRow icon="💼" title="LinkedIn post" sub="Ready-to-publish announcement of what you shipped" />
-                <ArtifactRow icon="📝" title="Résumé line" sub="“Designed & shipped production web apps, solo.”" />
-                <ArtifactRow icon="🔗" title="Shareable proof links" sub="Live apps + public profile in one link" />
-              </ul>
-            </div>
-            <div className="absolute inset-0 grid place-items-center bg-surface/40">
-              <Link href="/upgrade" className="btn-brand text-sm px-5 py-2.5">✨ Unlock career artifacts (Pro)</Link>
-            </div>
-          </div>
-        )}
+        <div className="panel p-5 mt-3"><ArtifactStudio apps={shipped.map((p) => ({ id: p.id, name: p.name, ...parseBrief(p.build_prompt) }))} /></div>
         <p className="text-xs text-on-surface-variant mt-3">💡 This turns “I’m learning AI” into “here’s what I’ve built.” Proof &gt; promises.</p>
       </div>
     </main>
@@ -132,14 +112,3 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function ArtifactRow({ icon, title, sub }: { icon: string; title: string; sub: string }) {
-  return (
-    <li className="flex items-center gap-3">
-      <span className="w-9 h-9 rounded-lg grid place-items-center bg-brand-container text-lg shrink-0">{icon}</span>
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-on-surface">{title}</p>
-        <p className="text-xs text-on-surface-variant truncate">{sub}</p>
-      </div>
-    </li>
-  );
-}
