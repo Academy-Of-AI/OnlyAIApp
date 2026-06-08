@@ -10,23 +10,31 @@ function shotSrc(url: string | null): string | null {
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const admin = await createAdminClient();
-
-  const { data: profile } = await admin
-    .from("profiles").select("id, github_username, plan").eq("github_username", slug).maybeSingle();
-  if (!profile) notFound();
-  // Public profiles are a Pro feature (and opt-in by being Pro) — keeps private
-  // builds private by default.
-  if (normalizePlan(profile.plan) !== "pro") notFound();
-
-  const { data: projects } = await admin
-    .from("projects")
-    .select("name, vercel_preview_url, status")
-    .eq("user_id", profile.id)
-    .eq("status", "deployed")
-    .order("created_at", { ascending: false })
-    .limit(24);
-  const apps = (projects ?? []).filter((p) => p.vercel_preview_url);
+  // Public profiles are a Pro feature (opt-in by being Pro) — keeps private builds
+  // private. Any infra error (e.g. admin client unavailable) resolves to a clean
+  // 404, never a 500.
+  type Pub = { name: string; vercel_preview_url: string | null };
+  let apps: Pub[] = [];
+  let found = false;
+  try {
+    const admin = await createAdminClient();
+    const { data: profile } = await admin
+      .from("profiles").select("id, plan").eq("github_username", slug).maybeSingle();
+    if (profile && normalizePlan(profile.plan) === "pro") {
+      found = true;
+      const { data: projects } = await admin
+        .from("projects")
+        .select("name, vercel_preview_url, status")
+        .eq("user_id", profile.id)
+        .eq("status", "deployed")
+        .order("created_at", { ascending: false })
+        .limit(24);
+      apps = ((projects ?? []) as Pub[]).filter((p) => p.vercel_preview_url);
+    }
+  } catch {
+    /* fall through to a clean 404 */
+  }
+  if (!found) notFound();
 
   return (
     <main className="min-h-screen flex flex-col">
