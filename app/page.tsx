@@ -2,8 +2,8 @@ import Link from "next/link";
 
 const steps = [
   { n: "01", title: "We set up a real system", body: "A live, deployed project — database + hosting wired up for you. No blank page, no config, no setup." },
-  { n: "02", title: "Build it with your agent", body: "Describe what you want. Your AI agent builds it on a reliable, database-first foundation — and we keep it on track so it doesn't wander." },
-  { n: "03", title: "Own it — it runs without you", body: "A real system on your own infrastructure. The database-and-logic core keeps running even when the AI is off. Yours to keep." },
+  { n: "02", title: "Build it with your agent", body: "Describe what you want. Your AI agent builds it on a reliable foundation — and we keep it on track so it doesn't wander." },
+  { n: "03", title: "Own it — it runs without you", body: "A real system on your own infrastructure that keeps working reliably. Yours to keep." },
 ];
 
 export default function LandingPage() {
@@ -62,10 +62,6 @@ export default function LandingPage() {
             How it works
           </Link>
         </div>
-
-        <p className="text-xs text-outline max-w-md">
-          Database + coded logic first, AI on top — so your system keeps running even when the AI is off.
-        </p>
       </section>
 
       {/* Steps */}
