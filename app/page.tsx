@@ -13,9 +13,9 @@ export default function LandingPage() {
       <nav className="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
         <div className="flex items-baseline gap-2 min-w-0">
           <span className="font-display font-bold text-lg tracking-tight text-on-surface">OnlyAIApp</span>
-          <a href="https://goacademyai.com" target="_blank" rel="noopener noreferrer"
+          <a href="https://www.linkedin.com/in/ngxienpuo/" target="_blank" rel="noopener noreferrer"
             className="hidden sm:inline text-[11px] text-outline hover:text-on-surface transition-colors whitespace-nowrap">
-            by Academy of AI
+            by Ng Xien Puo
           </a>
         </div>
         <Link
@@ -81,9 +81,9 @@ export default function LandingPage() {
       <footer className="border-t border-outline-variant px-6 py-6 text-center text-xs text-outline">
         OnlyAIApp — own a working AI system, built by you{" "}
         <span className="text-outline">·</span>{" "}
-        <a href="https://goacademyai.com" target="_blank" rel="noopener noreferrer"
+        <a href="https://www.linkedin.com/in/ngxienpuo/" target="_blank" rel="noopener noreferrer"
           className="text-outline hover:text-on-surface transition-colors">
-          An Academy of AI (AOAI) product
+          Built by Ng Xien Puo
         </a>{" "}
         <span className="text-outline">·</span>{" "}
         <Link href="/privacy" className="text-outline hover:text-on-surface transition-colors">
