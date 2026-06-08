@@ -113,7 +113,7 @@ export function DashboardSidebar({
             ✨ Upgrade{plan === "core" ? " to Pro" : ""}
           </Link>
         )}
-        <Link href="/dashboard#invite" className="snav text-[13px]">
+        <Link href="/invite" className={`snav text-[13px] ${isActive(pathname, "/invite") ? "snav-active" : ""}`}>
           <Icon>{ICON.gift}</Icon>
           Invite &amp; earn
         </Link>
@@ -147,7 +147,7 @@ export function DashboardSidebar({
 /** Mobile horizontal nav row (md:hidden) — light, sits under the top bar. */
 export function MobileNav() {
   const pathname = usePathname() ?? "";
-  const all = [...STUDIO, ...PROOF, ...MORE];
+  const all = [...STUDIO, ...PROOF, { href: "/invite", label: "Invite", icon: null }, ...MORE];
   return (
     <nav className="md:hidden flex gap-1 px-3 py-2 border-b border-[var(--color-outline-variant)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <Link href="/tracks" className="btn-brand flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap shrink-0">

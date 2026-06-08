@@ -151,7 +151,7 @@ export default function NewProjectPage() {
             🎁 Refer a friend — when they ship their first app, you both get a bonus project. Or upgrade for up to 8 projects + delete/recreate.
           </p>
           <div className="flex gap-2 flex-wrap">
-            <Link href="/dashboard#invite" className="btn-ghost text-sm px-4 py-2">🎁 Get your invite link</Link>
+            <Link href="/invite" className="btn-ghost text-sm px-4 py-2">🎁 Get your invite link</Link>
             <Link href="/upgrade" className="btn-brand text-sm px-4 py-2">Upgrade to Core ($8/mo) →</Link>
           </div>
         </div>
