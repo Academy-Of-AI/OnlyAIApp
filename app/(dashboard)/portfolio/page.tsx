@@ -86,11 +86,12 @@ export default async function PortfolioPage() {
 
       {/* Career artifacts (Pro) */}
       <div>
-        <p className="eyebrow">Career-ready artifacts</p>
+        <h2 className="font-display font-semibold text-base text-on-surface flex items-center gap-2">🎖️ Career-ready artifacts</h2>
+        <p className="text-sm text-on-surface-variant mt-0.5">Auto-drafted from what you built — pick an app, copy, post.</p>
         {isPro ? (
-          <div className="mt-2"><ArtifactStudio apps={shipped.map((p) => ({ id: p.id, name: p.name }))} /></div>
+          <div className="panel p-5 mt-3"><ArtifactStudio apps={shipped.map((p) => ({ id: p.id, name: p.name, ...parseBrief(p.build_prompt) }))} /></div>
         ) : (
-          <div className="panel p-5 mt-2 relative overflow-hidden">
+          <div className="panel p-5 mt-3 relative overflow-hidden">
             <div className="blur-[3px] select-none pointer-events-none">
               <ul className="space-y-2.5">
                 <ArtifactRow icon="📄" title="Case study" sub="“How I built & shipped a real app” — 1-page PDF" />
@@ -104,10 +105,22 @@ export default async function PortfolioPage() {
             </div>
           </div>
         )}
-        <p className="text-xs text-outline mt-2">💡 This turns “I’m learning AI” into “here’s what I’ve built.” Proof &gt; promises.</p>
+        <p className="text-xs text-on-surface-variant mt-3">💡 This turns “I’m learning AI” into “here’s what I’ve built.” Proof &gt; promises.</p>
       </div>
     </main>
   );
+}
+
+/** Pull a one-line summary + problem out of the stored build brief (PRD/plan seed). */
+function parseBrief(bp?: string | null): { summary?: string; problem?: string } {
+  const text = (bp ?? "").trim();
+  if (!text) return {};
+  const grab = (re: RegExp) => { const m = text.match(re); return m ? m[1].trim() : ""; };
+  const problem = grab(/Problem:\s*(.+)/i);
+  const summary =
+    grab(/(?:one workflow[^:]*:|Core things to track:|What I built:)\s*(.+)/i) ||
+    text.split(/\n/)[0].replace(/^Problem:\s*/i, "").trim();
+  return { summary: summary || undefined, problem: problem || undefined };
 }
 
 function Stat({ label, value }: { label: string; value: number }) {

@@ -1,4 +1,5 @@
 import { SubscribeButton, ManageBillingButton } from "@/components/subscribe-button";
+import { Invoices } from "@/components/invoices";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -112,6 +113,13 @@ export default async function UpgradePage({
           }
         />
       </div>
+
+      {plan !== "free" && (
+        <section className="max-w-2xl mx-auto w-full space-y-3">
+          <h2 className="font-display font-semibold text-on-surface">Invoices &amp; receipts</h2>
+          <Invoices />
+        </section>
+      )}
 
       <p className="text-center text-xs text-outline max-w-xl mx-auto leading-relaxed">
         Cancel anytime. Your Claude subscription is separate — and yours. Each project runs on its own

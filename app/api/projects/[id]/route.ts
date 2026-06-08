@@ -74,6 +74,7 @@ export async function PATCH(
     vercel_preview_url?: string;
     build_prompt?: string;
     plan_progress?: unknown;
+    track?: string;
   };
 
   const updates: Record<string, string> = {};
@@ -110,6 +111,10 @@ export async function PATCH(
 
   if (body.build_prompt !== undefined) {
     updates.build_prompt = body.build_prompt.slice(0, 2000);
+  }
+
+  if (body.track !== undefined) {
+    updates.track = String(body.track).slice(0, 40);
   }
 
   if (Object.keys(updates).length === 0) {

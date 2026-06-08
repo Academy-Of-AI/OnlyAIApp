@@ -12,41 +12,46 @@ type ArtifactType = (typeof ARTIFACTS)[number]["type"];
 
 const SITE = "onlyaiapp.com"; // baked into every artifact → free publicity when shared
 
-/** Deterministic templates (no AI, no tokens). User edits the [bracketed] bits. */
-function buildArtifact(type: ArtifactType, appName: string): string {
+type App = { id: string; name: string; summary?: string; problem?: string };
+
+/** Deterministic templates (no AI, no tokens). Auto-filled from the app's plan;
+ *  any gaps stay as [brackets] for the user to tweak. */
+function buildArtifact(type: ArtifactType, app: App): string {
+  const name = app.name;
+  const summary = app.summary?.trim();
+  const problem = app.problem?.trim();
   if (type === "linkedin") {
-    return `🚀 I just shipped ${appName} — a real, working app I built with AI.\n\n` +
+    return `🚀 I just shipped ${name}${summary ? ` — ${summary}` : " — a real, working app I built with AI"}.\n\n` +
       `Not a prototype: it's live, it's mine, and it works end-to-end.\n\n` +
       `Built it with ${SITE} — it set up the repo, database & hosting so I could focus on building. ` +
       `If you've been meaning to ship something, give it a look.\n\n` +
       `#buildinpublic #AI #shipit`;
   }
   if (type === "resume") {
-    return `• Designed & shipped ${appName}, a production web app (Next.js, Supabase), solo — built with AI via ${SITE}.\n` +
+    return `• Designed & shipped ${name}${summary ? ` (${summary})` : ""}, a production web app (Next.js, Supabase), solo — built with AI via ${SITE}.\n` +
       `• Took it end-to-end: data model, core features, and live deployment.`;
   }
   // case_study
-  return `Case study — ${appName}\n\n` +
-    `Problem: [the painful, repetitive thing it solves]\n` +
-    `What I built: ${appName} — a live web app. [one line on what it does]\n` +
+  return `Case study — ${name}\n\n` +
+    `Problem: ${problem || "[the painful, repetitive thing it solves]"}\n` +
+    `What I built: ${name} — ${summary || "a live web app. [one line on what it does]"}\n` +
     `How: built with AI on a solid foundation via ${SITE} (real repo, database & hosting — I own all of it).\n` +
     `Outcome: deployed and working end-to-end.\n` +
     `What it shows: I can take an idea and ship a real, working product.\n\n` +
     `Built with ${SITE}`;
 }
 
-export function ArtifactStudio({ apps = [] }: { apps?: { id: string; name: string }[] }) {
+export function ArtifactStudio({ apps = [] }: { apps?: App[] }) {
   const [active, setActive] = useState<ArtifactType | null>(null);
-  const [appId, setAppId] = useState<string>(apps.length === 1 ? apps[0].id : "");
+  const [appId, setAppId] = useState<string>(apps[0]?.id ?? "");
   const [text, setText] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const selected = apps.find((a) => a.id === appId);
-  const appName = selected?.name ?? apps[0]?.name ?? "my app";
+  const selectedApp = apps.find((a) => a.id === appId) ?? apps[0];
 
   function generate(type: ArtifactType) {
     setActive(type);
-    setText(buildArtifact(type, appName));
+    if (selectedApp) setText(buildArtifact(type, selectedApp));
     setCopied(false);
   }
 
@@ -59,7 +64,7 @@ export function ArtifactStudio({ apps = [] }: { apps?: { id: string; name: strin
       {apps.length > 1 && (
         <div>
           <label className="text-xs text-on-surface-variant">Write about</label>
-          <select value={appId} onChange={(e) => { setAppId(e.target.value); if (active) setText(buildArtifact(active, apps.find((a) => a.id === e.target.value)?.name ?? appName)); }}
+          <select value={appId} onChange={(e) => { const id = e.target.value; setAppId(id); const a = apps.find((x) => x.id === id); if (active && a) setText(buildArtifact(active, a)); }}
             className="cap-input mt-1">
             {apps.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>

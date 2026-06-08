@@ -122,15 +122,17 @@ export function DashboardSidebar({
           Need help?
         </Link>
 
-        {/* Account — avatar · name · plan · sign out (bottom, Claude-Code style) */}
+        {/* Account — avatar · name · plan (→ billing) · sign out (bottom, Claude-Code style) */}
         <div className="flex items-center gap-2.5 px-2 pt-2.5 mt-1.5 border-t border-[var(--color-sidebar-border)]">
-          <span className="w-7 h-7 rounded-full grid place-items-center text-white text-[11px] font-semibold shrink-0" style={{ background: "linear-gradient(135deg, var(--color-brand), #9333ea)" }}>
-            {(username || "?").slice(0, 2).toUpperCase()}
-          </span>
-          <div className="min-w-0 flex-1 leading-tight">
-            <p className="text-[13px] font-medium truncate" style={{ color: "var(--color-sidebar-on)" }}>{username || "Account"}</p>
-            <p className="text-[10px] uppercase tracking-wide" style={{ color: "var(--color-sidebar-on-variant)" }}>{plan}</p>
-          </div>
+          <Link href="/upgrade" title="Plan &amp; billing" className="flex items-center gap-2.5 min-w-0 flex-1 rounded-md hover:opacity-90 transition-opacity">
+            <span className="w-7 h-7 rounded-full grid place-items-center text-white text-[11px] font-semibold shrink-0" style={{ background: "linear-gradient(135deg, var(--color-brand), #9333ea)" }}>
+              {(username || "?").slice(0, 2).toUpperCase()}
+            </span>
+            <div className="min-w-0 leading-tight">
+              <p className="text-[13px] font-medium truncate" style={{ color: "var(--color-sidebar-on)" }}>{username || "Account"}</p>
+              <p className="text-[10px] uppercase tracking-wide" style={{ color: "var(--color-sidebar-on-variant)" }}>{plan} · billing</p>
+            </div>
+          </Link>
           {signOut && (
             <form action={signOut}>
               <button type="submit" title="Sign out" className="p-1 rounded-md hover:opacity-80 transition-opacity" style={{ color: "var(--color-sidebar-on-variant)" }}>

@@ -95,12 +95,17 @@ export default function NewProjectPage() {
             // If we came from "Start here" (Scope), seed the Plan with the brief.
             try {
               const brief = sessionStorage.getItem("scopeBrief");
-              if (brief && res.id) {
+              const track = sessionStorage.getItem("scopeTrack");
+              if ((brief || track) && res.id) {
                 sessionStorage.removeItem("scopeBrief");
+                sessionStorage.removeItem("scopeTrack");
+                const patch: Record<string, string> = {};
+                if (brief) patch.build_prompt = brief;
+                if (track) patch.track = track;
                 fetch(`/api/projects/${res.id}`, {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ build_prompt: brief }),
+                  body: JSON.stringify(patch),
                 }).catch(() => {});
               }
               // Carry any uploaded docs (Start here → Upload) to THIS project so

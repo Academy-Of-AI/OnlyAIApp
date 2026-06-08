@@ -37,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
           <div className="flex items-center gap-3 shrink-0">
             <NotificationsBell />
-            <Link href="/settings" title="Account &amp; settings"
+            <Link href="/upgrade" title="Plan &amp; billing"
               className="flex md:hidden items-center gap-2 min-w-0 group">
               <span className="w-7 h-7 rounded-full grid place-items-center text-white text-[11px] font-semibold shrink-0" style={{ background: "linear-gradient(135deg, var(--color-brand), #9333ea)" }}>
                 {(profile?.github_username ?? user.email ?? "?").slice(0, 2).toUpperCase()}
