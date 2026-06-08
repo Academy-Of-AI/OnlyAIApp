@@ -74,8 +74,10 @@ export async function signInWithEmail(formData: FormData) {
   });
 
   if (error) {
+    // Don't show raw Supabase/SMTP errors to non-technical users — show a
+    // friendly fallback that points them at GitHub (which never needs email).
     console.error("[auth] signInWithEmail error:", error.message);
-    redirect("/sign-in?auth_error=" + encodeURIComponent(error.message));
+    redirect("/sign-in?email_error=1");
   }
 
   redirect("/sign-in?sent=" + encodeURIComponent(email));

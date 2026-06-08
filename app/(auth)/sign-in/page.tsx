@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ auth_error?: string; sent?: string }>;
+  searchParams: Promise<{ auth_error?: string; sent?: string; email_error?: string }>;
 }) {
   const params = await searchParams;
   // Already signed in (e.g. opened the app in a new tab)? Don't make them
@@ -15,6 +15,7 @@ export default async function SignInPage({
   if (user) redirect("/dashboard");
 
   const authError = params?.auth_error;
+  const emailError = params?.email_error === "1";
   const sent = params?.sent;
 
   return (
@@ -30,6 +31,12 @@ export default async function SignInPage({
         {authError && (
           <div className="bg-[rgba(220,38,38,.08)] border border-[rgba(220,38,38,.25)] text-danger text-xs px-3 py-2 rounded-lg break-words">
             {authError}
+          </div>
+        )}
+
+        {emailError && (
+          <div className="bg-warn/10 border border-warn/30 text-warn text-xs px-3 py-2.5 rounded-lg leading-relaxed">
+            📭 Couldn’t email a sign-in link right now. Use <b>Continue with GitHub</b> below — it’s instant, no email needed.
           </div>
         )}
 
@@ -52,11 +59,12 @@ export default async function SignInPage({
               <span className="h-px flex-1 bg-outline-variant" /> or <span className="h-px flex-1 bg-outline-variant" />
             </div>
 
-            {/* GitHub — also signs you in, and grants repo access for building */}
+            {/* GitHub — also signs you in, and grants repo access for building.
+                Highlighted when the email path just failed. */}
             <form action={signInWithGitHub}>
-              <button type="submit" className="btn-ghost w-full flex items-center justify-center gap-2.5 py-2.5 text-sm">
+              <button type="submit" className={`w-full flex items-center justify-center gap-2.5 py-2.5 text-sm ${emailError ? "btn-brand ring-2 ring-offset-2 ring-[var(--color-brand)]" : "btn-ghost"}`}>
                 <GitHubIcon />
-                Continue with GitHub
+                Continue with GitHub{emailError ? " — recommended" : ""}
               </button>
             </form>
 
