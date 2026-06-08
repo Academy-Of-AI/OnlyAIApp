@@ -34,6 +34,8 @@ const STATUS_STYLES: Record<string, string> = {
 
 type View = "plan" | "pilot" | "settings";
 
+type Hardened = { payments: boolean; monitoring: boolean; hardened: boolean };
+
 export function ProjectTabs({
   project,
   memory = [],
@@ -41,6 +43,8 @@ export function ProjectTabs({
   initialPack = null,
   autoCapture = false,
   isPro = false,
+  hardened,
+  addons = null,
 }: {
   project: Project;
   memory?: Array<{ kind: string; content: string }>;
@@ -48,6 +52,8 @@ export function ProjectTabs({
   initialPack?: PlanPackResult | null;
   autoCapture?: boolean;
   isPro?: boolean;
+  hardened?: Hardened;
+  addons?: React.ReactNode;
 }) {
   const [view, setView] = useState<View>("plan");
   const pnav = (active: boolean) =>
@@ -89,8 +95,8 @@ export function ProjectTabs({
       </div>
 
       {view === "plan" && <PlanView project={project} initialPack={initialPack} />}
-      {view === "pilot" && <PilotView project={project} memory={memory} liveUrl={liveUrl} autoCapture={autoCapture} isPro={isPro} plan={initialPack?.plan ?? null} sprints={initialPack?.sprints ?? []} />}
-      {view === "settings" && <SettingsTab project={project} />}
+      {view === "pilot" && <PilotView project={project} memory={memory} liveUrl={liveUrl} autoCapture={autoCapture} isPro={isPro} hardened={hardened} onHarden={() => setView("settings")} plan={initialPack?.plan ?? null} sprints={initialPack?.sprints ?? []} />}
+      {view === "settings" && <SettingsTab project={project} addons={addons} />}
     </div>
   );
 }
@@ -117,9 +123,10 @@ function PlanView({
 
 /* ── Pilot view — keep it on course (auto-capture + drift + memory) & ship it ── */
 function PilotView({
-  project, memory = [], liveUrl = null, autoCapture = false, isPro = false, plan = null, sprints = [],
+  project, memory = [], liveUrl = null, autoCapture = false, isPro = false, hardened, onHarden, plan = null, sprints = [],
 }: {
   project: Project; memory?: Array<{ kind: string; content: string }>; liveUrl?: string | null; autoCapture?: boolean; isPro?: boolean;
+  hardened?: { payments: boolean; monitoring: boolean; hardened: boolean }; onHarden?: () => void;
   plan?: { now?: string[]; next?: string[]; later?: string[] } | null; sprints?: Array<{ title: string; items: string[] }>;
 }) {
   const broken = project.status === "failed";
@@ -202,6 +209,25 @@ function PilotView({
           </div>
         </div>
       </div>
+
+      {/* Hardened — production-readiness for this app (links to add-ons in Settings) */}
+      {hardened && (
+        <div className="panel p-4">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
+              🛡️ Hardened
+            </p>
+            {onHarden && <button onClick={onHarden} className="text-xs text-brand-dim hover:underline">Harden this app →</button>}
+          </div>
+          <div className="flex gap-2 mt-2 flex-wrap">
+            <span className={`chip ${hardened.payments ? "chip-success" : "chip-neutral"}`}>{hardened.payments ? "Payments ✓" : "Payments —"}</span>
+            <span className={`chip ${hardened.monitoring ? "chip-success" : "chip-neutral"}`}>{hardened.monitoring ? "Monitoring ✓" : "Monitoring —"}</span>
+          </div>
+          <p className="text-xs text-on-surface-variant mt-2">
+            {hardened.hardened ? "Production add-ons are wired up for this app." : "Add payments or monitoring to make this app production-grade."}
+          </p>
+        </div>
+      )}
 
       <AutoCaptureToggle projectId={project.id} enabled={autoCapture} />
 
@@ -391,7 +417,7 @@ function LaunchTab({ project, liveUrl = null }: { project: Project; liveUrl?: st
 }
 
 /* ── Settings tab ───────────────────────────────────────────────────────── */
-function SettingsTab({ project }: { project: Project }) {
+function SettingsTab({ project, addons = null }: { project: Project; addons?: React.ReactNode }) {
   const router = useRouter();
   const [name, setName]               = useState(project.name);
   const [url, setUrl]                 = useState(project.vercel_preview_url ?? "");
@@ -584,12 +610,13 @@ function SettingsTab({ project }: { project: Project }) {
         </div>
       </div>
 
-      {/* Per-project integrations — what THIS project is wired to */}
+      {/* Connections — what THIS app is auto-wired to */}
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-on-surface">Integrations</h3>
+        <h3 className="text-sm font-semibold text-on-surface">
+          Connections <span className="text-xs font-normal text-on-surface-variant">— set up automatically</span>
+        </h3>
         <p className="text-xs text-on-surface-variant">
-          What this project is connected to. Account tokens (used to provision new projects) are
-          managed in{" "}
+          What this app is wired to. Account tokens (used to provision new apps) are managed in{" "}
           <a href="/settings" className="text-brand hover:text-brand-dim">Settings ⚙</a>.
         </p>
         <div className="panel overflow-hidden divide-y divide-[var(--color-outline-variant)]">
@@ -607,10 +634,10 @@ function SettingsTab({ project }: { project: Project }) {
             status="Email is injected from your account key"
             href="/settings" hrefLabel="Manage →" />
         </div>
-        <a href={`/projects/${project.id}/ops`} className="btn-brand text-sm px-4 py-2 inline-flex mt-1">
-          🔌 Manage this app: add-ons (Stripe · Sentry · PostHog · Upstash), custom domain &amp; Showcase →
-        </a>
       </div>
+
+      {/* App add-ons + custom domain + Advanced — inline, no separate page */}
+      {addons}
 
       <div className="border border-danger/20 rounded-xl p-5 space-y-3">
         <h3 className="text-sm font-semibold text-danger">Danger zone</h3>

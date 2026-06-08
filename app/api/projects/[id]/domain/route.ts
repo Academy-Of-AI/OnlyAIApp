@@ -1,17 +1,18 @@
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
-import { isProUser } from "@/lib/plan";
+import { canUseDomains } from "@/lib/plan";
 import { addVercelDomain } from "@/lib/vercel";
 import { NextResponse } from "next/server";
 
-/** POST /api/projects/:id/domain — attach a custom domain to the project's Vercel app (Pro). */
+/** POST /api/projects/:id/domain — attach a custom domain to the project's Vercel app (Core + Pro). */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!(await isProUser(supabase, user.id))) {
-    return NextResponse.json({ error: "Custom domains are a Pro feature.", code: "pro_required" }, { status: 403 });
+  const { data: planRow } = await supabase.from("profiles").select("plan").eq("id", user.id).single();
+  if (!canUseDomains(planRow?.plan)) {
+    return NextResponse.json({ error: "Custom domains are available on Core & Pro.", code: "upgrade_required" }, { status: 403 });
   }
 
   const { domain } = (await request.json().catch(() => ({}))) as { domain?: string };

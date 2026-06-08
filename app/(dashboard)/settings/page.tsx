@@ -123,9 +123,9 @@ export default async function SettingsPage({
 
         <div className="panel p-5 bg-surface-dim">
           <p className="text-sm text-on-surface-variant">
-            <b className="text-on-surface">App integrations are per-app</b> — Stripe payments, Sentry, PostHog, Upstash &amp;
-            custom domains live on each project (so different apps can use different accounts/orgs). Open a project from{" "}
-            <Link href="/projects" className="text-brand-dim hover:underline">Projects</Link> → its <b className="text-on-surface">Settings → Manage this app</b>. (Pro)
+            <b className="text-on-surface">App add-ons are per-app</b> — payments, production hardening (your own keys)
+            &amp; a custom domain live on each project, so different apps can use different accounts/orgs. Open a project from{" "}
+            <Link href="/projects" className="text-brand-dim hover:underline">Projects</Link> → its <b className="text-on-surface">Settings</b> tab.
           </p>
         </div>
       </section>

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { artifactLimit } from "@/lib/plan";
 import { ArtifactStudio, CopyLinkButton } from "@/components/portfolio-tools";
+import { ShowcaseControls } from "@/components/showcase-controls";
 import Link from "next/link";
 
 export const metadata = { title: "Portfolio — OnlyAIApp" };
@@ -74,6 +75,10 @@ export default async function PortfolioPage() {
                 <div className="flex items-center gap-2"><span className="chip chip-success">Live</span><span className="font-display font-semibold text-on-surface truncate">{p.name}</span></div>
                 <div className="text-xs text-on-surface-variant bg-surface-dim border border-outline-variant rounded-lg px-2.5 py-2">
                   Proves: <b className="text-on-surface">you can ship a real, working app end-to-end.</b>
+                </div>
+                {/* Showcase — publish + thumbnail, where your proof lives */}
+                <div className="border-t border-outline-variant pt-2.5 mt-0.5">
+                  <ShowcaseControls projectId={p.id} published={!!p.showcase_published} image={p.showcase_image ?? null} />
                 </div>
                 <div className="flex gap-2 mt-auto pt-1">
                   {p.vercel_preview_url && <a href={p.vercel_preview_url} target="_blank" rel="noopener noreferrer" className="btn-ghost text-xs px-3 py-1.5">Live ↗</a>}

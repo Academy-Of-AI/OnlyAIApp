@@ -173,7 +173,7 @@ export default function LandingPage() {
           <div className="grid sm:grid-cols-3 gap-4 mt-10 items-stretch">
             <Tier name="Free" price="$0" cta="Start free" feats={["Ship 1 real app", "Full Portfolio + career artifacts", "Public profile + Showcase", "Progress + next-step"]} />
             <Tier name="Core" price="$8" per="/mo" cta="Choose Core" feats={["Up to 8 projects", "Delete & recreate freely", "Everything in Free"]} note="or save 25% billed yearly" />
-            <Tier name="Pro" price="$17" per="/mo" pop cta="Go Pro" feats={["Everything in Core", "Accept payments (Stripe)", "Production hardening (monitoring, analytics)", "Advanced build tracking", "+ custom domains"]} note="or save 30% billed yearly" badge="Power up" />
+            <Tier name="Pro" price="$17" per="/mo" pop cta="Go Pro" feats={["Everything in Core", "Accept payments (Stripe)", "Production hardening (monitoring & analytics)", "Advanced build tracking"]} note="or save 30% billed yearly" badge="Power up" />
           </div>
         </div>
       </section>

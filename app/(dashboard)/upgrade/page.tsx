@@ -98,10 +98,8 @@ export default async function UpgradePage({
           features={[
             "Everything in Core",
             "💳 Accept payments — your app can charge (Stripe)",
-            "🛡️ Production hardening — error monitoring, analytics & caching (Sentry · PostHog · Upstash)",
+            "🛡️ Production hardening — error monitoring, analytics & caching",
             "🛫 Advanced build tracking (drift & auto-capture)",
-            "✍️ Unlimited AI career artifacts",
-            "+ custom domains",
           ]}
           current={plan === "pro"}
           cta={

@@ -1,6 +1,7 @@
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
-import { getDeploymentErrorLine, getLatestDeploymentStatus } from "@/lib/vercel";
+import { getDeploymentErrorLine, getLatestDeploymentStatus, listVercelEnvVars } from "@/lib/vercel";
+import { hardeningOf } from "@/lib/plan";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -52,6 +53,17 @@ export default async function PilotPage() {
       return getDeploymentErrorLine({ token: vercelToken, deploymentId: s.deploymentId, teamId: vercelTeamId });
     }),
   );
+  // Per-app hardening — which apps have payments / monitoring add-ons wired up.
+  const hardenedFlags = await Promise.all(
+    (projects ?? []).map(async (p) => {
+      if (!vercelToken || !p.vercel_project_id) return false;
+      try {
+        const e = await listVercelEnvVars({ token: vercelToken, projectId: p.vercel_project_id as string, teamId: vercelTeamId });
+        return hardeningOf(e.map((x) => x.key)).hardened;
+      } catch { return false; }
+    }),
+  );
+  const hardenedCount = hardenedFlags.filter(Boolean).length;
 
   type Proj = {
     id: string; name: string;
@@ -139,9 +151,9 @@ export default async function PilotPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="eyebrow">Mission Control</p>
-          <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — every build, on course</h1>
+          <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — every build, on course &amp; hardened</h1>
           <p className="text-sm text-on-surface-variant mt-1">
-            Your whole portfolio at a glance — health, progress vs plan, and drift across every build.
+            Your whole portfolio at a glance — health, progress vs plan, drift, and how production-ready (hardened) each app is.
           </p>
         </div>
         <Link href="/new-project" className="btn-brand text-sm px-4 py-2">＋ New project</Link>
@@ -153,7 +165,7 @@ export default async function PilotPage() {
       </div>
 
       {/* macro KPIs — the portfolio at a glance */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
         <div className="tile">
           <p className="tile-label">Apps</p>
           <p className="tile-value text-on-surface">{rows.length}</p>
@@ -173,6 +185,11 @@ export default async function PilotPage() {
           <p className="tile-label">v1 shipped</p>
           <p className="tile-value" style={{ color: "var(--color-brand-dim)" }}>{v1Pct}<span className="text-base font-semibold">%</span></p>
           <p className="text-[11px] text-outline mt-0.5 tabnum">{v1Done}/{v1Total} features</p>
+        </div>
+        <div className="tile">
+          <p className="tile-label flex items-center gap-1.5">🛡️ Hardened</p>
+          <p className="tile-value" style={{ color: "var(--color-brand-dim)" }}>{hardenedCount}<span className="text-base font-semibold">/{rows.length}</span></p>
+          <p className="text-[11px] text-outline mt-0.5">payments / monitoring</p>
         </div>
         <div className="tile">
           <p className="tile-label">Changes captured</p>
@@ -225,8 +242,8 @@ function PilotLocked() {
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
       <div className="mb-5">
         <p className="eyebrow">Mission Control</p>
-        <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — every build, on course</h1>
-        <p className="text-sm text-on-surface-variant mt-1">Live health + drift across all your projects.</p>
+        <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — every build, on course &amp; hardened</h1>
+        <p className="text-sm text-on-surface-variant mt-1">Live health, drift &amp; hardening across all your projects.</p>
       </div>
 
       <div className="relative">

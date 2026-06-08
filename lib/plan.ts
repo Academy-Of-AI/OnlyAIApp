@@ -58,3 +58,16 @@ export function projectLimit(plan: string | null | undefined, bonusProjects: num
 export function canDeleteProjects(plan: string | null | undefined): boolean {
   return normalizePlan(plan) !== "free";
 }
+
+/** Custom domains are available on Core + Pro (not Free). Unadvertised perk. */
+export function canUseDomains(plan: string | null | undefined): boolean {
+  return normalizePlan(plan) !== "free";
+}
+
+/** Detect how production-hardened an app is, from its env-var keys. */
+export function hardeningOf(keys: Iterable<string>): { payments: boolean; monitoring: boolean; hardened: boolean } {
+  const set = keys instanceof Set ? keys : new Set(keys);
+  const payments = set.has("STRIPE_SECRET_KEY");
+  const monitoring = set.has("SENTRY_DSN") || set.has("NEXT_PUBLIC_POSTHOG_KEY") || set.has("UPSTASH_REDIS_REST_URL");
+  return { payments, monitoring, hardened: payments || monitoring };
+}
