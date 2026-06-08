@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const FIELDS = [
-  { key: "problem", q: "What painful, repetitive thing should your OS handle?", ph: "e.g. My reps lose track of change requests & touchpoints across leads — it's all in WhatsApp and spreadsheets.", area: true },
+  { key: "problem", q: "What do you want to build? (the painful, repetitive thing it handles)", ph: "e.g. My reps lose track of change requests & touchpoints across leads — it's all in WhatsApp and spreadsheets.", area: true },
   { key: "who", q: "Who uses it day-to-day?", ph: "e.g. Your sales reps" },
   { key: "things", q: "What “things” do you need to track?", ph: "e.g. Leads, touchpoints, change requests" },
   { key: "workflow", q: "If only ONE thing worked end-to-end in a week, what is it?", ph: "e.g. A rep logs a touchpoint → it shows on a prioritized follow-up list" },
@@ -21,10 +21,10 @@ type PlanningMode = "ground_truth" | "skip";
 // PRD/plan vs skill spec — guess from the filename, the user can override.
 const guessKind = (name: string): DocKind => (/skill/i.test(name) ? "skill" : "prd");
 
-export function ScopeForm() {
+export function ScopeForm({ initialProblem = "" }: { initialProblem?: string } = {}) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("describe");
-  const [v, setV] = useState<Record<Key, string>>({ problem: "", who: "", things: "", workflow: "", success: "", notV1: "" });
+  const [v, setV] = useState<Record<Key, string>>({ problem: initialProblem, who: "", things: "", workflow: "", success: "", notV1: "" });
   const [docs, setDocs] = useState<Doc[]>([]);
   const [planningMode, setPlanningMode] = useState<PlanningMode>("ground_truth");
   const [dragActive, setDragActive] = useState(false);
@@ -250,7 +250,7 @@ function BuildPanel({
       )}
       <button onClick={onBuild} disabled={!ready || busy}
         className="btn-brand w-full text-sm px-4 py-2.5 mt-1">
-        {busy ? "Opening…" : "Build this OS →"}
+        {busy ? "Opening…" : "Start building →"}
       </button>
       <p className="text-[11px] text-outline text-center">Next: name it &amp; provision — this seeds the Plan.</p>
     </div>

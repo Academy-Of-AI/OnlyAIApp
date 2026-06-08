@@ -39,11 +39,23 @@ export default async function InspirationPage() {
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
       <div>
-        <p className="eyebrow">Inspiration</p>
-        <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Inspiration</h1>
+        <p className="eyebrow">✨ Proof</p>
+        <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Showcase</h1>
         <p className="text-sm text-on-surface-variant mt-1">
-          Real, working AI systems shipped through OnlyAIApp — every live app, automatically.
+          Real apps, really shipped — every live one, automatically. Browse for inspiration, then go build yours.
         </p>
+      </div>
+
+      {/* Filters (visual) */}
+      <div className="flex gap-2 flex-wrap">
+        {["All", "Live & working", "Tools", "MVPs", "Portfolios"].map((f, i) => (
+          <span key={f}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${
+              i === 0 ? "bg-brand-container text-brand-dim border-brand-border" : "bg-surface-low text-on-surface-variant border-outline-variant"
+            }`}>
+            {f}
+          </span>
+        ))}
       </div>
 
       {apps.length === 0 ? (
@@ -84,7 +96,7 @@ export default async function InspirationPage() {
       )}
 
       <p className="text-center text-xs text-outline">
-        Every deployed app is showcased automatically. Pilot checks them for uptime.
+        Every deployed app is showcased automatically — your proof, on display.
       </p>
     </main>
   );
