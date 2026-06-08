@@ -98,6 +98,7 @@ export default async function UpgradePage({
             "Everything in Core",
             "💳 Accept payments in your apps (Stripe)",
             "🌐 Custom domains for your apps",
+            "🔌 Add-ons: Sentry, PostHog & Upstash (your keys)",
             "🛫 Advanced build tracking (drift & auto-capture)",
           ]}
           current={plan === "pro"}

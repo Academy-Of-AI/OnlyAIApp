@@ -1,5 +1,6 @@
 import { OpsPanel } from "@/components/ops-panel";
 import { DomainForm } from "@/components/domain-form";
+import { IntegrationKeyForm } from "@/components/integration-key-form";
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePlan } from "@/lib/plan";
@@ -8,6 +9,23 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+
+// Bring-your-own-key integrations (Pro). The user pastes their own keys; we inject
+// them into this project's Vercel env. detect = the env key that marks it "Added".
+const INTEGRATIONS = [
+  { key: "sentry", name: "Sentry", icon: "🛡️", desc: "Error monitoring", detect: "SENTRY_DSN",
+    fields: [{ env: "SENTRY_DSN", label: "Sentry DSN", placeholder: "https://…ingest.sentry.io/…" }] },
+  { key: "posthog", name: "PostHog", icon: "📈", desc: "Product analytics", detect: "NEXT_PUBLIC_POSTHOG_KEY",
+    fields: [
+      { env: "NEXT_PUBLIC_POSTHOG_KEY", label: "Project API key", placeholder: "phc_…" },
+      { env: "NEXT_PUBLIC_POSTHOG_HOST", label: "Host", placeholder: "https://us.i.posthog.com" },
+    ] },
+  { key: "upstash", name: "Upstash Redis", icon: "⚡", desc: "Cache / rate-limit", detect: "UPSTASH_REDIS_REST_URL",
+    fields: [
+      { env: "UPSTASH_REDIS_REST_URL", label: "REST URL", placeholder: "https://…upstash.io" },
+      { env: "UPSTASH_REDIS_REST_TOKEN", label: "REST token", placeholder: "A…" },
+    ] },
+];
 
 export default async function OpsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -60,6 +78,22 @@ export default async function OpsPage({ params }: { params: Promise<{ id: string
         {isPro
           ? <DomainForm projectId={id} />
           : <Link href="/upgrade" className="btn-ghost inline-flex text-sm px-4 py-2">✨ Pro feature — upgrade</Link>}
+      </section>
+
+      {/* Bring-your-own-key integrations (Pro) */}
+      <section className="mt-10 space-y-3">
+        <h2 className="font-semibold text-on-surface flex items-center gap-2">Integrations <span className="chip chip-brand">Pro</span></h2>
+        <p className="text-sm text-on-surface-variant">Paste your own keys — we inject them into this app’s environment. Redeploy to apply.</p>
+        {isPro ? (
+          <div className="space-y-3">
+            {INTEGRATIONS.map((it) => (
+              <IntegrationKeyForm key={it.key} projectId={id} name={it.name} icon={it.icon} desc={it.desc}
+                fields={it.fields} connected={envs.some((e) => e.key === it.detect)} />
+            ))}
+          </div>
+        ) : (
+          <Link href="/upgrade" className="btn-ghost inline-flex text-sm px-4 py-2">✨ Pro feature — upgrade</Link>
+        )}
       </section>
     </main>
   );
