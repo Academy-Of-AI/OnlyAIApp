@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { TRACKS, getTrack } from "@/lib/tracks";
 import Link from "next/link";
 
-type App = { name: string; vercel_preview_url: string | null; user_id: string; track: string | null };
+type App = { name: string; vercel_preview_url: string | null; user_id: string; track: string | null; showcase_image: string | null };
 
 function shotSrc(url: string | null): string | null {
   if (!url) return null;
@@ -16,19 +16,21 @@ export default async function ShowcasePage({ searchParams }: { searchParams: Pro
   const nameById = new Map<string, string>();
   try {
     const admin = await createAdminClient();
-    const { data: builders } = await admin.from("profiles").select("id, github_username").not("github_username", "is", null);
-    const builderList = builders ?? [];
-    builderList.forEach((p) => nameById.set(p.id, p.github_username as string));
-    if (builderList.length) {
-      let q = admin
-        .from("projects")
-        .select("name, vercel_preview_url, user_id, track, created_at, status")
-        .in("user_id", builderList.map((p) => p.id))
-        .eq("status", "deployed")
-        .not("vercel_preview_url", "is", null);
-      if (trackFilter) q = q.eq("track", trackFilter);
-      const { data } = await q.order("created_at", { ascending: false }).limit(60);
-      apps = (data ?? []) as App[];
+    // Only owner-published, deployed apps appear — keeps login pages / unfinished builds out.
+    let q = admin
+      .from("projects")
+      .select("name, vercel_preview_url, user_id, track, showcase_image, created_at")
+      .eq("showcase_published", true)
+      .eq("status", "deployed")
+      .not("vercel_preview_url", "is", null);
+    if (trackFilter) q = q.eq("track", trackFilter);
+    const { data } = await q.order("created_at", { ascending: false }).limit(60);
+    apps = (data ?? []) as App[];
+
+    const ids = [...new Set(apps.map((a) => a.user_id))];
+    if (ids.length) {
+      const { data: profs } = await admin.from("profiles").select("id, github_username").in("id", ids);
+      (profs ?? []).forEach((p) => { if (p.github_username) nameById.set(p.id, p.github_username as string); });
     }
   } catch {
     /* admin unavailable → empty gallery, never a crash */
@@ -64,13 +66,13 @@ export default async function ShowcasePage({ searchParams }: { searchParams: Pro
       {apps.length === 0 ? (
         <div className="text-center py-24 text-on-surface-variant space-y-3 panel">
           <p className="text-4xl">✦</p>
-          <p>{trackFilter ? "No live builds in this track yet." : "No live builds yet."}</p>
-          <p className="text-sm">Ship an app and it shows up here automatically.</p>
+          <p>{trackFilter ? "No published builds in this track yet." : "No published builds yet."}</p>
+          <p className="text-sm">Ship an app, then publish it from its <b>Ops</b> page to appear here.</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {apps.map((p, i) => {
-            const src = shotSrc(p.vercel_preview_url);
+            const src = p.showcase_image || shotSrc(p.vercel_preview_url);
             const builder = nameById.get(p.user_id);
             const t = getTrack(p.track);
             return (
@@ -104,7 +106,7 @@ export default async function ShowcasePage({ searchParams }: { searchParams: Pro
       )}
 
       <p className="text-center text-xs text-outline">
-        Want your app here? Ship one and it appears automatically.
+        Want your app here? Ship one, then publish it from the project’s Ops page.
       </p>
     </main>
   );

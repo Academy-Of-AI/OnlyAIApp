@@ -75,6 +75,8 @@ export async function PATCH(
     build_prompt?: string;
     plan_progress?: unknown;
     track?: string;
+    showcase_published?: boolean;
+    showcase_image?: string | null;
   };
 
   const updates: Record<string, string> = {};
@@ -86,6 +88,15 @@ export async function PATCH(
     const { error } = await supabase.from("projects")
       .update({ plan_progress: prog }).eq("id", id).eq("user_id", user.id);
     if (error) return NextResponse.json({ error: "Couldn't save progress" }, { status: 500 });
+  }
+
+  // Showcase publish toggle + custom thumbnail — saved on their own (boolean / nullable).
+  if (typeof body.showcase_published === "boolean" || body.showcase_image !== undefined) {
+    const su: Record<string, unknown> = {};
+    if (typeof body.showcase_published === "boolean") su.showcase_published = body.showcase_published;
+    if (body.showcase_image !== undefined) su.showcase_image = body.showcase_image ? String(body.showcase_image).slice(0, 500) : null;
+    const { error } = await supabase.from("projects").update(su).eq("id", id).eq("user_id", user.id);
+    if (error) return NextResponse.json({ error: "Couldn't update showcase settings" }, { status: 500 });
   }
 
   if (body.name !== undefined) {
@@ -118,7 +129,9 @@ export async function PATCH(
   }
 
   if (Object.keys(updates).length === 0) {
-    if (Array.isArray(body.plan_progress)) return NextResponse.json({ ok: true });
+    if (Array.isArray(body.plan_progress) || typeof body.showcase_published === "boolean" || body.showcase_image !== undefined) {
+      return NextResponse.json({ ok: true });
+    }
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 

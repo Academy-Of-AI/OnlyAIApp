@@ -1,19 +1,9 @@
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
-import { getDeploymentErrorLine, getLatestDeploymentStatus, type DeploymentState } from "@/lib/vercel";
+import { getDeploymentErrorLine, getLatestDeploymentStatus } from "@/lib/vercel";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-
-const STATE_UI: Record<DeploymentState, { label: string; dot: string; chip: string }> = {
-  READY:        { label: "Live",     dot: "bg-success",  chip: "chip chip-success" },
-  BUILDING:     { label: "Building", dot: "bg-warn-dim",  chip: "chip chip-warn" },
-  INITIALIZING: { label: "Building", dot: "bg-warn-dim",  chip: "chip chip-warn" },
-  QUEUED:       { label: "Queued",   dot: "bg-warn-dim",  chip: "chip chip-warn" },
-  ERROR:        { label: "Broken",   dot: "bg-danger",    chip: "chip chip-danger" },
-  CANCELED:     { label: "Canceled", dot: "bg-outline", chip: "chip chip-neutral" },
-  unknown:      { label: "No deploy", dot: "bg-outline", chip: "chip chip-neutral" },
-};
 
 function timeAgo(ms: number | null): string {
   if (!ms) return "";
@@ -99,47 +89,47 @@ export default async function PilotPage() {
 
   function Card({ r }: { r: Row }) {
     const p = r.project;
-    const ui = STATE_UI[(r.status?.state ?? "unknown") as DeploymentState];
+    const state = r.status?.state ?? "unknown";
     const d = p.last_digest as { onTrack?: boolean; note?: string } | null;
+    const isBroken = state === "ERROR";
+    const isBuilding = ["BUILDING", "QUEUED", "INITIALIZING"].includes(state);
+    const isDrift = d?.onTrack === false;
+    const verdict = isBroken
+      ? { icon: "🔴", label: "Broken", cls: "text-danger" }
+      : isDrift
+        ? { icon: "⚠️", label: "Drifting", cls: "text-warn" }
+        : isBuilding
+          ? { icon: "🛠️", label: "Building", cls: "text-warn" }
+          : { icon: "✅", label: "On track", cls: "text-success" };
+    const now = p.plan_pack?.plan?.now ?? [];
+    const doneSet = new Set(p.plan_progress ?? []);
+    const doneCount = now.filter((i) => doneSet.has(i)).length;
+    const nextStep = now.find((i) => !doneSet.has(i));
+    const reason = isBroken
+      ? (r.errorLine ?? "Deploy failed — open the build log.")
+      : isDrift ? (d?.note ?? "Recent work is drifting from the plan.") : null;
     return (
-      <Link href={`/projects/${p.id}`}
-        className="block panel p-4 hover:bg-surface-high transition-all">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className={`dot shrink-0 ${ui.dot}`} />
-            <div className="min-w-0">
-              <p className="font-semibold text-on-surface truncate flex items-center gap-2">
-                {p.name}
-                <span className={ui.chip}>{ui.label}</span>
-              </p>
-              {r.status?.commitMessage && <p className="text-xs text-outline truncate mt-0.5">{r.status.commitMessage}</p>}
-            </div>
-          </div>
+      <Link href={`/projects/${p.id}`} className="block panel p-4 hover:bg-surface-high transition-all space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className={`text-sm font-semibold ${verdict.cls}`}>{verdict.icon} {verdict.label}</span>
           {r.status?.createdAt && <span className="text-[11px] text-outline shrink-0">{timeAgo(r.status.createdAt)}</span>}
         </div>
-        {(() => {
-          const now = p.plan_pack?.plan?.now ?? [];
-          if (now.length === 0) return null;
-          const doneSet = new Set(p.plan_progress ?? []);
-          const doneCount = now.filter((i) => doneSet.has(i)).length;
-          const pct = Math.round((doneCount / now.length) * 100);
-          return (
-            <div className="mt-2.5">
-              <div className="flex items-center justify-between text-[11px] text-on-surface-variant mb-1">
-                <span>v1 progress</span><span className="tabnum">{doneCount}/{now.length}{doneCount === now.length ? " · ready to ship" : ""}</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-surface-high overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "var(--color-success)" }} />
-              </div>
+        <p className="font-display font-semibold text-on-surface truncate">{p.name}</p>
+        {reason && <p className="text-xs text-on-surface-variant">{reason}</p>}
+        {now.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between text-[11px] text-on-surface-variant mb-1">
+              <span>v1 progress</span><span className="tabnum">{doneCount}/{now.length}{doneCount === now.length ? " · ready" : ""}</span>
             </div>
-          );
-        })()}
-        {r.status?.state === "ERROR" && (
-          <p className="mt-2 text-xs text-on-surface-variant"><span className="text-danger">⚠</span> {r.errorLine ?? "Deploy failed — open to see the build log."}</p>
+            <div className="h-1.5 rounded-full bg-surface-high overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${Math.round((doneCount / now.length) * 100)}%`, background: "var(--color-success)" }} />
+            </div>
+          </div>
         )}
-        {d?.onTrack === false && (
-          <p className="mt-2 text-xs text-on-surface-variant"><span className="text-warn">⟲</span> Drifting{d.note ? `: ${d.note}` : ""}</p>
-        )}
+        <div className="flex flex-col gap-0.5 text-xs">
+          {r.status?.commitMessage && <span className="text-on-surface-variant truncate"><span className="text-outline">changed: </span>{r.status.commitMessage}</span>}
+          {nextStep && <span className="text-on-surface truncate"><span className="text-brand-dim">next: </span>{nextStep}</span>}
+        </div>
       </Link>
     );
   }
@@ -149,7 +139,7 @@ export default async function PilotPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="eyebrow">Mission Control</p>
-          <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — every OS, on course</h1>
+          <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — every build, on course</h1>
           <p className="text-sm text-on-surface-variant mt-1">
             Your whole portfolio at a glance — health, progress vs plan, and drift across every build.
           </p>
@@ -157,10 +147,15 @@ export default async function PilotPage() {
         <Link href="/new-project" className="btn-brand text-sm px-4 py-2">＋ New project</Link>
       </div>
 
+      <div className="panel p-4 text-sm text-on-surface-variant">
+        🛫 <b className="text-on-surface">Pilot watches every live app</b> for breakage and <b className="text-on-surface">drift from your plan</b>.
+        Keep building (commit &amp; push) and it auto-flags <b className="text-on-surface">what changed, what’s off-plan, and what’s next</b> — so nothing slips between sessions.
+      </div>
+
       {/* macro KPIs — the portfolio at a glance */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="tile">
-          <p className="tile-label">OSes</p>
+          <p className="tile-label">Apps</p>
           <p className="tile-value text-on-surface">{rows.length}</p>
           <p className="text-[11px] text-outline mt-0.5">projects</p>
         </div>
@@ -230,7 +225,7 @@ function PilotLocked() {
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
       <div className="mb-5">
         <p className="eyebrow">Mission Control</p>
-        <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — every OS, on course</h1>
+        <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — every build, on course</h1>
         <p className="text-sm text-on-surface-variant mt-1">Live health + drift across all your projects.</p>
       </div>
 

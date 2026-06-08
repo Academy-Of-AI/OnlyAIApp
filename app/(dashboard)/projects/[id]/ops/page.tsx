@@ -1,6 +1,7 @@
 import { OpsPanel } from "@/components/ops-panel";
 import { DomainForm } from "@/components/domain-form";
 import { IntegrationKeyForm } from "@/components/integration-key-form";
+import { ShowcaseControls } from "@/components/showcase-controls";
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePlan } from "@/lib/plan";
@@ -94,6 +95,15 @@ export default async function OpsPage({ params }: { params: Promise<{ id: string
         ) : (
           <Link href="/upgrade" className="btn-ghost inline-flex text-sm px-4 py-2">✨ Pro feature — upgrade</Link>
         )}
+      </section>
+
+      {/* Showcase listing (free) */}
+      <section className="mt-10 space-y-3">
+        <h2 className="font-semibold text-on-surface flex items-center gap-2">✨ Showcase</h2>
+        <p className="text-sm text-on-surface-variant">Choose whether this app appears on the public Showcase, and set its thumbnail (so a login page doesn’t show).</p>
+        <div className="panel p-4">
+          <ShowcaseControls projectId={id} published={!!project.showcase_published} image={project.showcase_image ?? null} />
+        </div>
       </section>
     </main>
   );
