@@ -170,10 +170,10 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-on-surface text-center">Simple pricing 💸</h2>
           <p className="text-on-surface-variant text-center mt-2 max-w-lg mx-auto">Always bring your own Claude — we never mark up what you pay for AI.</p>
-          <div className="grid sm:grid-cols-3 gap-4 mt-10 items-start">
-            <Tier name="Free" price="$0" feats={["Ship 1 real app (2 with opt-in)", "All tracks + provisioning", "Appears on the Showcase", "Progress + next-step"]} />
-            <Tier name="Core" price="$8" per="/mo" feats={["Up to 8 projects", "Delete & recreate freely", "Everything in Free"]} note="or save 25% billed yearly" />
-            <Tier name="Pro" price="$17" per="/mo" pop feats={["Everything in Core", "Full Portfolio + career artifacts", "Public profile & case studies", "Advanced build tracking"]} note="or save 30% billed yearly" badge="Build your career" />
+          <div className="grid sm:grid-cols-3 gap-4 mt-10 items-stretch">
+            <Tier name="Free" price="$0" cta="Start free" feats={["Ship 1 real app", "All tracks + provisioning", "Appears on the Showcase", "Progress + next-step"]} />
+            <Tier name="Core" price="$8" per="/mo" cta="Choose Core" feats={["Up to 8 projects", "Delete & recreate freely", "Everything in Free"]} note="or save 25% billed yearly" />
+            <Tier name="Pro" price="$17" per="/mo" pop cta="Go Pro" feats={["Everything in Core", "Full Portfolio + career artifacts", "Public profile & case studies", "Advanced build tracking"]} note="or save 30% billed yearly" badge="Build your career" />
           </div>
         </div>
       </section>
@@ -197,20 +197,21 @@ export default function LandingPage() {
   );
 }
 
-function Tier({ name, price, per, feats, note, pop, badge }: {
-  name: string; price: string; per?: string; feats: string[]; note?: string; pop?: boolean; badge?: string;
+function Tier({ name, price, per, feats, note, pop, badge, cta }: {
+  name: string; price: string; per?: string; feats: string[]; note?: string; pop?: boolean; badge?: string; cta?: string;
 }) {
   return (
     <div className={`panel p-6 relative flex flex-col gap-2 ${pop ? "border-brand-border shadow-[0_6px_24px_rgba(124,58,237,0.14)]" : ""}`}>
       {badge && <span className="absolute -top-2.5 left-6 bg-brand text-white text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">{badge}</span>}
       <p className="font-display font-bold text-lg text-on-surface">{name}</p>
       <p className="font-display font-extrabold text-3xl tracking-tight text-on-surface">{price}{per && <span className="text-sm font-semibold text-on-surface-variant">{per}</span>}</p>
-      <ul className="space-y-1.5 mt-1">
+      <ul className="space-y-1.5 mt-1 flex-1">
         {feats.map((f) => (
           <li key={f} className="text-sm text-on-surface-variant flex gap-2"><span className="text-success font-bold">✓</span>{f}</li>
         ))}
       </ul>
       {note && <p className="text-xs text-on-surface-variant mt-1">{note}</p>}
+      <Link href="/sign-in" className={`${pop ? "btn-brand" : "btn-ghost"} text-sm font-semibold px-4 py-2.5 text-center mt-3`}>{cta ?? "Get started"} →</Link>
     </div>
   );
 }

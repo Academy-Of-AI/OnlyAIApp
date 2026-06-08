@@ -21,7 +21,7 @@ type PlanningMode = "ground_truth" | "skip";
 // PRD/plan vs skill spec — guess from the filename, the user can override.
 const guessKind = (name: string): DocKind => (/skill/i.test(name) ? "skill" : "prd");
 
-export function ScopeForm({ initial = {} }: { initial?: Partial<Record<Key, string>> } = {}) {
+export function ScopeForm({ initial = {}, modifier = "" }: { initial?: Partial<Record<Key, string>>; modifier?: string } = {}) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("describe");
   const [v, setV] = useState<Record<Key, string>>({
@@ -72,14 +72,13 @@ export function ScopeForm({ initial = {} }: { initial?: Partial<Record<Key, stri
     if (!ready || busy) return;
     setBusy(true);
     try {
+      const base = mode === "upload" ? uploadSeed() : describeBrief();
+      sessionStorage.setItem("scopeBrief", modifier ? `${base}\n\nBuild focus: ${modifier}` : base);
       if (mode === "upload") {
-        sessionStorage.setItem("scopeBrief", uploadSeed());
         sessionStorage.setItem("scopeUpload", JSON.stringify({
           docs: docs.map((d) => ({ name: d.name, content: d.content, kind: d.kind })),
           mode: planningMode,
         }));
-      } else {
-        sessionStorage.setItem("scopeBrief", describeBrief());
       }
     } catch { /* ignore */ }
     router.push("/new-project");

@@ -1,7 +1,8 @@
 /**
  * Outcome-mapped build tracks. Each ends with a real, deployed artifact the user owns.
- * Shared by /tracks (display) and the scope → Plan Pack flow (each track prefills
- * the scope form distinctly, so picking a track is a tailored on-ramp).
+ * - prefill: starter values that populate the scope form (a tailored on-ramp).
+ * - modifier: extra build guidance appended to the brief. It FLAVORS the build
+ *   (audience/shape) but never replaces the underlying generation method.
  */
 export type ScopeField = "problem" | "who" | "things" | "workflow" | "success" | "notV1";
 
@@ -10,12 +11,12 @@ export type Track = {
   icon: string;
   title: string;
   desc: string;
-  ship: string;      // the finished artifact
+  ship: string;
   time: string;
   difficulty: "Beginner" | "Intermediate";
   why: string;
-  /** Per-track starter values that prefill the scope form (user edits to their specifics). */
   prefill: Partial<Record<ScopeField, string>>;
+  modifier: string;
 };
 
 export const TRACKS: Track[] = [
@@ -33,6 +34,7 @@ export const TRACKS: Track[] = [
       workflow: "A visitor opens the live app and sees it working end-to-end.",
       success: "I have a deployed app + a short case study I can show employers.",
     },
+    modifier: "Optimize for a polished, demoable portfolio piece a recruiter can try in 30 seconds — first impression and clarity matter.",
   },
   {
     key: "income",
@@ -48,6 +50,7 @@ export const TRACKS: Track[] = [
       workflow: "A user signs up, uses the core feature, and pays for access.",
       success: "The tool is live and can take a real payment.",
     },
+    modifier: "Include a simple paid tier with checkout so the tool can charge for access from day one.",
   },
   {
     key: "busywork",
@@ -63,6 +66,7 @@ export const TRACKS: Track[] = [
       workflow: "I enter the inputs once and the tool produces the result automatically.",
       success: "The task that took hours now takes minutes.",
     },
+    modifier: "Optimize for automating one repetitive workflow into a fast, no-friction internal tool.",
   },
   {
     key: "mvp",
@@ -78,6 +82,7 @@ export const TRACKS: Track[] = [
       workflow: "A new user signs up and completes the core action.",
       success: "Real people are signing up and using it.",
     },
+    modifier: "Keep it a lean MVP: signups plus the single core action, nothing extra — built to test demand fast.",
   },
   {
     key: "brand",
@@ -93,21 +98,25 @@ export const TRACKS: Track[] = [
       workflow: "I publish/manage my content and visitors can view it.",
       success: "It’s live on my own domain and I control it.",
     },
+    modifier: "Optimize for a personal site / content tool the owner fully controls, with easy publishing.",
   },
   {
-    key: "explore",
-    icon: "🧪",
-    title: "Just explore",
-    desc: "No goal yet? Spin up a sandbox and build whatever you’re curious about.",
-    ship: "a deployed experiment",
-    time: "~30 min",
-    difficulty: "Beginner",
-    why: "fun first → proof follows",
+    key: "team",
+    icon: "🏢",
+    title: "A system for your team",
+    desc: "Build an internal operational tool for your department — sales, ops, HR, finance.",
+    ship: "a shared internal system",
+    time: "~3 days",
+    difficulty: "Intermediate",
+    why: "your team runs on it",
     prefill: {
-      problem: "A small experiment to try an idea quickly and learn by building.",
-      workflow: "The core idea works end-to-end, even if it’s rough.",
-      success: "It’s deployed and I learned something.",
+      problem: "An internal operational system for my department’s recurring workflow.",
+      who: "My team / department",
+      things: "The records, statuses, and people my team tracks today in spreadsheets/chat.",
+      workflow: "A team member logs the work and everyone sees the shared, up-to-date view.",
+      success: "My team runs the real workflow here instead of spreadsheets.",
     },
+    modifier: "This is a multi-user internal team tool: design for shared data across several users with clear roles, an operational dashboard, and reliability for daily use.",
   },
 ];
 

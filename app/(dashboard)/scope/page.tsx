@@ -33,7 +33,7 @@ export default async function ScopePage({
         </div>
       )}
 
-      <ScopeForm initial={track?.prefill ?? {}} />
+      <ScopeForm initial={track?.prefill ?? {}} modifier={track?.modifier ?? ""} />
     </main>
   );
 }

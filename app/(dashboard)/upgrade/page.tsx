@@ -55,11 +55,7 @@ export default async function UpgradePage({
             "Hand off to Claude Code",
           ]}
           current={plan === "free"}
-          footer={
-            plan === "free"
-              ? <Link href="/dashboard" className="block text-center text-xs text-brand hover:underline">＋ Add your WhatsApp for a 2nd free project →</Link>
-              : undefined
-          }
+          cta={<Link href="/tracks" className="block w-full text-center text-sm font-semibold rounded-lg py-2.5 border border-outline-variant text-on-surface hover:border-outline transition-colors">Start building →</Link>}
         />
 
         {/* Core */}
