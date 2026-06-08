@@ -117,13 +117,11 @@ export default async function UpgradePage({
         />
       </div>
 
-      <p className="text-center text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-        Cancel anytime. Your AI agent subscription (Claude Code, Codex, etc.) is separate — and yours.
-        Each project runs on its own database in your own cloud account, so your data and infrastructure stay fully yours.
-        <br />
-        <span className="font-medium text-on-surface">Heads up:</span> running multiple live projects (Core &amp; Pro)
-        needs a <b className="text-on-surface">Supabase Pro plan</b> — each project provisions its own database, billed by Supabase, separate from this.
-      </p>
+      <div className="max-w-xl mx-auto text-xs text-on-surface-variant space-y-1.5 leading-relaxed">
+        <p>• <b className="text-on-surface">You own everything</b> — code, data &amp; hosting live in your own cloud account.</p>
+        <p>• <b className="text-on-surface">Cancel anytime.</b> Your AI agent (Claude Code, Codex…) is a separate subscription, and yours.</p>
+        <p>• <b className="text-on-surface">Supabase note:</b> running several live apps needs a Supabase Pro plan — each app gets its own database, billed by Supabase.</p>
+      </div>
 
       {plan !== "free" && (
         <section className="max-w-2xl mx-auto w-full space-y-3">

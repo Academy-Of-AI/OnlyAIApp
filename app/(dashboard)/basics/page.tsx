@@ -70,6 +70,31 @@ const terms: Term[] = [
     def: "OnlyAIApp setting all of the above up for you in one click — the repo, database, hosting, and keys, ready to go.",
     analogy: "Like getting a new home where the power, water, and internet are already switched on.",
   },
+  {
+    term: "Stripe payments",
+    def: "Lets your app charge money — card payments or subscriptions. Connect your own Stripe account and your app can sell.",
+    analogy: "The card machine for your app — it takes the customer's money safely.",
+  },
+  {
+    term: "Custom domain",
+    def: "Point your own web address (like myapp.com) at your app instead of the default link.",
+    analogy: "Putting your own nameplate on the door instead of the building's default number.",
+  },
+  {
+    term: "Sentry",
+    def: "Watches your live app for errors and tells you the moment something breaks for a real user — with the details to fix it.",
+    analogy: "A security camera that records exactly what went wrong, so you're not guessing.",
+  },
+  {
+    term: "PostHog",
+    def: "Analytics for your app — shows who's using it, what they click, and where they drop off.",
+    analogy: "Footprints in the shop — you see where people go and where they leave.",
+  },
+  {
+    term: "Upstash (Redis)",
+    def: "A super-fast mini-memory for your app, used for things like rate-limiting or caching so it stays quick.",
+    analogy: "A sticky-note board by the till for things you need to grab instantly.",
+  },
 ];
 
 export default function BasicsPage() {

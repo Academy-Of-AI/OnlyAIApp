@@ -53,7 +53,10 @@ export async function POST(request: Request) {
 
   const name = profile?.github_username || "the builder";
   const ctx = shipped.map((p) => {
-    const desc = (p.build_prompt ?? "").trim().split(/\n/)[0].slice(0, 200);
+    const desc = (String(p.build_prompt ?? "").split(/\n/).find((l: string) => {
+      const v = l.trim();
+      return !!v && !/^#/.test(v) && !/\.(md|txt|pdf)\b/i.test(v);
+    }) ?? "").trim().slice(0, 200);
     const ms = Array.isArray(p.plan_progress) ? p.plan_progress.length : 0;
     return `App: ${p.name}\nStatus: live / deployed\nWhat it does: ${desc || "a web app"}\nMilestones completed: ${ms}`;
   }).join("\n\n");

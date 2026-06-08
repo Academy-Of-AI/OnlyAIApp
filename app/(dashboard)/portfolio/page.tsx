@@ -101,10 +101,18 @@ function parseBrief(bp?: string | null): { summary?: string; problem?: string } 
   const text = (bp ?? "").trim();
   if (!text) return {};
   const grab = (re: RegExp) => { const m = text.match(re); return m ? m[1].trim() : ""; };
-  const problem = grab(/Problem:\s*(.+)/i);
-  const summary =
-    grab(/(?:one workflow[^:]*:|Core things to track:|What I built:)\s*(.+)/i) ||
-    text.split(/\n/)[0].replace(/^Problem:\s*/i, "").trim();
+  // Reject filenames, markdown headings/lists, and too-short fragments — they make ugly artifacts.
+  const clean = (s: string) => {
+    const v = (s || "").replace(/^#+\s*/, "").trim();
+    if (/\.(md|txt|pdf|docx?|json)\b/i.test(v)) return "";
+    if (/^[#>*\-`|]/.test(v)) return "";
+    if (v.length < 10) return "";
+    return v;
+  };
+  const problem = clean(grab(/Problem:\s*(.+)/i));
+  const fromFields = clean(grab(/(?:one workflow[^:]*:|Core things to track:|What I built:)\s*(.+)/i));
+  const firstGoodLine = clean(text.split(/\n/).find((l) => clean(l)) ?? "");
+  const summary = fromFields || firstGoodLine;
   return { summary: summary || undefined, problem: problem || undefined };
 }
 
