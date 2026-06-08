@@ -83,7 +83,7 @@ export default function LandingPage() {
         <span className="text-outline">·</span>{" "}
         <a href="https://www.linkedin.com/in/ngxienpuo/" target="_blank" rel="noopener noreferrer"
           className="text-outline hover:text-on-surface transition-colors">
-          Built by Ng Xien Puo
+          Made by Ng Xien Puo
         </a>{" "}
         <span className="text-outline">·</span>{" "}
         <Link href="/privacy" className="text-outline hover:text-on-surface transition-colors">
