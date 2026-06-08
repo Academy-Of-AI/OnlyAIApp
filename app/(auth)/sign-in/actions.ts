@@ -49,3 +49,34 @@ export async function signInWithGitHub() {
     redirect(data.url);
   }
 }
+
+/**
+ * Server Action — passwordless email sign-in (magic link). Lets people in
+ * WITHOUT GitHub so they can explore; GitHub is requested later, at build time.
+ * Reuses /auth/callback (generic code exchange).
+ */
+export async function signInWithEmail(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email || !email.includes("@")) {
+    redirect("/sign-in?auth_error=" + encodeURIComponent("Enter a valid email address."));
+  }
+
+  const headerStore = await headers();
+  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "onlyaiapp.com";
+  const isLocal = host.startsWith("localhost") || host.startsWith("127.");
+  const proto = headerStore.get("x-forwarded-proto") ?? (isLocal ? "http" : "https");
+  const origin = `${proto}://${host}`;
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: `${origin}/auth/callback?next=/dashboard` },
+  });
+
+  if (error) {
+    console.error("[auth] signInWithEmail error:", error.message);
+    redirect("/sign-in?auth_error=" + encodeURIComponent(error.message));
+  }
+
+  redirect("/sign-in?sent=" + encodeURIComponent(email));
+}

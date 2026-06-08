@@ -1,5 +1,6 @@
 import { OptInNudge } from "@/components/optin-nudge";
 import { ReferralCard } from "@/components/referral-card";
+import { GetStartedChecklist } from "@/components/get-started-checklist";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePlan, hasOptedIn } from "@/lib/plan";
 import { reconcileReferralReward } from "@/lib/referrals";
@@ -67,21 +68,8 @@ export default async function HomePage({
         </p>
       </div>
 
-      {/* Connect GitHub (only thing needed to start) */}
-      {!hasGitHub && (
-        <section className="panel border-brand-border bg-brand-container p-5 sm:p-6 space-y-4">
-          <div>
-            <h2 className="font-display tracking-tight font-semibold text-lg text-on-surface">Connect GitHub to start</h2>
-            <p className="text-sm text-on-surface-variant mt-1">Your builds get a private repo, created automatically. It’s the only thing you need to begin.</p>
-          </div>
-          <a href="/api/github/connect" className="btn-brand flex items-center justify-center gap-2 text-sm px-4 py-2.5 w-full sm:w-auto"><GHIcon /> Connect GitHub →</a>
-          <p className="text-xs text-outline">
-            No GitHub account?{" "}
-            <a href="https://github.com/signup" target="_blank" rel="noopener noreferrer" className="text-on-surface-variant hover:text-on-surface underline underline-offset-2">Create one free →</a>{" "}
-            — it takes a minute, then come back and connect.
-          </p>
-        </section>
-      )}
+      {/* Guided onboarding rail (also handles the GitHub connect step) */}
+      <GetStartedChecklist hasGitHub={!!hasGitHub} hasProject={list.length > 0} hasShipped={shipped > 0} />
 
       {/* Free-tier opt-in nudge → +1 project */}
       {hasGitHub && showOptInNudge && <OptInNudge />}
@@ -112,18 +100,11 @@ export default async function HomePage({
               </div>
             </div>
           </div>
-        ) : (
-          <div className="panel p-6 text-center space-y-3">
-            <p className="text-3xl">🚀</p>
-            <h2 className="font-display font-semibold text-lg text-on-surface">Build your first real app</h2>
-            <p className="text-sm text-on-surface-variant max-w-md mx-auto">Pick an outcome — a portfolio project, a side-income tool, killing your busywork — and we’ll spin up a live app to start from.</p>
-            <Link href="/tracks" className="btn-brand text-sm px-5 py-2.5 inline-flex">Pick a track →</Link>
-          </div>
-        )
+        ) : null
       )}
 
-      {/* Quick actions */}
-      {hasGitHub && (
+      {/* Quick actions — visible to all so email-only users can explore */}
+      {(
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Link href="/tracks" className="panel p-4 hover:border-outline transition-all">
             <div className="text-xl">🧭</div>
@@ -189,13 +170,5 @@ function Stat({ label, value, foot }: { label: string; value: number; foot: stri
       <div className="tile-value tabnum">{value}</div>
       <div className="text-[11px] text-on-surface-variant mt-1">{foot}</div>
     </div>
-  );
-}
-
-function GHIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
-      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.1.82-.26.82-.58v-2.03c-3.34.72-4.04-1.6-4.04-1.6-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.65 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.21.7.82.58C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z" />
-    </svg>
   );
 }

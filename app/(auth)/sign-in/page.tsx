@@ -1,23 +1,22 @@
-import { signInWithGitHub } from "./actions";
+import { signInWithGitHub, signInWithEmail } from "./actions";
 
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ auth_error?: string }>;
+  searchParams: Promise<{ auth_error?: string; sent?: string }>;
 }) {
   const params = await searchParams;
   const authError = params?.auth_error;
+  const sent = params?.sent;
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 bg-surface">
       <div className="w-full max-w-sm space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <p className="eyebrow text-sm tracking-wide uppercase text-xs">OnlyAIApp</p>
-          <h1 className="font-display text-2xl font-bold text-on-surface">Build your AI system</h1>
-          <p className="text-on-surface-variant text-sm">
-            Sign in or create an account — your workspace is tied to your GitHub.
-          </p>
+          <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-brand">OnlyAIApp · Build Studio</p>
+          <h1 className="font-display text-2xl font-bold text-on-surface">Build real apps. Own the proof.</h1>
+          <p className="text-on-surface-variant text-sm">Sign in to start — no setup, no config.</p>
         </div>
 
         {authError && (
@@ -26,28 +25,39 @@ export default async function SignInPage({
           </div>
         )}
 
-        {/* Primary CTA — server action, works without JS */}
-        <form action={signInWithGitHub}>
-          <button
-            type="submit"
-            className="btn-brand w-full flex items-center justify-center gap-2.5 py-3 text-sm"
-          >
-            <GitHubIcon />
-            Continue with GitHub
-          </button>
-        </form>
+        {sent ? (
+          <div className="panel p-6 text-center space-y-2">
+            <p className="text-3xl">📧</p>
+            <p className="font-display font-semibold text-on-surface">Check your email</p>
+            <p className="text-sm text-on-surface-variant">We sent a sign-in link to <b className="text-on-surface">{sent}</b>. Click it to continue.</p>
+            <a href="/sign-in" className="inline-block text-xs text-brand-dim hover:underline pt-1">Use a different method</a>
+          </div>
+        ) : (
+          <>
+            {/* Email magic link — gets you in without GitHub */}
+            <form action={signInWithEmail} className="space-y-2">
+              <input name="email" type="email" required placeholder="you@email.com" className="cap-input" />
+              <button type="submit" className="btn-brand w-full py-2.5 text-sm">Email me a sign-in link →</button>
+            </form>
 
-        {/* Fix 5: product-specific rationale */}
-        <p className="text-center text-xs text-on-surface-variant leading-relaxed">
-          GitHub is required — your app, repo, and workflow live in real code.
-          We create your workspace and keep your build on track from there.
-        </p>
+            <div className="flex items-center gap-3 text-xs text-outline">
+              <span className="h-px flex-1 bg-outline-variant" /> or <span className="h-px flex-1 bg-outline-variant" />
+            </div>
 
-        {/* Fix 3: trust / legal microcopy — no Terms/Privacy pages exist yet, so safe copy only */}
-        <p className="text-center text-[11px] text-outline">
-          By continuing you agree that OnlyAIApp may access your GitHub account to
-          create and manage repositories on your behalf.
-        </p>
+            {/* GitHub — also signs you in, and grants repo access for building */}
+            <form action={signInWithGitHub}>
+              <button type="submit" className="btn-ghost w-full flex items-center justify-center gap-2.5 py-2.5 text-sm">
+                <GitHubIcon />
+                Continue with GitHub
+              </button>
+            </form>
+
+            <p className="text-center text-xs text-on-surface-variant leading-relaxed">
+              Email gets you in to explore. When you build your first app you’ll connect GitHub —
+              that’s how your code becomes truly yours.
+            </p>
+          </>
+        )}
       </div>
     </main>
   );
