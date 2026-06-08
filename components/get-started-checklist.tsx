@@ -11,8 +11,7 @@ export function GetStartedChecklist({
 }: {
   hasGitHub: boolean; hasProject: boolean; hasShipped: boolean;
 }) {
-  // Graduated — don't nag experienced builders.
-  if (hasGitHub && hasProject && hasShipped) return null;
+  const allDone = hasGitHub && hasProject && hasShipped;
 
   const steps: Step[] = [
     { label: "Connect GitHub", href: "/api/github/connect", cta: "Connect", done: hasGitHub, external: true },
@@ -24,8 +23,8 @@ export function GetStartedChecklist({
 
   return (
     <div className="panel p-5">
-      <p className="eyebrow">🚀 Get started</p>
-      <h2 className="font-display font-semibold text-on-surface mt-1">Your first 4 steps</h2>
+      <p className="eyebrow">{allDone ? "🎉 You're rolling" : "🚀 Get started"}</p>
+      <h2 className="font-display font-semibold text-on-surface mt-1">{allDone ? "You've shipped — keep building" : "Your first 4 steps"}</h2>
       <ol className="mt-3 space-y-2.5">
         {steps.map((s, i) => {
           const isCurrent = i === firstTodo;

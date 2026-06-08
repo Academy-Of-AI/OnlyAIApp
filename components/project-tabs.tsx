@@ -607,6 +607,9 @@ function SettingsTab({ project }: { project: Project }) {
             status="Email is injected from your account key"
             href="/settings" hrefLabel="Manage →" />
         </div>
+        <a href={`/projects/${project.id}/ops`} className="btn-brand text-sm px-4 py-2 inline-flex mt-1">
+          🔌 Manage this app: add-ons (Stripe · Sentry · PostHog · Upstash), custom domain &amp; Showcase →
+        </a>
       </div>
 
       <div className="border border-danger/20 rounded-xl p-5 space-y-3">

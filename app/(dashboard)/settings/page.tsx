@@ -1,7 +1,6 @@
 import { VercelConnectForm } from "@/components/vercel-connect-form";
 import { SupabaseConnectForm } from "@/components/supabase-connect-form";
 import { ResendConnectForm } from "@/components/resend-connect-form";
-import { StripeConnectButton } from "@/components/stripe-connect-button";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -34,9 +33,7 @@ export default async function SettingsPage({
   const hasVercel = has("vercel");
   const hasSupabase = has("supabase");
   const hasResend = has("resend");
-  const hasStripe = has("stripe");
   const plan = profile?.plan ?? "free";
-  const isPro = plan === "pro";
 
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
@@ -124,20 +121,13 @@ export default async function SettingsPage({
             : <ResendConnectForm redirectTo="/settings" />}
         </IntegrationCard>
 
-        {/* Stripe payments (Pro) — let the user's apps accept payments */}
-        <IntegrationCard icon="💳" name="Stripe payments" connected={hasStripe}
-          desc="Let your apps accept payments — one Stripe account, reused across your projects. (Pro)">
-          {!isPro
-            ? <Link href="/upgrade" className="btn-ghost inline-flex items-center justify-center text-sm px-4 py-2">✨ Pro feature — upgrade</Link>
-            : hasStripe
-              ? <ConnectedNote text="Connected — your apps can take payments." />
-              : <StripeConnectButton />}
-        </IntegrationCard>
-
-        <p className="text-xs text-on-surface-variant px-1 pt-1">
-          Need <b className="text-on-surface">Sentry, PostHog, Upstash</b> or a <b className="text-on-surface">custom domain</b> for a specific app?
-          Those are per-app — open it from <Link href="/projects" className="text-brand-dim hover:underline">Projects</Link> → the <b className="text-on-surface">Ops</b> tab. (Pro)
-        </p>
+        <div className="panel p-5 bg-surface-dim">
+          <p className="text-sm text-on-surface-variant">
+            <b className="text-on-surface">App integrations are per-app</b> — Stripe payments, Sentry, PostHog, Upstash &amp;
+            custom domains live on each project (so different apps can use different accounts/orgs). Open a project from{" "}
+            <Link href="/projects" className="text-brand-dim hover:underline">Projects</Link> → its <b className="text-on-surface">Settings → Manage this app</b>. (Pro)
+          </p>
+        </div>
       </section>
     </main>
   );

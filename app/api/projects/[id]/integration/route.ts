@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 
 // Only these env keys may be written (bring-your-own-key integrations).
 const ALLOWED = new Set([
+  "STRIPE_SECRET_KEY", "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
   "SENTRY_DSN", "NEXT_PUBLIC_SENTRY_DSN",
   "NEXT_PUBLIC_POSTHOG_KEY", "NEXT_PUBLIC_POSTHOG_HOST",
   "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN",

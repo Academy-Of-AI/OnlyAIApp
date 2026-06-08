@@ -14,6 +14,11 @@ export const dynamic = "force-dynamic";
 // Bring-your-own-key integrations (Pro). The user pastes their own keys; we inject
 // them into this project's Vercel env. detect = the env key that marks it "Added".
 const INTEGRATIONS = [
+  { key: "stripe", name: "Stripe payments", icon: "💳", desc: "Accept payments in this app", detect: "STRIPE_SECRET_KEY",
+    fields: [
+      { env: "STRIPE_SECRET_KEY", label: "Secret key", placeholder: "sk_live_… or sk_test_…" },
+      { env: "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", label: "Publishable key", placeholder: "pk_live_… or pk_test_…" },
+    ] },
   { key: "sentry", name: "Sentry", icon: "🛡️", desc: "Error monitoring", detect: "SENTRY_DSN",
     fields: [{ env: "SENTRY_DSN", label: "Sentry DSN", placeholder: "https://…ingest.sentry.io/…" }] },
   { key: "posthog", name: "PostHog", icon: "📈", desc: "Product analytics", detect: "NEXT_PUBLIC_POSTHOG_KEY",
