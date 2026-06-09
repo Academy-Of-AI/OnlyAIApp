@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { TRACKS } from "@/lib/tracks";
-import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 
 const steps = [
   { n: "01", icon: "🧭", title: "Pick a track", body: "Choose an outcome — land a role, a side-income tool, kill your busywork. We spin up a real, live app to start from." },
@@ -23,11 +23,13 @@ const artifacts = [
 ];
 
 export default async function LandingPage() {
-  // Auth-aware CTAs — a logged-in visitor (e.g. opening the site in a new tab)
-  // shouldn't be nudged to "sign in" as if logged out.
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const authed = !!user;
+  // Auth-aware CTAs from a CHEAP cookie-presence check only — never getUser()
+  // here. getUser() on this high-traffic page triggered concurrent refresh-token
+  // grants (RSC + middleware) that hammered Supabase /token with 429s and broke
+  // fresh sign-ins. A stale cookie at worst shows "Open Studio"; the dashboard
+  // then validates properly. No network call, no token refresh.
+  const cookieStore = await cookies();
+  const authed = cookieStore.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
   const ctaHref = authed ? "/dashboard" : "/sign-in";
 
   return (
