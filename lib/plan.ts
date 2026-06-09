@@ -50,8 +50,13 @@ export function hasOptedIn(
  * Base per tier + 1 per successful referral (bonus_projects, granted when a
  * referee ships their first app).
  */
+/** Hard ceiling on provisioned projects (also enforced server-side via MAX_PROJECTS). */
+export const PROJECT_CEILING = 8;
+
 export function projectLimit(plan: string | null | undefined, bonusProjects: number = 0): number {
-  return PROJECT_LIMITS[normalizePlan(plan)] + Math.max(0, bonusProjects | 0);
+  // Base per tier + referral bonuses, capped at the ceiling — referrals add
+  // slots only until the total hits 8.
+  return Math.min(PROJECT_CEILING, PROJECT_LIMITS[normalizePlan(plan)] + Math.max(0, bonusProjects | 0));
 }
 
 /** Free users can't delete their project (so they can't recycle the slot). */
