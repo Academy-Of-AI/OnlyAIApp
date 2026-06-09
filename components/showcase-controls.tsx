@@ -20,8 +20,15 @@ export function ShowcaseControls({
   }
 
   async function savePublished(next: boolean) {
+    const prev = pub;
     setPub(next); setMsg(null);
-    await patch({ showcase_published: next }).catch(() => {});
+    try {
+      const res = await patch({ showcase_published: next });
+      if (!res.ok) throw new Error();
+    } catch {
+      setPub(prev); // revert the optimistic toggle
+      setMsg("Couldn't update — please try again.");
+    }
   }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -31,7 +38,8 @@ export function ShowcaseControls({
     setBusy(true); setMsg(null);
     try {
       const url = await uploadImage(file, projectId);
-      await patch({ showcase_image: url });
+      const res = await patch({ showcase_image: url });
+      if (!res.ok) throw new Error("Couldn't save the thumbnail — please try again.");
       setImg(url); setMsg("Thumbnail updated.");
     } catch (err) {
       setMsg(err instanceof Error ? err.message : "Upload failed — try again.");
@@ -41,8 +49,15 @@ export function ShowcaseControls({
   }
 
   async function clearImage() {
+    const prev = img;
     setImg(null); setMsg(null);
-    await patch({ showcase_image: null }).catch(() => {});
+    try {
+      const res = await patch({ showcase_image: null });
+      if (!res.ok) throw new Error();
+    } catch {
+      setImg(prev); // restore the thumbnail we optimistically cleared
+      setMsg("Couldn't update — please try again.");
+    }
   }
 
   return (

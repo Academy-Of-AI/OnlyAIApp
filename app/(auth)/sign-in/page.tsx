@@ -2,17 +2,23 @@ import { signInWithGitHub, signInWithEmail } from "./actions";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
+// Only honor same-origin, local-path redirects (defense against open redirect).
+function safeNext(next: string | undefined): string {
+  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+}
+
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ auth_error?: string; sent?: string; email_error?: string }>;
+  searchParams: Promise<{ auth_error?: string; sent?: string; email_error?: string; next?: string }>;
 }) {
   const params = await searchParams;
+  const next = safeNext(params?.next);
   // Already signed in (e.g. opened the app in a new tab)? Don't make them
-  // re-authenticate — send them straight into the Studio.
+  // re-authenticate — send them straight to where they were headed.
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect("/dashboard");
+  if (user) redirect(next);
 
   const authError = params?.auth_error;
   const emailError = params?.email_error === "1";
@@ -45,12 +51,13 @@ export default async function SignInPage({
             <p className="text-3xl">📧</p>
             <p className="font-display font-semibold text-on-surface">Check your email</p>
             <p className="text-sm text-on-surface-variant">We sent a sign-in link to <b className="text-on-surface">{sent}</b>. Click it to continue.</p>
-            <a href="/sign-in" className="inline-block text-xs text-brand-dim hover:underline pt-1">Use a different method</a>
+            <a href={next === "/dashboard" ? "/sign-in" : `/sign-in?next=${encodeURIComponent(next)}`} className="inline-block text-xs text-brand-dim hover:underline pt-1">Use a different method</a>
           </div>
         ) : (
           <>
             {/* Email magic link — gets you in without GitHub */}
             <form action={signInWithEmail} className="space-y-2">
+              <input type="hidden" name="next" value={next} />
               <input name="email" type="email" required placeholder="you@email.com" className="cap-input" />
               <button type="submit" className="btn-brand w-full py-2.5 text-sm">Email me a sign-in link →</button>
             </form>
@@ -62,6 +69,7 @@ export default async function SignInPage({
             {/* GitHub — also signs you in, and grants repo access for building.
                 Highlighted when the email path just failed. */}
             <form action={signInWithGitHub}>
+              <input type="hidden" name="next" value={next} />
               <button type="submit" className={`w-full flex items-center justify-center gap-2.5 py-2.5 text-sm ${emailError ? "btn-brand ring-2 ring-offset-2 ring-[var(--color-brand)]" : "btn-ghost"}`}>
                 <GitHubIcon />
                 Continue with GitHub{emailError ? " — recommended" : ""}

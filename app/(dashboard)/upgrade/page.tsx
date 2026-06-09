@@ -97,6 +97,7 @@ export default async function UpgradePage({
           sub="or $11.90/mo billed yearly — save 30%"
           features={[
             "Everything in Core",
+            "✍️ Unlimited AI artifact writes",
             "💳 Accept payments — your app can charge (Stripe)",
             "🛡️ Production hardening — error monitoring, analytics & caching",
             "🛫 Advanced build tracking (drift & auto-capture)",

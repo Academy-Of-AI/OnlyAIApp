@@ -93,7 +93,7 @@ export function ProfileCard({
           <span className="absolute inset-0 rounded-xl bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity grid place-items-center text-white text-[10px] font-semibold">
             {uploading ? "…" : "Photo"}
           </span>
-          <input type="file" accept="image/*" className="hidden" onChange={onPhoto} disabled={uploading} />
+          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={onPhoto} disabled={uploading} />
         </label>
 
         <div className="flex-1 min-w-[160px]">
@@ -144,7 +144,13 @@ export function ProfileCard({
       {!editing && msg && <p className={`text-xs mt-2 ${msg.ok ? "text-success" : "text-danger"}`}>{msg.text}</p>}
 
       {cropFile && (
-        <AvatarCropper file={cropFile} busy={uploading} onCancel={() => setCropFile(null)} onCropped={uploadCropped} />
+        <AvatarCropper
+          file={cropFile}
+          busy={uploading}
+          error={msg && !msg.ok ? msg.text : null}
+          onCancel={() => { setCropFile(null); setMsg(null); }}
+          onCropped={uploadCropped}
+        />
       )}
     </div>
   );

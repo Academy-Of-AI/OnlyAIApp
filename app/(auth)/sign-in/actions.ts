@@ -5,6 +5,15 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 /**
+ * Only honor same-origin, local-path post-login redirects (defense against
+ * open redirect). Falls back to /dashboard.
+ */
+function safeNext(next: FormDataEntryValue | null): string {
+  const value = typeof next === "string" ? next : "";
+  return value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
+}
+
+/**
  * Server Action — initiates GitHub OAuth via the SERVER client.
  *
  * This is the canonical Supabase App Router approach. By calling
@@ -23,7 +32,8 @@ import { redirect } from "next/navigation";
  * format than the server callback expected — causing "PKCE verifier
  * not found" every time.
  */
-export async function signInWithGitHub() {
+export async function signInWithGitHub(formData: FormData) {
+  const next = safeNext(formData.get("next"));
   const headerStore = await headers();
   // Prefer the forwarded host so it works on both onlyaiapp.com and previews.
   const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "onlyaiapp.com";
@@ -36,7 +46,7 @@ export async function signInWithGitHub() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
     options: {
-      redirectTo: `${origin}/auth/callback?next=/dashboard`,
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
     },
   });
 
@@ -56,6 +66,7 @@ export async function signInWithGitHub() {
  * Reuses /auth/callback (generic code exchange).
  */
 export async function signInWithEmail(formData: FormData) {
+  const next = safeNext(formData.get("next"));
   const email = String(formData.get("email") ?? "").trim();
   if (!email || !email.includes("@")) {
     redirect("/sign-in?auth_error=" + encodeURIComponent("Enter a valid email address."));
@@ -70,7 +81,7 @@ export async function signInWithEmail(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${origin}/auth/callback?next=/dashboard` },
+    options: { emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}` },
   });
 
   if (error) {

@@ -17,7 +17,7 @@ const STATUS_STYLES: Record<string, string> = {
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ connected?: string; error?: string }>;
+  searchParams: Promise<{ connected?: string; error?: string; upgraded?: string }>;
 }) {
   const params = await searchParams;
   const supabase = await createClient();
@@ -50,6 +50,9 @@ export default async function HomePage({
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6">
       {/* Alerts */}
+      {params.upgraded && (
+        <div className="panel border-l-2 border-l-success text-success text-sm px-4 py-3">🎉 You&apos;re upgraded — your new plan is active. Enjoy your unlocked perks.</div>
+      )}
       {params.connected && (
         <div className="panel border-l-2 border-l-success text-success text-sm px-4 py-3">✓ {connectedLabel(params.connected)} connected successfully.</div>
       )}

@@ -14,9 +14,22 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
+  const returnedState = searchParams.get("state");
 
   if (error || !code) {
     return NextResponse.redirect(`${origin}/dashboard?error=github_denied`);
+  }
+
+  // CSRF: the state returned by GitHub MUST match the httpOnly cookie we set in
+  // /api/github/connect. A mismatch (or missing cookie) means the request did
+  // not originate from our connect flow — reject to prevent connection fixation
+  // / account-overwrite. Clear the single-use cookie regardless of outcome.
+  const cookieStore = await cookies();
+  const expectedState = cookieStore.get("github_oauth_state")?.value;
+  cookieStore.set("github_oauth_state", "", { maxAge: 0, path: "/" });
+
+  if (!expectedState || !returnedState || returnedState !== expectedState) {
+    return NextResponse.redirect(`${origin}/dashboard?error=github_state`);
   }
 
   // Exchange code for access token

@@ -9,19 +9,27 @@ const SIZE = 256; // square export + on-screen frame (1:1 — WYSIWYG)
  * perfectly square image so it never gets head-cropped on display.
  */
 export function AvatarCropper({
-  file, onCancel, onCropped, busy = false,
+  file, onCancel, onCropped, busy = false, error = null,
 }: {
   file: File;
   onCancel: () => void;
   onCropped: (blob: Blob) => void;
   busy?: boolean;
+  /** Upload/save error surfaced by the parent — shown inside the modal. */
+  error?: string | null;
 }) {
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [url, setUrl] = useState<string>("");
   const [nat, setNat] = useState<{ w: number; h: number } | null>(null);
   const [zoom, setZoom] = useState(1);
   const [off, setOff] = useState({ x: 0, y: 0 });
+  // Set when the browser can't decode the picked file (e.g. HEIC from iPhone),
+  // so we can surface a message and stop showing "Save photo" as available.
+  const [loadErr, setLoadErr] = useState<string | null>(null);
   const drag = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null);
+
+  // Reset the decode error whenever a new file is loaded.
+  useEffect(() => { setLoadErr(null); setNat(null); }, [file]);
 
   // Load the picked file into an object URL.
   useEffect(() => {
@@ -97,7 +105,8 @@ export function AvatarCropper({
               src={url}
               alt="crop"
               draggable={false}
-              onLoad={(e) => setNat({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+              onLoad={(e) => { setLoadErr(null); setNat({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight }); }}
+              onError={() => setLoadErr("That image type isn’t supported here. Try a JPG, PNG, or WebP (iPhone HEIC photos won’t load).")}
               style={{ position: "absolute", left, top, width: drawnW, height: drawnH, maxWidth: "none" }}
             />
           )}
@@ -112,9 +121,13 @@ export function AvatarCropper({
             className="flex-1 accent-[var(--color-brand)]" />
         </div>
 
+        {(loadErr || error) && (
+          <p className="text-xs text-danger" role="alert">{loadErr ?? error}</p>
+        )}
+
         <div className="flex items-center justify-end gap-2">
-          <button onClick={onCancel} disabled={busy} className="btn-ghost text-sm px-3 py-1.5">Cancel</button>
-          <button onClick={save} disabled={busy || !nat} className="btn-brand text-sm px-4 py-1.5">{busy ? "Saving…" : "Save photo"}</button>
+          <button onClick={onCancel} disabled={busy} className="btn-ghost text-sm px-3 py-1.5">{loadErr ? "Pick another" : "Cancel"}</button>
+          <button onClick={save} disabled={busy || !nat || !!loadErr} className="btn-brand text-sm px-4 py-1.5">{busy ? "Saving…" : "Save photo"}</button>
         </div>
       </div>
     </div>

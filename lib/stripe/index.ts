@@ -18,10 +18,11 @@ export const stripe = new Proxy({} as Stripe, {
   },
 });
 
+// Keep in sync with lib/plan.ts (PROJECT_LIMITS). Prices in whole USD/mo.
 export const PLANS = {
-  free: { name: "Free", price: 0, projects: 3 },
-  pro:  { name: "Pro",  price: 19, projects: Infinity },
-  org:  { name: "Org",  price: 99, projects: Infinity },
+  free: { name: "Free", price: 0,  projects: 2 },
+  core: { name: "Core", price: 8,  projects: 8 },
+  pro:  { name: "Pro",  price: 17, projects: 8 },
 } as const;
 
 /** One-time credit packs — sold via Stripe checkout with price_data */

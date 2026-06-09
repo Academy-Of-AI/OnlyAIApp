@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface Milestone { id: string; title: string; detail: string | null; status: string; position: number }
 
@@ -28,19 +29,22 @@ export function PlanPanel({
   const [prd, setPrd] = useState("");
   const [generating, setGenerating] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [proGated, setProGated] = useState(false);
   const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones);
 
   async function generate(e: React.FormEvent) {
     e.preventDefault();
     if (!objective.trim()) return;
-    setGenerating(true); setErr(null);
+    setGenerating(true); setErr(null); setProGated(false);
     try {
       const res = await fetch(`/api/projects/${projectId}/plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ objective, prd }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      // Pro-gated (402 / pro_required) → surface an Upgrade CTA, not bare red text.
+      if (res.status === 402 || data?.code === "pro_required") { setProGated(true); return; }
       if (!res.ok) throw new Error(data.error ?? "Failed");
       router.refresh();
     } catch (e2) {
@@ -85,7 +89,15 @@ export function PlanPanel({
         >
           {generating ? "Generating plan…" : "Generate plan of record"}
         </button>
-        {err && <p className="text-xs text-danger">{err}</p>}
+        {proGated && (
+          <div className="rounded-lg border border-brand-border bg-brand-container px-4 py-3 space-y-2">
+            <p className="text-sm text-on-surface">
+              AI plan generation is a <span className="font-semibold">Pro</span> feature — it runs on our AI to turn your objective into a milestone plan of record.
+            </p>
+            <Link href="/upgrade" className="btn-brand text-sm px-4 py-2 inline-block">Upgrade to Pro →</Link>
+          </div>
+        )}
+        {err && !proGated && <p className="text-xs text-danger">{err}</p>}
         <p className="text-xs text-on-surface-variant">
           The plan is written into CLAUDE.md so the agent stays anchored to it and flags scope creep.
         </p>

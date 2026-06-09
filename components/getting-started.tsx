@@ -19,14 +19,21 @@ export function GettingStarted({
   hasPlan,
   hasMemory,
   firstProjectId,
+  isPro,
 }: {
   accountsConnected: boolean;
   hasProject: boolean;
   hasPlan: boolean;
   hasMemory: boolean;
   firstProjectId: string | null;
+  /** AI plan generation is Pro-gated. When explicitly false, the "Set your
+   *  objective" step routes to Upgrade instead of dead-ending on a 402. Left
+   *  undefined → behaves as before (assumes capable). */
+  isPro?: boolean;
 }) {
   const pid = firstProjectId;
+  // Free users can't generate an AI plan — point them at Upgrade rather than the wall.
+  const objectiveGated = isPro === false;
 
   // Graduation: they've run the full loop. Take the training wheels off.
   if (hasProject && hasPlan && hasMemory) {
@@ -46,8 +53,11 @@ export function GettingStarted({
     { label: "Set up Claude Code (your engine)", done: false, href: "/start", cta: "Guide" },
     { label: "Connect GitHub", done: accountsConnected, href: "#", cta: "Connect above" },
     { label: "Create your first project", done: hasProject, href: "/new-project", cta: "New project" },
-    { label: "Set your objective (→ a plan your agent follows)", done: hasPlan,
-      href: pid ? `/projects/${pid}/plan` : "/new-project", cta: "Set objective" },
+    objectiveGated
+      ? { label: "Set your objective (AI plan — a Pro feature)", done: hasPlan,
+          href: "/upgrade", cta: "Upgrade" }
+      : { label: "Set your objective (→ a plan your agent follows)", done: hasPlan,
+          href: pid ? `/projects/${pid}/plan` : "/new-project", cta: "Set objective" },
     { label: "Build it with Claude Code", done: hasMemory,
       href: pid ? `/projects/${pid}` : "/new-project", cta: "Open project" },
   ];

@@ -6,7 +6,9 @@ import { useEffect, useState } from "react";
 export default function JoinPage() {
   const params = useParams();
   const router = useRouter();
-  const code = (params.code as string).toUpperCase();
+  const code = ((params.code as string) ?? "").toUpperCase();
+  // Where auth should return the user to so the join intent survives sign-in.
+  const joinPath = `/join/${code}`;
 
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,13 +126,13 @@ export default function JoinPage() {
           <div className="space-y-3">
             <p className="text-outline text-sm text-center">Sign in or create an account to continue</p>
             <a
-              href={`/sign-up?next=/join/${code}`}
+              href={`/sign-up?next=${encodeURIComponent(joinPath)}`}
               className="btn-brand block w-full text-center text-white py-3 transition-colors"
             >
               Create free account →
             </a>
             <a
-              href={`/sign-in?next=/join/${code}`}
+              href={`/sign-in?next=${encodeURIComponent(joinPath)}`}
               className="btn-ghost block w-full text-center py-3 transition-colors text-sm"
             >
               Sign in

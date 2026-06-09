@@ -27,7 +27,18 @@ export async function POST(request: Request) {
   const dataUrl = typeof body.dataUrl === "string" ? body.dataUrl : "";
 
   const match = dataUrl.match(/^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/);
-  if (!match) return NextResponse.json({ error: "That doesn't look like an image." }, { status: 400 });
+  if (!match) {
+    // Distinguish an unsupported image type (e.g. iPhone HEIC) from non-image
+    // junk so the user gets an actionable message instead of a generic one.
+    const mimeMatch = dataUrl.match(/^data:(image\/[a-z0-9.+-]+);base64,/i);
+    if (mimeMatch) {
+      return NextResponse.json(
+        { error: `${mimeMatch[1]} images aren't supported — please use a JPG, PNG, WebP, or GIF.` },
+        { status: 415 },
+      );
+    }
+    return NextResponse.json({ error: "That doesn't look like an image." }, { status: 400 });
+  }
 
   const mime = match[1];
   const ext = MIME_EXT[mime] ?? "png";

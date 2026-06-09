@@ -20,8 +20,11 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   try {
     const admin = await createAdminClient();
     const { data: profile } = await admin
-      .from("profiles").select("id, display_name, headline, avatar_url, linkedin_url, website_url").eq("github_username", slug).maybeSingle();
-    if (profile) {
+      .from("profiles").select("id, plan, display_name, headline, avatar_url, linkedin_url, website_url").eq("github_username", slug).maybeSingle();
+    // The public profile is a Pro feature — only Pro builders expose their apps
+    // publicly. Non-Pro (and unknown) slugs resolve to a clean 404 so private
+    // builds stay private.
+    if (profile && profile.plan === "pro") {
       found = true;
       prof = {
         display_name: profile.display_name ?? null,
