@@ -16,13 +16,13 @@ export default async function ShowcasePage({ searchParams }: { searchParams: Pro
   const nameById = new Map<string, string>();
   try {
     const admin = await createAdminClient();
-    // Only owner-published, deployed apps appear — keeps login pages / unfinished builds out.
+    // Owner-published, deployed apps. A live URL is OPTIONAL — an entry can show
+    // just an uploaded thumbnail (some apps sit behind a login, so we don't force a link).
     let q = admin
       .from("projects")
       .select("name, vercel_preview_url, user_id, track, showcase_image, created_at")
       .eq("showcase_published", true)
-      .eq("status", "deployed")
-      .not("vercel_preview_url", "is", null);
+      .eq("status", "deployed");
     if (trackFilter) q = q.eq("track", trackFilter);
     const { data } = await q.order("created_at", { ascending: false }).limit(60);
     apps = (data ?? []) as App[];
@@ -75,29 +75,35 @@ export default async function ShowcasePage({ searchParams }: { searchParams: Pro
             const src = p.showcase_image || shotSrc(p.vercel_preview_url);
             const builder = nameById.get(p.user_id);
             const t = getTrack(p.track);
+            const url = p.vercel_preview_url;
+            const mediaClass = "aspect-[16/10] bg-surface-high border-b border-outline-variant overflow-hidden block";
+            const media = src ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={src} alt={p.name} loading="lazy"
+                className="w-full h-full object-cover object-top group-hover:scale-[1.02] transition-transform" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-outline text-3xl">🖥</div>
+            );
             return (
               <div key={`${p.user_id}-${i}`} className="panel overflow-hidden flex flex-col hover:bg-surface-high transition-colors group">
-                <a href={p.vercel_preview_url ?? "#"} target="_blank" rel="noopener noreferrer"
-                  className="aspect-[16/10] bg-surface-high border-b border-outline-variant overflow-hidden block">
-                  {src ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt={p.name} loading="lazy"
-                      className="w-full h-full object-cover object-top group-hover:scale-[1.02] transition-transform" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-outline text-3xl">🖥</div>
-                  )}
-                </a>
+                {url ? (
+                  <a href={url} target="_blank" rel="noopener noreferrer" className={mediaClass}>{media}</a>
+                ) : (
+                  <div className={mediaClass}>{media}</div>
+                )}
                 <div className="p-4 flex flex-col gap-1.5 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="font-display font-semibold text-on-surface truncate">{p.name}</h3>
-                    <span className="chip chip-success shrink-0"><span className="dot" style={{ background: "var(--color-success)" }} />Live</span>
+                    {url && <span className="chip chip-success shrink-0"><span className="dot" style={{ background: "var(--color-success)" }} />Live</span>}
                   </div>
                   {t && <span className="text-[11px] text-on-surface-variant">{t.icon} {t.title}</span>}
                   {builder && (
                     <Link href={`/u/${builder}`} className="text-xs text-on-surface-variant hover:text-on-surface truncate">by {builder} →</Link>
                   )}
-                  <a href={p.vercel_preview_url ?? "#"} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-brand group-hover:text-brand-dim mt-auto pt-2">Visit →</a>
+                  {url && (
+                    <a href={url} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-brand group-hover:text-brand-dim mt-auto pt-2">Visit →</a>
+                  )}
                 </div>
               </div>
             );
