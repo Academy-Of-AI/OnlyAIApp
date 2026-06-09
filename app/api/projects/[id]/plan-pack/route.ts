@@ -373,7 +373,7 @@ export async function POST(
   const isPro = profile?.plan === "pro";
   if (!ownerFunded && !isPro && mode !== "bypass" && (!profile || profile.build_credits <= 0)) {
     return NextResponse.json(
-      { error: "You're out of credits — get 3 for $10, or go Pro for unlimited.", code: "no_credits" },
+      { error: "You're out of free credits — upgrade to Core ($8/mo) for unlimited, or Pro for everything.", code: "no_credits" },
       { status: 402 },
     );
   }
