@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 const steps = [
   { n: "01", icon: "🧭", title: "Pick a track", body: "Choose an outcome — land a role, a side-income tool, kill your busywork. We spin up a real, live app to start from." },
-  { n: "02", icon: "🛠️", title: "Build it with AI", body: "Tell your AI agent what you want. It builds on a solid foundation — and we keep it on track so it doesn’t wander off." },
+  { n: "02", icon: "🛠️", title: "Build it with AI", body: "Your AI agent builds on a solid foundation — set up the proven way, so it holds up as it grows. Pilot watches for drift and turns scary errors into your one next step — so you finish, not flounder." },
   { n: "03", icon: "🎖️", title: "Ship & show your proof", body: "Deploy a real app you own — then auto-generate a case study, a LinkedIn post, and a portfolio piece. Proof > promises." },
 ];
 
@@ -55,14 +55,14 @@ export default async function LandingPage() {
         <div aria-hidden className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-24 h-[420px] w-[680px] max-w-[90vw] rounded-full" style={{ background: "radial-gradient(closest-side, color-mix(in srgb, var(--color-brand) 13%, transparent), transparent)" }} />
         <div className="relative max-w-3xl mx-auto flex flex-col items-center gap-5">
           <span className="inline-flex items-center gap-2 bg-brand-container text-brand-dim text-xs font-semibold px-3.5 py-1.5 rounded-full border border-brand-border">
-            ✨ Not a course. A build studio.
+            ✨ Not a toy generator — a forge for real, owned apps.
           </span>
           <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] text-on-surface">
-            Build real AI apps.{" "}
+            Forge a real app you own.{" "}
             <span className="bg-gradient-to-r from-violet-500 to-fuchsia-400 bg-clip-text text-transparent">Walk away with proof.</span>
           </h1>
           <p className="text-on-surface-variant text-lg max-w-xl">
-            Learn AI by <b>doing</b> — pick an outcome, build a real app with your AI agent, and end up owning a live product <i>and</i> a portfolio you can actually show. Fun first. Proof second. Career third.
+            Pick an outcome. Your AI agent builds it on a <b>solid foundation</b>, with a co-pilot that stops it drifting and pushes it to a <b>finished</b> app you <i>own</i> — then walk away with proof you can show.
           </p>
           <div className="flex gap-3 flex-wrap justify-center">
             <Link href={ctaHref} className="btn-brand font-semibold px-6 py-3">{authed ? "Open your Studio →" : "Start building — free →"}</Link>
@@ -90,6 +90,31 @@ export default async function LandingPage() {
                 <p className="text-on-surface-variant text-sm leading-relaxed mt-1">{s.body}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Built to last — the Forge difference (method stays invisible; only the outcome shows) */}
+      <section className="border-t border-outline-variant px-5 sm:px-6 py-14 sm:py-16">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-on-surface text-center">Built to last, not to demo 🧱</h2>
+          <p className="text-on-surface-variant text-center mt-2 max-w-lg mx-auto">Most AI tools hand you a flimsy demo that breaks the moment you touch it. We forge something real — and it’s yours.</p>
+          <div className="grid sm:grid-cols-3 gap-4 mt-10">
+            <div className="panel p-5">
+              <div className="text-2xl">🧱</div>
+              <h3 className="font-display font-semibold text-lg text-on-surface mt-2">A real foundation</h3>
+              <p className="text-on-surface-variant text-sm leading-relaxed mt-1">Set up the proven way, so it stays reliable as it grows — not a fragile demo.</p>
+            </div>
+            <div className="panel p-5">
+              <div className="text-2xl">🔌</div>
+              <h3 className="font-display font-semibold text-lg text-on-surface mt-2">Keeps working even if the AI’s off</h3>
+              <p className="text-on-surface-variant text-sm leading-relaxed mt-1">Real, dependable software — not magic that breaks when a prompt changes.</p>
+            </div>
+            <div className="panel p-5">
+              <div className="text-2xl">🔑</div>
+              <h3 className="font-display font-semibold text-lg text-on-surface mt-2">Yours to own &amp; grow</h3>
+              <p className="text-on-surface-variant text-sm leading-relaxed mt-1">Real code in your own accounts — never locked in.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -154,7 +179,7 @@ export default async function LandingPage() {
             </div>
             <div className="panel p-6">
               <p className="eyebrow">The real rule</p>
-              <h3 className="font-display font-semibold text-xl text-on-surface mt-2">Fun → Proof → Career</h3>
+              <h3 className="font-display font-semibold text-xl text-on-surface mt-2">Real → Proof → Career</h3>
               <p className="text-on-surface-variant text-sm mt-1.5">Most “learn AI” products leave you with notes and a vibe. You leave with <b className="text-on-surface">live apps, a portfolio, and confidence</b> — the stuff that actually moves your career.</p>
               <Link href="/sign-in" className="btn-brand font-semibold px-5 py-2.5 mt-4 inline-flex">Build your proof →</Link>
             </div>
@@ -197,7 +222,7 @@ export default async function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-outline-variant px-6 py-6 text-center text-xs text-outline">
-        OnlyAIApp — build real AI apps, walk away with proof{" "}
+        OnlyAIApp — forge real apps you own, walk away with proof{" "}
         <span className="text-outline">·</span>{" "}
         <a href="https://www.linkedin.com/in/ngxienpuo/" target="_blank" rel="noopener noreferrer" className="text-outline hover:text-on-surface transition-colors">Made by Ng Xien Puo</a>{" "}
         <span className="text-outline">·</span>{" "}
