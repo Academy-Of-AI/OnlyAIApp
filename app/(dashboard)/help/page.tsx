@@ -49,15 +49,15 @@ const sections: FaqSection[] = [
     items: [
       {
         q: "What's the difference between Free, Core, and Pro?",
-        a: "Free gives you 1 project (which you can't delete). Core is $8/mo — up to 8 projects, delete & recreate, and unlimited Plan Packs. Pro is $17/mo — everything in Core plus your full Portfolio (public profile + AI career artifacts) and advanced build tracking (Pilot). Pay yearly and Core saves 25%, Pro saves 30%.",
+        a: "Free gives you 2 projects (which you can't delete). Core is $8/mo — up to 8 projects, delete & recreate, and unlimited Plan Packs. Pro is $17/mo — everything in Core plus your full Portfolio (public profile + AI career artifacts) and advanced build tracking (Pilot). Pay yearly and Core saves 25%, Pro saves 30%.",
       },
       {
         q: "How do I get more projects?",
-        a: "Free includes one project. Refer a friend — when they ship their first app, you both get a bonus project. Or upgrade to Core ($8/mo) for up to 8 projects right away.",
+        a: "Free includes two projects. Refer a friend — when they ship their first app, you both get a bonus project. Or upgrade to Core ($8/mo) for up to 8 projects right away.",
       },
       {
         q: "Why can't I delete my project on Free?",
-        a: 'This keeps "1 free project" actually meaning one project — otherwise it would be unlimited projects, one at a time. Upgrade to Core whenever you want to delete and recreate projects freely, or to run several at once.',
+        a: 'This keeps the free tier meaningful — otherwise it would be unlimited projects, one at a time. Upgrade to Core whenever you want to delete and recreate projects freely, or to run several at once.',
       },
       {
         q: "How do I manage or cancel my subscription?",

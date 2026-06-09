@@ -50,7 +50,7 @@ export default async function UpgradePage({
           period="forever"
           tagline="See it work, end to end."
           features={[
-            "1 live project",
+            "2 live projects",
             "Repo, database & hosting set up for you",
             "🎖️ Full Portfolio + career artifacts (3 AI writes/mo)",
             "Hand off to your AI agent (Claude Code, Codex…)",

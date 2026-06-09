@@ -414,13 +414,9 @@ export async function POST(
       const send = (e: Record<string, unknown>) =>
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(e)}\n\n`));
 
-      let creditUsed = false;
       try {
-        if (!ownerFunded && !isPro) {
-          const { data: deducted } = await supabase.rpc("use_build_credit", { p_user_id: user.id });
-          creditUsed = deducted !== false;
-        }
-
+        // Credit is charged on SUCCESS only (at the end) — a timeout or error never
+        // burns it, so free/lite users can always retry without getting stuck.
         const anthropic = new Anthropic({ apiKey: anthropicKey });
 
         let docs: Array<{ path: string; content: string }> = [];
@@ -656,6 +652,11 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
           try { await supabase.from("projects").update({ build_prompt: idea }).eq("id", id); } catch { /* non-fatal */ }
         }
 
+        // Charge the credit only now that it actually succeeded (Pro & owner-funded stay free).
+        if (!ownerFunded && !isPro) {
+          try { await supabase.rpc("use_build_credit", { p_user_id: user.id }); } catch { /* non-fatal */ }
+        }
+
         send({
           step: "done",
           message: schemaApplied ? "Plan pack committed + database wired ✓" : "Plan pack committed ✓",
@@ -670,7 +671,6 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
         });
       } catch (err) {
         console.error("[plan-pack] error:", err);
-        if (creditUsed) { try { await supabase.rpc("refund_build_credit", { p_user_id: user.id }); } catch {} }
         const msg = friendlyAiError(err) ?? (err instanceof Error ? err.message : "Plan generation failed.");
         try { send({ step: "error", message: msg }); } catch {}
       } finally {

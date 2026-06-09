@@ -21,12 +21,12 @@ export const PRO_REQUIRED = {
 } as const;
 
 /* ── Tiers ───────────────────────────────────────────────────────────────
-   free  — 1 project, can't delete (anti-recycle). +1 per successful referral.
+   free  — 2 projects, can't delete (anti-recycle). +1 per successful referral.
    core  — $8/mo · 8 projects · delete/recreate.
    pro   — $17/mo (yearly −30%) · 8 projects · Portfolio + career artifacts + Pilot. */
 export type PlanTier = "free" | "core" | "pro";
 
-export const PROJECT_LIMITS: Record<PlanTier, number> = { free: 1, core: 8, pro: 8 };
+export const PROJECT_LIMITS: Record<PlanTier, number> = { free: 2, core: 8, pro: 8 };
 
 /** Monthly AI-written career artifacts per tier. (Instant templates are unlimited & free.) */
 export const ARTIFACT_LIMITS: Record<PlanTier, number> = { free: 3, core: 15, pro: Infinity };

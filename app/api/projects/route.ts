@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     const tier = normalizePlan(planRow?.plan);
     return NextResponse.json(
       tier === "free"
-        ? { error: "Free includes 1 project. Refer a friend to earn a bonus project, or upgrade to Core for up to 8.", code: "plan_limit" }
+        ? { error: "Free includes 2 projects. Refer a friend to earn a bonus, or upgrade to Core for up to 8.", code: "plan_limit" }
         : { error: `Your plan includes ${limit} projects. Delete one you don't need to free a slot.`, code: "plan_limit" },
       { status: 403 },
     );
