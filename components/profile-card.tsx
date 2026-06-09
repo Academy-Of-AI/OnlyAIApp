@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CopyLinkButton } from "@/components/portfolio-tools";
+import { AvatarCropper } from "@/components/avatar-cropper";
 
 type Initial = {
   avatar_url: string | null;
@@ -30,28 +31,34 @@ export function ProfileCard({
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null);
 
   const shownName = name.trim() || fallbackName;
   const initials = shownName.slice(0, 2).toUpperCase();
   const autoLine = `AI builder — ${shipped} app${shipped === 1 ? "" : "s"} shipped${building ? `, ${building} building` : ""}`;
 
-  async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+  // Pick a file → open the cropper (don't upload the raw file).
+  function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    e.target.value = ""; // let the same file be re-picked later
+    if (file) { setMsg(null); setCropFile(file); }
+  }
+
+  // Cropper returns a square blob → upload + save.
+  async function uploadCropped(blob: Blob) {
     setUploading(true); setMsg(null);
     try {
       const supabase = createClient();
-      const ext = (file.name.split(".").pop() || "png").toLowerCase();
-      const path = `avatar-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("showcase").upload(path, file, { upsert: true, contentType: file.type });
+      const path = `avatar-${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("showcase").upload(path, blob, { upsert: true, contentType: "image/jpeg" });
       if (error) { setMsg({ text: "Upload failed: " + error.message }); return; }
       const url = supabase.storage.from("showcase").getPublicUrl(path).data.publicUrl;
       const res = await fetch("/api/profile", {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ avatar_url: url }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); setMsg({ text: d.error ?? "Couldn't save photo." }); return; }
-      setAvatar(url); setMsg({ ok: true, text: "Photo updated." });
+      setAvatar(url); setMsg({ ok: true, text: "Photo updated." }); setCropFile(null);
     } catch {
       setMsg({ text: "Upload failed — try again." });
     } finally {
@@ -139,6 +146,10 @@ export function ProfileCard({
         </div>
       )}
       {!editing && msg && <p className={`text-xs mt-2 ${msg.ok ? "text-success" : "text-danger"}`}>{msg.text}</p>}
+
+      {cropFile && (
+        <AvatarCropper file={cropFile} busy={uploading} onCancel={() => setCropFile(null)} onCropped={uploadCropped} />
+      )}
     </div>
   );
 }
