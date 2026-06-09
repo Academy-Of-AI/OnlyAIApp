@@ -21,12 +21,31 @@ export const PRO_REQUIRED = {
 } as const;
 
 /* ── Tiers ───────────────────────────────────────────────────────────────
-   free  — 2 projects, can't delete (anti-recycle). +1 per successful referral.
-   core  — $8/mo · 8 projects · delete/recreate.
-   pro   — $17/mo (yearly −30%) · 8 projects · Portfolio + career artifacts + Pilot. */
+   free  — 1 project, can't delete (anti-recycle). The first 50 builders get a
+           +1 early-adopter bonus (=> 2). +1 per successful referral on top.
+   core  — $8/mo · 8 projects · delete/recreate · unlimited* Plan Packs.
+   pro   — $17/mo (yearly −30%) · 8 projects · Portfolio + career artifacts + Pilot.
+   *Core/Pro Plan Packs are "unlimited" behind a generous monthly soft fair-use
+    cap (PLAN_PACK_FAIR_USE) that only catches runaway owner-AI cost. */
 export type PlanTier = "free" | "core" | "pro";
 
-export const PROJECT_LIMITS: Record<PlanTier, number> = { free: 2, core: 8, pro: 8 };
+export const PROJECT_LIMITS: Record<PlanTier, number> = { free: 1, core: 8, pro: 8 };
+
+/**
+ * Soft fair-use cap on Plan Pack generations per calendar month. Free is NOT
+ * capped here (it is metered separately by build_credits). Core/Pro advertise
+ * "unlimited" — these numbers sit far above any honest use and exist only to
+ * stop a runaway loop from burning owner Anthropic cost. Reset monthly.
+ */
+export const PLAN_PACK_FAIR_USE: Record<PlanTier, number> = { free: Infinity, core: 40, pro: 120 };
+export function planPackFairUseCap(plan: string | null | undefined): number {
+  return PLAN_PACK_FAIR_USE[normalizePlan(plan)];
+}
+
+/** Current fair-use accounting period as 'YYYY-MM' (UTC). */
+export function currentPlanPackPeriod(): string {
+  return new Date().toISOString().slice(0, 7);
+}
 
 /** Monthly AI-written career artifacts per tier. (Instant templates are unlimited & free.) */
 export const ARTIFACT_LIMITS: Record<PlanTier, number> = { free: 3, core: 15, pro: Infinity };

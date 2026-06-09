@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { friendlyAiError } from "@/lib/ai-errors";
 import { runMigration } from "@/lib/supabase-mgmt";
 import { getCommitIdentity } from "@/lib/github";
-import { normalizePlan } from "@/lib/plan";
+import { normalizePlan, planPackFairUseCap, currentPlanPackPeriod } from "@/lib/plan";
 
 export const maxDuration = 300;
 
@@ -371,12 +371,28 @@ export async function POST(
   // Core + Pro = unlimited Plan Packs; ONLY free is metered by credits.
   // Gate on the FREE tier (not isPro), or paying Core users get metered/blocked.
   const { data: profile } = await supabase
-    .from("profiles").select("build_credits, plan").eq("id", user.id).single();
+    .from("profiles").select("build_credits, plan, plan_packs_used, plan_packs_period").eq("id", user.id).single();
   const isFree = normalizePlan(profile?.plan) === "free";
   if (!ownerFunded && isFree && mode !== "bypass" && (!profile || profile.build_credits <= 0)) {
     return NextResponse.json(
       { error: "You're out of free credits — upgrade to Core ($8/mo) for unlimited, or Pro for everything.", code: "no_credits" },
       { status: 402 },
+    );
+  }
+
+  // Soft fair-use cap for Core/Pro "unlimited" Plan Packs. Far above honest use
+  // (Core 40 / Pro 120 per month) — it only catches a runaway loop so owner AI
+  // cost stays bounded. Resets monthly. Bypass costs no AI, so it's exempt.
+  const fairPeriod = currentPlanPackPeriod();
+  const fairCap = planPackFairUseCap(profile?.plan);
+  const usedThisPeriod = profile?.plan_packs_period === fairPeriod ? (profile?.plan_packs_used ?? 0) : 0;
+  if (!ownerFunded && !isFree && mode !== "bypass" && Number.isFinite(fairCap) && usedThisPeriod >= fairCap) {
+    return NextResponse.json(
+      {
+        error: `You've hit this month's fair-use limit for Plan Packs (${fairCap}). It resets on the 1st — reply to your welcome email if you genuinely need more this month.`,
+        code: "fair_use",
+      },
+      { status: 429 },
     );
   }
 
@@ -705,10 +721,13 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
           try { await supabase.from("projects").update({ build_prompt: idea }).eq("id", id); } catch { /* non-fatal */ }
         }
 
-        // Charge the credit only now that it actually succeeded. Only FREE users
-        // are metered — Core, Pro & owner-funded stay free (never charged).
+        // Meter on SUCCESS only. Free users spend a build credit; Core/Pro count
+        // one against the monthly soft fair-use cap (never charged money). Owner-
+        // funded stays unmetered. (Bypass returns earlier, so it never reaches here.)
         if (!ownerFunded && isFree) {
           try { await supabase.rpc("use_build_credit", { p_user_id: user.id }); } catch { /* non-fatal */ }
+        } else if (!ownerFunded && !isFree) {
+          try { await supabase.rpc("bump_plan_pack_usage", { p_user_id: user.id, p_period: fairPeriod }); } catch { /* non-fatal */ }
         }
 
         send({

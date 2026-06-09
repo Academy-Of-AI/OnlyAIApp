@@ -54,7 +54,8 @@ export async function POST(request: Request) {
     );
   }
 
-  // Per-tier project limit (free = 2, +1 with the product-updates opt-in; core/pro = 8).
+  // Per-tier project limit (free = 1, +1 for the first 50 builders, +1 with the
+  // product-updates opt-in, +1 per referral; core/pro = 8). Capped at 8.
   const { data: planRow } = await supabase
     .from("profiles").select("plan, phone, marketing_consent, github_id, bonus_projects").eq("id", user.id).single();
   // Only count slots that are actually in use: a 'failed' first attempt (or a
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
     const tier = normalizePlan(planRow?.plan);
     return NextResponse.json(
       tier === "free"
-        ? { error: "Free includes 2 projects. Refer a friend to earn a bonus, or upgrade to Core for up to 8.", code: "plan_limit" }
+        ? { error: `You've reached your Free limit (${limit} project${limit === 1 ? "" : "s"}). Refer a friend to earn a bonus slot, or upgrade to Core for up to 8.`, code: "plan_limit" }
         : { error: `Your plan includes ${limit} projects. Delete one you don't need to free a slot.`, code: "plan_limit" },
       { status: 403 },
     );

@@ -1,7 +1,9 @@
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
-import { getDeploymentErrorLine, getLatestDeploymentStatus, listVercelEnvVars } from "@/lib/vercel";
+import { getLatestDeploymentStatus, listVercelEnvVars } from "@/lib/vercel";
 import { hardeningOf } from "@/lib/plan";
+import { ExplainError } from "@/components/explain-error";
+import { PilotLite } from "@/components/pilot-lite";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -19,9 +21,10 @@ export default async function PilotPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Pilot is a Pro feature — free users get a locked upgrade screen.
+  // Pilot's full multi-project board is Pro. Free/Core users get a real, useful
+  // Pilot LITE for their single most-recent project (not a wall).
   const { data: planRow } = await supabase.from("profiles").select("plan").eq("id", user!.id).single();
-  if (planRow?.plan !== "pro") return <PilotLocked />;
+  if (planRow?.plan !== "pro") return <PilotLiteView userId={user!.id} />;
 
   const [{ data: projects }, { data: vercelConn }, { count: memoryCount }] = await Promise.all([
     supabase.from("projects").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }),
@@ -46,13 +49,6 @@ export default async function PilotPage() {
       return getLatestDeploymentStatus({ token: vercelToken, projectId: p.vercel_project_id as string, teamId: vercelTeamId });
     }),
   );
-  const errorLines = await Promise.all(
-    (projects ?? []).map(async (p, i) => {
-      const s = statuses[i];
-      if (!vercelToken || !s || s.state !== "ERROR" || !s.deploymentId) return null;
-      return getDeploymentErrorLine({ token: vercelToken, deploymentId: s.deploymentId, teamId: vercelTeamId });
-    }),
-  );
   // Per-app hardening — which apps have payments / monitoring add-ons wired up.
   const hardenedFlags = await Promise.all(
     (projects ?? []).map(async (p) => {
@@ -75,9 +71,8 @@ export default async function PilotPage() {
   type Row = {
     project: Proj;
     status: Awaited<ReturnType<typeof getLatestDeploymentStatus>> | null;
-    errorLine: string | null;
   };
-  const rows: Row[] = ((projects ?? []) as Proj[]).map((p, i) => ({ project: p, status: statuses[i], errorLine: errorLines[i] }));
+  const rows: Row[] = ((projects ?? []) as Proj[]).map((p, i) => ({ project: p, status: statuses[i] }));
 
   const drifting = (p: Row["project"]) => {
     const d = p.last_digest as { onTrack?: boolean } | null;
@@ -117,32 +112,37 @@ export default async function PilotPage() {
     const doneSet = new Set(p.plan_progress ?? []);
     const doneCount = now.filter((i) => doneSet.has(i)).length;
     const nextStep = now.find((i) => !doneSet.has(i));
+    // Broken cards show the guided <ExplainError/> below (not the raw error line).
     const reason = isBroken
-      ? (r.errorLine ?? "Deploy failed — open the build log.")
+      ? null
       : isDrift ? (d?.note ?? "Recent work is drifting from the plan.") : null;
     return (
-      <Link href={`/projects/${p.id}`} className="block panel p-4 hover:bg-surface-high transition-all space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className={`text-sm font-semibold ${verdict.cls}`}>{verdict.icon} {verdict.label}</span>
-          {r.status?.createdAt && <span className="text-[11px] text-outline shrink-0">{timeAgo(r.status.createdAt)}</span>}
-        </div>
-        <p className="font-display font-semibold text-on-surface truncate">{p.name}</p>
-        {reason && <p className="text-xs text-on-surface-variant">{reason}</p>}
-        {now.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between text-[11px] text-on-surface-variant mb-1">
-              <span>v1 progress</span><span className="tabnum">{doneCount}/{now.length}{doneCount === now.length ? " · ready" : ""}</span>
-            </div>
-            <div className="h-1.5 rounded-full bg-surface-high overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: `${Math.round((doneCount / now.length) * 100)}%`, background: "var(--color-success)" }} />
-            </div>
+      <div className="space-y-2">
+        <Link href={`/projects/${p.id}`} className="block panel p-4 hover:bg-surface-high transition-all space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className={`text-sm font-semibold ${verdict.cls}`}>{verdict.icon} {verdict.label}</span>
+            {r.status?.createdAt && <span className="text-[11px] text-outline shrink-0">{timeAgo(r.status.createdAt)}</span>}
           </div>
-        )}
-        <div className="flex flex-col gap-0.5 text-xs">
-          {r.status?.commitMessage && <span className="text-on-surface-variant truncate"><span className="text-outline">changed: </span>{r.status.commitMessage}</span>}
-          {nextStep && <span className="text-on-surface truncate"><span className="text-brand-dim">next: </span>{nextStep}</span>}
-        </div>
-      </Link>
+          <p className="font-display font-semibold text-on-surface truncate">{p.name}</p>
+          {reason && <p className="text-xs text-on-surface-variant">{reason}</p>}
+          {now.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between text-[11px] text-on-surface-variant mb-1">
+                <span>v1 progress</span><span className="tabnum">{doneCount}/{now.length}{doneCount === now.length ? " · ready" : ""}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-surface-high overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${Math.round((doneCount / now.length) * 100)}%`, background: "var(--color-success)" }} />
+              </div>
+            </div>
+          )}
+          <div className="flex flex-col gap-0.5 text-xs">
+            {r.status?.commitMessage && <span className="text-on-surface-variant truncate"><span className="text-outline">changed: </span>{r.status.commitMessage}</span>}
+            {nextStep && <span className="text-on-surface truncate"><span className="text-brand-dim">next: </span>{nextStep}</span>}
+          </div>
+        </Link>
+        {/* Turn a scary build error into the one next step — right on the board. */}
+        {isBroken && <ExplainError projectId={p.id} />}
+      </div>
     );
   }
 
@@ -224,63 +224,82 @@ export default async function PilotPage() {
   );
 }
 
-/** Free-tier tease for Pilot (a Pro feature) — show a blurred board behind an upgrade card. */
-function PilotLocked() {
-  const tiles = [
-    { label: "OSes", val: "8", dot: "" },
-    { label: "On track", val: "6", dot: "bg-success" },
-    { label: "Building", val: "1", dot: "bg-warn-dim" },
-    { label: "Broken", val: "1", dot: "bg-danger" },
-  ];
-  const sample = [
-    { name: "deal-os", chip: "chip chip-success", state: "Live", dot: "bg-success", note: "Auto-captured: proposal engine + send tracking. On track." },
-    { name: "client-portal", chip: "chip chip-warn", state: "Building", dot: "bg-warn-dim", note: "Deploy building — added billing page." },
-    { name: "ops-os", chip: "chip chip-warn", state: "Drifting", dot: "bg-warn", note: "⟲ Drift: settings page is creeping past the plan." },
-    { name: "crm-os", chip: "chip chip-danger", state: "Broken", dot: "bg-danger", note: "⚠ Build failed — type error in /lib." },
-  ];
+/**
+ * Free / Core Pilot — a REAL, useful Lite view for the user's single most-recent
+ * project (deploy health → one next step if broken, their one next plan step,
+ * and a "stuck?" nudge), plus an upgrade nudge for the whole-portfolio board.
+ * Not a wall. The heavy <ExplainError/> work happens client-side in <PilotLite/>.
+ */
+async function PilotLiteView({ userId }: { userId: string }) {
+  const supabase = await createClient();
+
+  const [{ data: project }, { data: vercelConn }] = await Promise.all([
+    supabase.from("projects")
+      .select("id, name, status, vercel_project_id, vercel_preview_url, plan_pack, plan_progress")
+      .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("oauth_connections").select("access_token, metadata")
+      .eq("user_id", userId).eq("provider", "vercel").maybeSingle(),
+  ]);
+
+  if (!project) {
+    return (
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <PilotLiteHeader />
+        <div className="text-center py-24 text-on-surface-variant space-y-2 panel mt-6">
+          <p className="text-3xl">🛫</p>
+          <p>No projects yet.</p>
+          <Link href="/new-project" className="btn-brand inline-block text-sm px-4 py-2 mt-2">＋ New project</Link>
+        </div>
+      </main>
+    );
+  }
+
+  // Best-effort live deploy snapshot (degrades to stored fields if no token).
+  let deployState: Awaited<ReturnType<typeof getLatestDeploymentStatus>>["state"] = "unknown";
+  let lastChangeAt: number | null = null;
+  let liveUrl: string | null = (project.vercel_preview_url as string | null) ?? null;
+  if (vercelConn && project.vercel_project_id) {
+    try {
+      const token = await decrypt(vercelConn.access_token as string);
+      const teamId = (vercelConn.metadata as { team_id?: string | null } | null)?.team_id ?? undefined;
+      const s = await getLatestDeploymentStatus({ token, projectId: project.vercel_project_id as string, teamId });
+      deployState = s.state;
+      lastChangeAt = s.createdAt;
+      if (s.url && s.state === "READY") liveUrl = s.url;
+    } catch { /* fall back to stored fields */ }
+  }
+  if (deployState === "unknown" && project.status === "failed") deployState = "ERROR";
+
+  // The single next unfinished plan step.
+  const now = (project.plan_pack as { plan?: { now?: string[] } } | null)?.plan?.now ?? [];
+  const doneSet = new Set((project.plan_progress as string[] | null) ?? []);
+  const nextStep = now.find((i) => !doneSet.has(i)) ?? null;
+
+  // "Stuck?" — no new commit in 48h+ (only when we actually know the last change).
+  const stuck = lastChangeAt != null && Date.now() - lastChangeAt > 48 * 3600 * 1000 && deployState !== "ERROR";
+
   return (
-    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-      <div className="mb-5">
-        <p className="eyebrow">Mission Control</p>
-        <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — every build, on course &amp; hardened</h1>
-        <p className="text-sm text-on-surface-variant mt-1">Live health, drift &amp; hardening across all your projects.</p>
-      </div>
-
-      <div className="relative">
-        {/* Blurred teaser board */}
-        <div className="blur-[3px] select-none pointer-events-none space-y-4" aria-hidden>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {tiles.map((t) => (
-              <div key={t.label} className="tile">
-                <p className="tile-label flex items-center gap-1.5">{t.dot ? <span className={`dot ${t.dot}`} /> : null}{t.label}</p>
-                <p className="tile-value text-on-surface">{t.val}</p>
-              </div>
-            ))}
-          </div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {sample.map((s) => (
-              <div key={s.name} className="panel p-4">
-                <p className="font-semibold text-on-surface flex items-center gap-2"><span className={`dot ${s.dot}`} />{s.name}<span className={s.chip}>{s.state}</span></p>
-                <p className="text-xs text-on-surface-variant mt-1">{s.note}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Upgrade overlay */}
-        <div className="absolute inset-0 grid place-items-center px-4">
-          <div className="panel p-6 sm:p-7 text-center space-y-3 max-w-sm" style={{ boxShadow: "0 10px 36px rgba(16,24,40,.16)" }}>
-            <p className="text-3xl">🛫</p>
-            <p className="eyebrow">Pro feature</p>
-            <h2 className="font-display tracking-tight text-xl font-bold text-on-surface">Unlock Pilot</h2>
-            <p className="text-sm text-on-surface-variant">
-              Live deploy health &amp; drift across every project, auto-capture of what changed, and
-              launch-readiness checks — so nothing slips between sessions.
-            </p>
-            <Link href="/upgrade" className="btn-brand inline-block text-sm px-5 py-2.5">✨ Upgrade to Pro</Link>
-          </div>
-        </div>
-      </div>
+    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6">
+      <PilotLiteHeader />
+      <PilotLite
+        project={{ id: project.id as string, name: project.name as string }}
+        deploy={{ state: deployState, liveUrl, lastChangeAt }}
+        nextStep={nextStep}
+        stuck={stuck}
+      />
     </main>
+  );
+}
+
+function PilotLiteHeader() {
+  return (
+    <div>
+      <p className="eyebrow">Mission Control · Lite</p>
+      <h1 className="text-2xl font-bold font-display tracking-tight text-on-surface">Pilot — your next move, every session</h1>
+      <p className="text-sm text-on-surface-variant mt-1">
+        Pilot turns a broken build into your one next step, and nudges you back to the plan — for your latest project.
+        Upgrade to track your whole portfolio.
+      </p>
+    </div>
   );
 }

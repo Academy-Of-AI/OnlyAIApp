@@ -62,7 +62,10 @@ export default async function LandingPage() {
             <span className="bg-gradient-to-r from-violet-500 to-fuchsia-400 bg-clip-text text-transparent">Walk away with proof.</span>
           </h1>
           <p className="text-on-surface-variant text-lg max-w-xl">
-            Pick an outcome. Your AI agent builds it on a <b>solid foundation</b>, with a co-pilot that stops it drifting and pushes it to a <b>finished</b> app you <i>own</i> — then walk away with proof you can show.
+            Pick an outcome. Your AI agent builds it on a <b>solid foundation</b>, with a Pilot that stops it drifting and pushes it to a <b>finished</b> app you <i>own</i> — then walk away with proof you can show.
+          </p>
+          <p className="text-sm font-medium text-brand-dim">
+            For the maker who’s built toys with AI — but never shipped a real one.
           </p>
           <div className="flex gap-3 flex-wrap justify-center">
             <Link href={ctaHref} className="btn-brand font-semibold px-6 py-3">{authed ? "Open your Studio →" : "Start building — free →"}</Link>
@@ -206,7 +209,7 @@ export default async function LandingPage() {
           <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-on-surface text-center">Simple pricing 💸</h2>
           <p className="text-on-surface-variant text-center mt-2 max-w-lg mx-auto">Bring your own AI agent — Claude Code, Codex, or any. We never mark up what you pay for AI.</p>
           <div className="grid sm:grid-cols-3 gap-4 mt-10 items-stretch">
-            <Tier name="Free" price="$0" cta="Start free" feats={["Ship 2 real apps", "Full Portfolio + career artifacts", "Public profile + Showcase", "Progress + next-step"]} />
+            <Tier name="Free" price="$0" cta="Start free" feats={["Ship a real app you own", "Full Portfolio + career artifacts", "Public profile + Showcase", "Progress + next-step"]} note="🚀 First 50 builders get 2 projects" />
             <Tier name="Core" price="$8" per="/mo" cta="Choose Core" feats={["Up to 8 projects", "Delete & recreate freely", "Everything in Free"]} note="or save 25% billed yearly" />
             <Tier name="Pro" price="$17" per="/mo" pop cta="Go Pro" feats={["Everything in Core", "Accept payments (Stripe)", "Production hardening (monitoring & analytics)", "Advanced build tracking"]} note="or save 30% billed yearly" badge="Power up" />
           </div>

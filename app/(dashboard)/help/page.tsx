@@ -49,11 +49,11 @@ const sections: FaqSection[] = [
     items: [
       {
         q: "What's the difference between Free, Core, and Pro?",
-        a: "Free gives you 2 projects (which you can't delete). Core is $8/mo — up to 8 projects, delete & recreate, and unlimited Plan Packs. Pro is $17/mo — everything in Core plus your full Portfolio (public profile + AI career artifacts) and advanced build tracking (Pilot). Pay yearly and Core saves 25%, Pro saves 30%.",
+        a: "Free gives you 1 project (which you can't delete) — the first 50 builders get a bonus second one. Core is $8/mo — up to 8 projects, delete & recreate, and unlimited Plan Packs. Pro is $17/mo — everything in Core plus your full Portfolio (public profile + AI career artifacts) and advanced build tracking (Pilot). Pay yearly and Core saves 25%, Pro saves 30%.",
       },
       {
         q: "How do I get more projects?",
-        a: "Free includes two projects. Refer a friend — when they ship their first app, you both get a bonus project. Or upgrade to Core ($8/mo) for up to 8 projects right away.",
+        a: "Free includes one project (early builders get a bonus second one). Refer a friend — when they ship their first app, you both get a bonus project. Or upgrade to Core ($8/mo) for up to 8 projects right away.",
       },
       {
         q: "Why can't I delete my project on Free?",
@@ -128,7 +128,7 @@ const sections: FaqSection[] = [
     items: [
       {
         q: "What is Pilot?",
-        a: "Pilot is your co-pilot for live apps. It watches deploy health and detects drift across all your projects, auto-captures what changed, and runs launch-readiness checks so you know an app is actually ready before you share it. It's a Pro feature.",
+        a: "Pilot is mission control for your live apps. It watches deploy health and detects drift across all your projects, auto-captures what changed, and runs launch-readiness checks so you know an app is actually ready before you share it. It's a Pro feature.",
       },
       {
         q: "Why is Pilot paid?",

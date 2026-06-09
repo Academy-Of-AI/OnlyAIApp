@@ -9,15 +9,28 @@ interface DriftReport {
   scopeCreep: Array<{ item: string; why: string }>;
   rabbitHole: { detected: boolean; area: string; note: string } | null;
   courseCorrection: string;
+  correctionMove?: string;
+  correctionPrompt?: string;
 }
 
 export function DriftPanel({ projectId, hasPlan }: { projectId: string; hasPlan: boolean }) {
   const [report, setReport] = useState<DriftReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function copyPrompt(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard blocked — the box stays selectable for manual copy */
+    }
+  }
 
   async function check() {
-    setLoading(true); setErr(null);
+    setLoading(true); setErr(null); setCopied(false);
     try {
       const res = await fetch(`/api/projects/${projectId}/drift`, { method: "POST" });
       const data = await res.json();
@@ -59,6 +72,35 @@ export function DriftPanel({ projectId, hasPlan }: { projectId: string; hasPlan:
             <p className="text-sm text-on-surface mt-2">{report.progressNote}</p>
             <p className="text-xs text-on-surface-variant mt-2">Mapped to milestone: <span className="text-on-surface">{report.currentMilestone}</span></p>
           </div>
+
+          {!report.onTrack && report.correctionMove && (
+            <div className="rounded-xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.06)] p-4">
+              <p className="text-xs uppercase tracking-wide text-warn mb-1.5 font-medium">Your one move back on plan</p>
+              <p className="text-sm text-on-surface font-medium">{report.correctionMove}</p>
+
+              {report.correctionPrompt && (
+                <div className="mt-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs text-on-surface-variant">Paste this to your agent</p>
+                    <button
+                      type="button"
+                      onClick={() => copyPrompt(report.correctionPrompt!)}
+                      className="text-xs px-2.5 py-1 rounded-md border border-outline text-on-surface-variant hover:text-on-surface hover:border-on-surface-variant transition-colors"
+                    >
+                      {copied ? "✓ Copied" : "Copy"}
+                    </button>
+                  </div>
+                  <textarea
+                    readOnly
+                    value={report.correctionPrompt}
+                    onFocus={(e) => e.currentTarget.select()}
+                    rows={3}
+                    className="w-full resize-none rounded-lg bg-surface-high border border-outline px-3 py-2 text-xs font-mono text-on-surface leading-relaxed focus:outline-none focus:border-brand"
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {report.scopeCreep?.length > 0 && (
             <div className="panel p-4">

@@ -6,6 +6,9 @@ import { PlanPack, type Result as PlanPackResult } from "@/components/plan-pack"
 import { PlanProgress } from "@/components/plan-progress";
 import { AutoCaptureToggle } from "@/components/auto-capture-toggle";
 import { DeleteProjectButton } from "@/components/delete-project-button";
+import { ExplainError } from "@/components/explain-error";
+import { LaunchCheck } from "@/components/launch-check";
+import { DriftPanel } from "@/components/drift-panel";
 
 type Project = {
   id: string;
@@ -184,6 +187,17 @@ function PilotView({
         <p className="text-sm text-on-surface-variant mt-0.5">{verdict.sub}</p>
       </div>
 
+      {/* If the last deploy broke, turn the scary error into one next step (replaces the raw error line). */}
+      <ExplainError projectId={project.id} />
+
+      {/* On a drifting project, surface the one move back on plan (enhanced DriftPanel). */}
+      {drifting && (
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wider mb-1.5 text-on-surface-variant">Back on course</p>
+          <DriftPanel projectId={project.id} hasPlan={!!plan} />
+        </div>
+      )}
+
       {/* The spine — progress vs the plan (Now / Next / Later + sprints) */}
       <PlanProgress projectId={project.id} plan={plan} sprints={sprints} initialDone={project.plan_progress ?? []} />
 
@@ -262,6 +276,9 @@ function PilotView({
           <p className="text-xs text-outline mt-3">Picked up automatically as you build — so the AI always knows your project.</p>
         </div>
       )}
+
+      {/* Honest finish-line check — deployed, real (not a login wall), core shipped. */}
+      <LaunchCheck projectId={project.id} />
 
       <LaunchTab project={project} liveUrl={liveUrl} />
       </>)}
