@@ -9,9 +9,9 @@ function shotSrc(url: string | null): string | null {
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  // Public profiles are a Pro feature (opt-in by being Pro) — keeps private builds
-  // private. Any infra error (e.g. admin client unavailable) resolves to a clean
-  // 404, never a 500.
+  // Public profiles are available to everyone (the Free tier advertises a full
+  // Portfolio). Any infra error (e.g. admin client unavailable) resolves to a
+  // clean 404, never a 500.
   type Pub = { name: string; vercel_preview_url: string | null };
   type Prof = { display_name: string | null; headline: string | null; avatar_url: string | null; linkedin_url: string | null; website_url: string | null };
   let apps: Pub[] = [];
@@ -21,10 +21,8 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     const admin = await createAdminClient();
     const { data: profile } = await admin
       .from("profiles").select("id, plan, display_name, headline, avatar_url, linkedin_url, website_url").eq("github_username", slug).maybeSingle();
-    // The public profile is a Pro feature — only Pro builders expose their apps
-    // publicly. Non-Pro (and unknown) slugs resolve to a clean 404 so private
-    // builds stay private.
-    if (profile && profile.plan === "pro") {
+    // Available to all tiers — an unknown slug resolves to a clean 404.
+    if (profile) {
       found = true;
       prof = {
         display_name: profile.display_name ?? null,
