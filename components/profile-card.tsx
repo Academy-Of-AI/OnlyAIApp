@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { uploadImage } from "@/lib/upload-image";
 import { CopyLinkButton } from "@/components/portfolio-tools";
 import { AvatarCropper } from "@/components/avatar-cropper";
 
@@ -45,22 +45,18 @@ export function ProfileCard({
     if (file) { setMsg(null); setCropFile(file); }
   }
 
-  // Cropper returns a square blob → upload + save.
+  // Cropper returns a square blob → upload SERVER-side (reliable, can't hang) + save.
   async function uploadCropped(blob: Blob) {
     setUploading(true); setMsg(null);
     try {
-      const supabase = createClient();
-      const path = `avatar-${Date.now()}.jpg`;
-      const { error } = await supabase.storage.from("showcase").upload(path, blob, { upsert: true, contentType: "image/jpeg" });
-      if (error) { setMsg({ text: "Upload failed: " + error.message }); return; }
-      const url = supabase.storage.from("showcase").getPublicUrl(path).data.publicUrl;
+      const url = await uploadImage(blob, "avatar");
       const res = await fetch("/api/profile", {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ avatar_url: url }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); setMsg({ text: d.error ?? "Couldn't save photo." }); return; }
       setAvatar(url); setMsg({ ok: true, text: "Photo updated." }); setCropFile(null);
-    } catch {
-      setMsg({ text: "Upload failed — try again." });
+    } catch (e) {
+      setMsg({ text: e instanceof Error ? e.message : "Upload failed — try again." });
     } finally {
       setUploading(false);
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { uploadImage } from "@/lib/upload-image";
 
 export function ShowcaseControls({
   projectId, published, image,
@@ -26,19 +26,15 @@ export function ShowcaseControls({
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file
     if (!file) return;
     setBusy(true); setMsg(null);
     try {
-      const supabase = createClient();
-      const ext = (file.name.split(".").pop() || "png").toLowerCase();
-      const path = `${projectId}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("showcase").upload(path, file, { upsert: true, contentType: file.type });
-      if (error) { setMsg("Upload failed: " + error.message); return; }
-      const url = supabase.storage.from("showcase").getPublicUrl(path).data.publicUrl;
+      const url = await uploadImage(file, projectId);
       await patch({ showcase_image: url });
       setImg(url); setMsg("Thumbnail updated.");
-    } catch {
-      setMsg("Upload failed — try again.");
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Upload failed — try again.");
     } finally {
       setBusy(false);
     }
