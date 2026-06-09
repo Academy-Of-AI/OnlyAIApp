@@ -48,15 +48,23 @@ export function hasOptedIn(
 /**
  * How many projects this user may provision.
  * Base per tier + 1 per successful referral (bonus_projects, granted when a
- * referee ships their first app).
+ * referee ships their first app) + 1 for opting in to product updates.
  */
 /** Hard ceiling on provisioned projects (also enforced server-side via MAX_PROJECTS). */
 export const PROJECT_CEILING = 8;
 
-export function projectLimit(plan: string | null | undefined, bonusProjects: number = 0): number {
-  // Base per tier + referral bonuses, capped at the ceiling — referrals add
-  // slots only until the total hits 8.
-  return Math.min(PROJECT_CEILING, PROJECT_LIMITS[normalizePlan(plan)] + Math.max(0, bonusProjects | 0));
+export function projectLimit(
+  plan: string | null | undefined,
+  bonusProjects: number = 0,
+  profile?: { phone?: string | null; marketing_consent?: boolean | null } | null,
+): number {
+  // Base per tier + referral bonuses + the opt-in perk, capped at the ceiling —
+  // extra slots accrue only until the total hits 8.
+  const optIn = hasOptedIn(profile) ? 1 : 0;
+  return Math.min(
+    PROJECT_CEILING,
+    PROJECT_LIMITS[normalizePlan(plan)] + Math.max(0, bonusProjects | 0) + optIn,
+  );
 }
 
 /** Free users can't delete their project (so they can't recycle the slot). */

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { friendlyAiError } from "@/lib/ai-errors";
 import { runMigration } from "@/lib/supabase-mgmt";
 import { getCommitIdentity } from "@/lib/github";
+import { normalizePlan } from "@/lib/plan";
 
 export const maxDuration = 300;
 
@@ -367,11 +368,12 @@ export async function POST(
     );
   }
 
-  // Pro = unlimited Plan Packs; free is metered by credits.
+  // Core + Pro = unlimited Plan Packs; ONLY free is metered by credits.
+  // Gate on the FREE tier (not isPro), or paying Core users get metered/blocked.
   const { data: profile } = await supabase
     .from("profiles").select("build_credits, plan").eq("id", user.id).single();
-  const isPro = profile?.plan === "pro";
-  if (!ownerFunded && !isPro && mode !== "bypass" && (!profile || profile.build_credits <= 0)) {
+  const isFree = normalizePlan(profile?.plan) === "free";
+  if (!ownerFunded && isFree && mode !== "bypass" && (!profile || profile.build_credits <= 0)) {
     return NextResponse.json(
       { error: "You're out of free credits — upgrade to Core ($8/mo) for unlimited, or Pro for everything.", code: "no_credits" },
       { status: 402 },
@@ -703,8 +705,9 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
           try { await supabase.from("projects").update({ build_prompt: idea }).eq("id", id); } catch { /* non-fatal */ }
         }
 
-        // Charge the credit only now that it actually succeeded (Pro & owner-funded stay free).
-        if (!ownerFunded && !isPro) {
+        // Charge the credit only now that it actually succeeded. Only FREE users
+        // are metered — Core, Pro & owner-funded stay free (never charged).
+        if (!ownerFunded && isFree) {
           try { await supabase.rpc("use_build_credit", { p_user_id: user.id }); } catch { /* non-fatal */ }
         }
 

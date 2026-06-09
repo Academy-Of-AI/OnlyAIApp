@@ -9,6 +9,28 @@ function mgmtHeaders(token: string) {
   };
 }
 
+/**
+ * Map a raw Supabase Management API error body into a short, member-friendly
+ * message. The raw bodies are JSON blobs or stack-y strings we don't want to
+ * surface verbatim, so we pull out the common provisioning failures.
+ */
+function friendlySupabaseError(action: "create" | "health", raw: string): string {
+  const r = raw.toLowerCase();
+  if (action === "health") {
+    return "Your Supabase database is taking longer than usual to come online. It will keep provisioning in the background — give it a minute, then refresh your project.";
+  }
+  if (/free.*tier|project limit|maximum number of projects|quota|too many projects/.test(r)) {
+    return "Your Supabase organization has reached its project limit. Delete an unused project or upgrade your Supabase plan, then try again.";
+  }
+  if (/unauthor|invalid token|forbidden|401|403/.test(r)) {
+    return "Supabase wouldn't let us create the database — your connection may have expired. Reconnect Supabase and try again.";
+  }
+  if (/name|already exists|duplicate/.test(r)) {
+    return "A Supabase project with that name already exists in your organization. Pick a different project name.";
+  }
+  return "We couldn't create your Supabase database right now. Please try again in a moment.";
+}
+
 export async function listOrganizations(
   token: string,
 ): Promise<Array<{ id: string; name: string }>> {
@@ -47,7 +69,7 @@ export async function createSupabaseProject(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Failed to create Supabase project: ${err}`);
+    throw new Error(friendlySupabaseError("create", err));
   }
 
   const data = await res.json() as { ref: string };
@@ -77,9 +99,7 @@ export async function waitForProject(
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 
-  throw new Error(
-    `Supabase project ${ref} did not become healthy within 180 seconds`,
-  );
+  throw new Error(friendlySupabaseError("health", `project ${ref} health-timeout`));
 }
 
 export async function getProjectKeys(
@@ -95,16 +115,28 @@ export async function getProjectKeys(
     throw new Error(`Failed to get Supabase project keys: ${err}`);
   }
 
-  const keys = await res.json() as Array<{ name: string; api_key: string }>;
-  const anonEntry = keys.find((k) => k.name === "anon");
+  const keys = await res.json() as Array<{ name?: string; type?: string; api_key?: string; api_key_id?: string }>;
 
-  if (!anonEntry) {
-    throw new Error("Could not find anon key for Supabase project");
-  }
+  // Supabase is migrating from legacy JWT keys (name "anon"/"service_role") to a
+  // new publishable/secret format ("sb_publishable_…"). The client only ever
+  // needs the *public* key, so accept either: legacy "anon", or a publishable
+  // key (matched by type or name). Never accept a secret/service_role key.
+  const isPublic = (k: { name?: string; type?: string }) => {
+    const n = (k.name ?? "").toLowerCase();
+    const t = (k.type ?? "").toLowerCase();
+    return n === "anon" || n === "publishable" || t === "publishable" || t === "anon";
+  };
+  const publicEntry = keys.find(isPublic);
+  const anonKey = publicEntry?.api_key ?? "";
 
+  // IMPORTANT: do NOT throw here. By the time we fetch keys, the GitHub repo and
+  // Supabase project already exist. Throwing would abort provisioning and roll
+  // everything back over a non-fatal key-shape mismatch. Instead, return an
+  // empty anon key — the project is still usable; the member can paste the
+  // publishable key from their Supabase dashboard if it wasn't auto-injected.
   return {
     projectUrl: `https://${ref}.supabase.co`,
-    anonKey: anonEntry.api_key,
+    anonKey,
   };
 }
 

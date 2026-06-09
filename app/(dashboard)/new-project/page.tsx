@@ -17,7 +17,7 @@ type StepEvent = { step: string; message: string; detail?: string };
 type ProvisionResult = {
   id: string;
   githubRepoUrl: string;
-  vercelPreviewUrl: string;
+  vercelPreviewUrl?: string; // absent on the GitHub-only path (no Vercel deploy)
   supabaseProjectRef?: string;
   commitEmail?: string;
   commitName?: string;
@@ -76,60 +76,79 @@ export default function NewProjectPage() {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const text = decoder.decode(value, { stream: true });
-      const lines = text.split("\n").filter((l) => l.startsWith("data: "));
-      for (const line of lines) {
-        try {
-          const event = JSON.parse(line.slice(6)) as
-            | { step: "done"; result: ProvisionResult }
-            | { step: "error"; message: string }
-            | StepEvent;
+    // Track whether we saw a terminal event ("done" or "error"). If the stream
+    // drops or ends without one, the finally block still clears loading so the
+    // button can never hang on "Provisioning…" forever.
+    let sawTerminal = false;
 
-          if (event.step === "done") {
-            const res = (event as { step: "done"; result: ProvisionResult }).result;
-            setResult(res);
-            setLoading(false);
-            // If we came from "Start here" (Scope), seed the Plan with the brief.
-            try {
-              const brief = sessionStorage.getItem("scopeBrief");
-              const track = sessionStorage.getItem("scopeTrack");
-              if ((brief || track) && res.id) {
-                sessionStorage.removeItem("scopeBrief");
-                sessionStorage.removeItem("scopeTrack");
-                const patch: Record<string, string> = {};
-                if (brief) patch.build_prompt = brief;
-                if (track) patch.track = track;
-                fetch(`/api/projects/${res.id}`, {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(patch),
-                }).catch(() => {});
-              }
-              // Carry any uploaded docs (Start here → Upload) to THIS project so
-              // the Plan Pack can pick them up and generate in the chosen mode.
-              const upload = sessionStorage.getItem("scopeUpload");
-              if (upload && res.id) {
-                sessionStorage.setItem(`scopeUpload:${res.id}`, upload);
-                sessionStorage.removeItem("scopeUpload");
-              }
-            } catch { /* ignore */ }
-          } else if (event.step === "error") {
-            setError((event as { step: "error"; message: string }).message);
-            setLoading(false);
-          } else {
-            setSteps((prev) => {
-              const last = prev[prev.length - 1];
-              if (last?.step === event.step) return [...prev.slice(0, -1), event as StepEvent];
-              return [...prev, event as StepEvent];
-            });
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split("\n").filter((l) => l.startsWith("data: "));
+        for (const line of lines) {
+          try {
+            const event = JSON.parse(line.slice(6)) as
+              | { step: "done"; result: ProvisionResult }
+              | { step: "error"; message: string }
+              | StepEvent;
+
+            if (event.step === "done") {
+              sawTerminal = true;
+              const res = (event as { step: "done"; result: ProvisionResult }).result;
+              setResult(res);
+              // If we came from "Start here" (Scope), seed the Plan with the brief.
+              try {
+                const brief = sessionStorage.getItem("scopeBrief");
+                const track = sessionStorage.getItem("scopeTrack");
+                if ((brief || track) && res.id) {
+                  sessionStorage.removeItem("scopeBrief");
+                  sessionStorage.removeItem("scopeTrack");
+                  const patch: Record<string, string> = {};
+                  if (brief) patch.build_prompt = brief;
+                  if (track) patch.track = track;
+                  fetch(`/api/projects/${res.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(patch),
+                  }).catch(() => {});
+                }
+                // Carry any uploaded docs (Start here → Upload) to THIS project so
+                // the Plan Pack can pick them up and generate in the chosen mode.
+                const upload = sessionStorage.getItem("scopeUpload");
+                if (upload && res.id) {
+                  sessionStorage.setItem(`scopeUpload:${res.id}`, upload);
+                  sessionStorage.removeItem("scopeUpload");
+                }
+              } catch { /* ignore */ }
+            } else if (event.step === "error") {
+              sawTerminal = true;
+              setError((event as { step: "error"; message: string }).message);
+            } else {
+              setSteps((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.step === event.step) return [...prev.slice(0, -1), event as StepEvent];
+                return [...prev, event as StepEvent];
+              });
+            }
+          } catch {
+            // parse error, skip
           }
-        } catch {
-          // parse error, skip
         }
       }
+    } catch {
+      // Stream dropped/aborted mid-provision. Don't leave the user stuck — surface
+      // a recoverable message unless a terminal event already arrived. The repo
+      // (and any Supabase/Vercel resources) may still have been created server-side.
+      if (!sawTerminal) {
+        setError("The connection dropped while setting up your project. Check your dashboard in a minute — it may have finished — or try again.");
+      }
+    } finally {
+      // ALWAYS clear loading, even if the stream ended without a terminal event
+      // (e.g. proxy timeout). This is the guard that prevents a permanent
+      // "Provisioning…" hang.
+      setLoading(false);
     }
   }
 
@@ -263,38 +282,53 @@ export default function NewProjectPage() {
             <span className="text-2xl">🎉</span>
             <div>
               <div className="flex items-center gap-2">
-                <span className="dot bg-success" />
-                <p className="font-bold text-lg text-on-surface font-display tracking-tight">Your project is live!</p>
+                <span className="dot" style={{ background: result.vercelPreviewUrl ? "var(--color-success)" : "var(--color-outline)" }} />
+                <p className="font-bold text-lg text-on-surface font-display tracking-tight">
+                  {result.vercelPreviewUrl ? "Your project is live!" : "Repo created"}
+                </p>
               </div>
-              <p className="text-sm text-on-surface-variant">Set up automatically. Now just describe what you want — VAB builds it for you, right here.</p>
+              <p className="text-sm text-on-surface-variant">
+                {result.vercelPreviewUrl
+                  ? "Set up automatically and deploying to Vercel now. Open it in your editor and start building."
+                  : "Your GitHub repo is ready. Connect Vercel to deploy it to a live URL."}
+              </p>
             </div>
           </div>
 
-          {/* Primary: build it in-app (no editor, no terminal) */}
+          {/* Primary: open the project workspace */}
           <Link
             href={`/projects/${result.id}`}
             className="btn-brand flex items-center justify-between px-4 py-3"
           >
             <div>
-              <p className="text-sm font-bold text-white">✨ Build your first version</p>
-              <p className="text-xs text-white/80">Type what you want — VAB builds it. No setup, no code.</p>
+              <p className="text-sm font-bold text-white">✨ Open your project</p>
+              <p className="text-xs text-white/80">Plan it, build it, and ship it — all in one place.</p>
             </div>
             <span className="text-white text-lg">→</span>
           </Link>
 
-          {/* Secondary: see the live site */}
-          <a
-            href={result.vercelPreviewUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between bg-surface-low border border-outline-variant rounded-lg px-4 py-3 hover:border-outline transition-colors group"
-          >
-            <div>
-              <p className="text-sm font-medium text-on-surface">🌐 Open live site</p>
-              <p className="text-xs text-on-surface-variant">{result.vercelPreviewUrl}</p>
+          {/* Secondary: see the live site — only when there's an actual deploy URL */}
+          {result.vercelPreviewUrl ? (
+            <a
+              href={result.vercelPreviewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between bg-surface-low border border-outline-variant rounded-lg px-4 py-3 hover:border-outline transition-colors group"
+            >
+              <div>
+                <p className="text-sm font-medium text-on-surface">🌐 Open live site</p>
+                <p className="text-xs text-on-surface-variant">{result.vercelPreviewUrl}</p>
+              </div>
+              <span className="text-outline group-hover:text-on-surface">→</span>
+            </a>
+          ) : (
+            <div className="flex items-center justify-between bg-surface-low border border-outline-variant rounded-lg px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-on-surface">▲ Connect Vercel to deploy</p>
+                <p className="text-xs text-on-surface-variant">No live URL yet — link Vercel and every push deploys automatically.</p>
+              </div>
             </div>
-            <span className="text-outline group-hover:text-on-surface">→</span>
-          </a>
+          )}
 
           {/* Demoted: take the wheel in your own editor (graduation path) */}
           <details className="bg-surface-low border border-outline-variant rounded-lg px-4 py-3">

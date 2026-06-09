@@ -6,7 +6,7 @@ import {
   getProjectKeys,
   waitForProject,
 } from "@/lib/supabase-mgmt";
-import { addVercelEnvVars, createVercelProject, deleteVercelProject, getVercelProjectDomain } from "@/lib/vercel";
+import { addVercelEnvVars, createVercelProject, deleteVercelProject, getVercelProjectDomain, triggerVercelDeployment } from "@/lib/vercel";
 
 export type ProgressEvent = {
   step: string;      // e.g. "github_done"
@@ -165,7 +165,14 @@ export async function provisionProject(
       if (resendApiKey) envVars["RESEND_API_KEY"] = resendApiKey;
       await addVercelEnvVars({ token: vercelToken, projectId, envVars });
       onProgress({ step: "env_done", message: "Environment variables set ✓" });
+
+      // Actually kick off the first build. Linking a fresh project does NOT
+      // always trigger a deploy on its own (the initial push predates the
+      // git connection), so we trigger it explicitly. Non-fatal: if this
+      // fails, Vercel's GitHub webhook still fires on the next push.
       onProgress({ step: "deploy_start", message: "Triggering first deployment…" });
+      await triggerVercelDeployment({ token: vercelToken, projectId, projectName }).catch(() => {});
+      onProgress({ step: "deploy_done", message: "Deployment started ✓ — building on Vercel" });
     } else {
       onProgress({ step: "github_only", message: "Repo ready — connect Vercel later to deploy." });
     }

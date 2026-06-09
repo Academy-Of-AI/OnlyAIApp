@@ -1,9 +1,10 @@
 import { OpsPanel } from "@/components/ops-panel";
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
+import { isProUser } from "@/lib/plan";
 import { listVercelEnvVars } from "@/lib/vercel";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +14,14 @@ export default async function AdvancedOpsPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  // Advanced ops (raw env vars + rollback) is Pro-only — gate it server-side so
+  // non-Pro users can't reach the page even by direct URL.
+  if (!(await isProUser(supabase, user.id))) redirect(`/projects/${id}`);
 
   const { data: project } = await supabase
-    .from("projects").select("*").eq("id", id).eq("user_id", user!.id).single();
+    .from("projects").select("*").eq("id", id).eq("user_id", user.id).single();
   if (!project) notFound();
 
   // Load current env vars (keys only) for display.
@@ -23,7 +29,7 @@ export default async function AdvancedOpsPage({ params }: { params: Promise<{ id
   if (project.vercel_project_id) {
     const { data: conn } = await supabase
       .from("oauth_connections").select("access_token, metadata")
-      .eq("user_id", user!.id).eq("provider", "vercel").single();
+      .eq("user_id", user.id).eq("provider", "vercel").single();
     if (conn) {
       try {
         const token = await decrypt(conn.access_token as string);

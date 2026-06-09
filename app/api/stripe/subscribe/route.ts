@@ -14,6 +14,8 @@ type PlanKey = keyof typeof PRICES;
 /**
  * POST /api/stripe/subscribe  Body: { plan?: "core" | "pro"; interval?: "month" | "year" }
  * Starts a subscription checkout using inline price_data — no pre-created Stripe price needed.
+ * If the user already has an active subscription, swaps the price on that subscription in
+ * place (Core ⇄ Pro) instead of creating a second, double-billing subscription.
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -24,6 +26,9 @@ export async function POST(request: Request) {
   const plan: PlanKey = body.plan === "core" ? "core" : "pro";
   const interval: "month" | "year" = body.interval === "year" ? "year" : "month";
   const cfg = PRICES[plan];
+  const unitAmount = interval === "year" ? cfg.year : cfg.month;
+  const productName =
+    interval === "year" ? `OnlyAIApp — ${cfg.name} (yearly)` : `OnlyAIApp — ${cfg.name}`;
 
   const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL!;
   const { data: profile } = await supabase
@@ -33,16 +38,54 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `You're already on ${cfg.name}.` }, { status: 400 });
   }
 
+  // If the customer already has an active subscription, SWAP the price on it in place
+  // rather than creating a second subscription (the Core→Pro double-billing bug).
+  if (profile?.stripe_customer_id) {
+    const existing = await stripe.subscriptions.list({
+      customer: profile.stripe_customer_id,
+      status: "active",
+      limit: 1,
+    });
+    const sub = existing.data[0];
+    const item = sub?.items.data[0];
+    if (sub && item) {
+      // Inline price (with inline product) — keeps the "no pre-created price" approach,
+      // since subscription item price_data requires an existing product id.
+      const price = await stripe.prices.create({
+        currency: "usd",
+        unit_amount: unitAmount,
+        recurring: { interval },
+        product_data: { name: productName },
+      });
+
+      const updated = await stripe.subscriptions.update(sub.id, {
+        items: [{ id: item.id, price: price.id }],
+        proration_behavior: "create_prorations",
+        // Stamp plan so the webhook flips the profile to the right tier (it defaults to Pro
+        // when plan metadata is missing — see app/api/stripe/webhooks/route.ts).
+        metadata: { userId: user.id, plan },
+      });
+
+      // No redirect needed — the swap is applied immediately. Webhook (customer.subscription.updated)
+      // syncs the profile plan + subscriptions row. Return a success URL for the client to navigate to.
+      return NextResponse.json({
+        url: `${origin}/dashboard?upgraded=1`,
+        subscriptionId: updated.id,
+        swapped: true,
+      });
+    }
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [{
       quantity: 1,
       price_data: {
         currency: "usd",
-        unit_amount: interval === "year" ? cfg.year : cfg.month,
+        unit_amount: unitAmount,
         recurring: { interval },
         product_data: {
-          name: interval === "year" ? `OnlyAIApp — ${cfg.name} (yearly)` : `OnlyAIApp — ${cfg.name}`,
+          name: productName,
           description: cfg.desc,
         },
       },

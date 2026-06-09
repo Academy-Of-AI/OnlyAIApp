@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isProUser, PRO_REQUIRED } from "@/lib/plan";
 import { syncClaudeMd } from "@/lib/sync-claude-md";
 import { NextResponse } from "next/server";
 
@@ -12,6 +13,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Plan milestone tracking is a Pro feature (advanced build tracking).
+  if (!(await isProUser(supabase, user.id))) {
+    return NextResponse.json(PRO_REQUIRED, { status: 402 });
+  }
 
   const body = await req.json() as { milestoneId?: string; status?: string };
   if (!body.milestoneId || !["todo", "in_progress", "done"].includes(body.status ?? "")) {

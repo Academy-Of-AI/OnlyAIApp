@@ -5,6 +5,42 @@ export function githubClient(token: string) {
 }
 
 /**
+ * Turn a raw Octokit/GitHub API error into a short, member-friendly message.
+ * GitHub returns terse, low-level strings ("name already exists on this
+ * account", validation arrays, 403s) that aren't safe to surface verbatim, so
+ * we map the common provisioning failures to plain English and fall back to a
+ * generic message otherwise.
+ */
+export function friendlyGithubError(err: unknown, repoName?: string): string {
+  const e = err as { status?: number; message?: string; response?: { data?: { errors?: Array<{ message?: string }> } } };
+  const status = e?.status;
+  const raw = [
+    e?.message ?? "",
+    ...(e?.response?.data?.errors ?? []).map((x) => x?.message ?? ""),
+  ].join(" ").toLowerCase();
+
+  // Repo name already taken on the account
+  if (status === 422 || /already exists|name already exists|must be unique/.test(raw)) {
+    return repoName
+      ? `A repository named "${repoName}" already exists on your GitHub account. Pick a different project name.`
+      : "That repository name is already taken on your GitHub account. Pick a different project name.";
+  }
+  // Org/account is full or over its private-repo limit
+  if (/over your plan|repository limit|exceeded|too many repositories|account.*full/.test(raw)) {
+    return "Your GitHub account has hit its repository limit. Free up a slot or upgrade your GitHub plan, then try again.";
+  }
+  // Token can't create repos (missing scope, SSO not authorized, expired)
+  if (status === 401 || status === 403 || /bad credentials|requires authentication|not accessible|sso/.test(raw)) {
+    return "GitHub wouldn't let us create the repo — your connection may have expired or be missing the 'repo' permission. Reconnect GitHub and try again.";
+  }
+  // Template missing/renamed
+  if (status === 404 || /not found/.test(raw)) {
+    return "We couldn't find the project template on GitHub. This is on us — please try again shortly.";
+  }
+  return "GitHub couldn't create the repository right now. Please try again in a moment.";
+}
+
+/**
  * Create a new repo for the user by generating from a template.
  */
 export async function createRepoFromTemplate({
@@ -26,19 +62,24 @@ export async function createRepoFromTemplate({
 }) {
   const octokit = githubClient(token);
 
-  const { data } = await octokit.request(
-    "POST /repos/{template_owner}/{template_repo}/generate",
-    {
-      template_owner: templateOwner,
-      template_repo: templateRepo,
-      owner: newOwner,
-      name: newName,
-      description,
-      private: isPrivate,
-      include_all_branches: false,
-      headers: { "X-GitHub-Api-Version": "2022-11-28" },
-    },
-  );
+  let data;
+  try {
+    ({ data } = await octokit.request(
+      "POST /repos/{template_owner}/{template_repo}/generate",
+      {
+        template_owner: templateOwner,
+        template_repo: templateRepo,
+        owner: newOwner,
+        name: newName,
+        description,
+        private: isPrivate,
+        include_all_branches: false,
+        headers: { "X-GitHub-Api-Version": "2022-11-28" },
+      },
+    ));
+  } catch (err) {
+    throw new Error(friendlyGithubError(err, newName));
+  }
 
   return {
     repoUrl: data.html_url,

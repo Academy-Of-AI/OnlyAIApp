@@ -20,20 +20,23 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Free users can't delete (anti-recycle); Core/Pro can.
   const { data: planRow } = await supabase.from("profiles").select("plan").eq("id", user.id).single();
-  if (planRow?.plan !== "pro" && planRow?.plan !== "core") {
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("vercel_project_id, supabase_project_ref, status")
+    .eq("id", id).eq("user_id", user.id).single();
+  if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+
+  // Free users can't delete (anti-recycle); Core/Pro can. Exception: a 'failed'
+  // project never consumed a real slot, so allow anyone to delete it to recover
+  // the slot.
+  if (planRow?.plan !== "pro" && planRow?.plan !== "core" && project.status !== "failed") {
     return NextResponse.json(
       { error: "Free projects can't be deleted — upgrade to Core to delete and recreate projects.", code: "delete_locked" },
       { status: 403 },
     );
   }
-
-  const { data: project } = await supabase
-    .from("projects")
-    .select("vercel_project_id, supabase_project_ref")
-    .eq("id", id).eq("user_id", user.id).single();
-  if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
   const { data: conns } = await supabase
     .from("oauth_connections").select("provider, access_token")
@@ -94,7 +97,28 @@ export async function PATCH(
   if (typeof body.showcase_published === "boolean" || body.showcase_image !== undefined) {
     const su: Record<string, unknown> = {};
     if (typeof body.showcase_published === "boolean") su.showcase_published = body.showcase_published;
-    if (body.showcase_image !== undefined) su.showcase_image = body.showcase_image ? String(body.showcase_image).slice(0, 500) : null;
+    if (body.showcase_image !== undefined) {
+      if (body.showcase_image) {
+        // Only accept thumbnails we host ourselves (the public `showcase` bucket),
+        // mirroring the avatar_url check — the host must match our Supabase origin
+        // so a caller can't store an arbitrary off-site URL.
+        const raw = String(body.showcase_image).slice(0, 500);
+        let ok = false;
+        try {
+          const supabaseOrigin = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").origin;
+          ok = new URL(raw).origin === supabaseOrigin;
+        } catch { ok = false; }
+        if (!ok) {
+          return NextResponse.json(
+            { error: "Showcase image must be an uploaded image." },
+            { status: 400 },
+          );
+        }
+        su.showcase_image = raw;
+      } else {
+        su.showcase_image = null;
+      }
+    }
     const { error } = await supabase.from("projects").update(su).eq("id", id).eq("user_id", user.id);
     if (error) return NextResponse.json({ error: "Couldn't update showcase settings" }, { status: 500 });
   }

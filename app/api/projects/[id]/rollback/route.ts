@@ -1,5 +1,6 @@
 import { decrypt } from "@/lib/crypto";
 import { createClient } from "@/lib/supabase/server";
+import { isProUser, PRO_REQUIRED } from "@/lib/plan";
 import { rollbackVercelProject } from "@/lib/vercel";
 import { NextResponse } from "next/server";
 
@@ -12,6 +13,11 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // One-click deploy rollback is a Pro feature (advanced ops).
+  if (!(await isProUser(supabase, user.id))) {
+    return NextResponse.json(PRO_REQUIRED, { status: 402 });
+  }
 
   const { data: project } = await supabase
     .from("projects").select("name, vercel_project_id")

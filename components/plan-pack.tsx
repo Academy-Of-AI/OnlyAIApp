@@ -63,6 +63,9 @@ export function PlanPack({
   const [stepIdx, setStepIdx] = useState(-1);
   const [result, setResult] = useState<Result | null>(initialPack);
   const [err, setErr] = useState<string | null>(null);
+  // When the server returns code "no_credits" we render an Upgrade link instead
+  // of bare red text, so the out-of-credits state is actionable.
+  const [errCode, setErrCode] = useState<string | null>(null);
   const [tab, setTab] = useState<TabName>(initialPack ? "Plan" : "Describe");
   const [activeDoc, setActiveDoc] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -131,7 +134,7 @@ export function PlanPack({
 
   async function generate(modeOverride?: "bypass") {
     if (!idea.trim() || running || !repo) return;
-    setRunning(true); setErr(null); setResult(null); setStepIdx(0);
+    setRunning(true); setErr(null); setErrCode(null); setResult(null); setStepIdx(0);
     try {
       const res = await fetch(`/api/projects/${project.id}/plan-pack`, {
         method: "POST",
@@ -144,8 +147,8 @@ export function PlanPack({
         }),
       });
       if (!res.ok || !res.body) {
-        const d = await res.json().catch(() => ({} as { error?: string }));
-        setErr(d.error ?? "Couldn't start."); setRunning(false); setStepIdx(-1); return;
+        const d = await res.json().catch(() => ({} as { error?: string; code?: string }));
+        setErr(d.error ?? "Couldn't start."); setErrCode(d.code ?? null); setRunning(false); setStepIdx(-1); return;
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -315,7 +318,16 @@ export function PlanPack({
                 })}
               </div>
             )}
-            {err && <p className="text-xs text-danger">{err}</p>}
+            {err && (
+              errCode === "no_credits" ? (
+                <p className="text-xs text-danger">
+                  {err}{" "}
+                  <a href="/upgrade" className="text-brand font-semibold hover:underline">Upgrade to Core ($8/mo) →</a>
+                </p>
+              ) : (
+                <p className="text-xs text-danger">{err}</p>
+              )
+            )}
             {result && <p className="text-xs text-success">✓ Plan pack committed — see the Plan, Docs, Sprints and Hand off tabs.</p>}
           </div>
         )}

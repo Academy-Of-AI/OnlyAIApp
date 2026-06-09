@@ -3,7 +3,7 @@ import { registerPushWebhook, getCommitIdentity, getGithubUser } from "@/lib/git
 import { provisionProject, type ProgressEvent } from "@/lib/provisioning";
 import { createClient } from "@/lib/supabase/server";
 import { getTemplate } from "@/lib/templates";
-import { projectLimit, normalizePlan } from "@/lib/plan";
+import { projectLimit, normalizePlan, isProUser } from "@/lib/plan";
 import { NextResponse } from "next/server";
 
 export const maxDuration = 300;
@@ -54,33 +54,23 @@ export async function POST(request: Request) {
     );
   }
 
-  // Per-tier project limit (free = 1, +1 with the data opt-in; core/pro = 8).
+  // Per-tier project limit (free = 2, +1 with the product-updates opt-in; core/pro = 8).
   const { data: planRow } = await supabase
     .from("profiles").select("plan, phone, marketing_consent, github_id, bonus_projects").eq("id", user.id).single();
+  // Only count slots that are actually in use: a 'failed' first attempt (or a
+  // stale 'provisioning' row that never finished) must NOT permanently burn a
+  // free slot. We exclude both so a user can retry after a failure.
   const { count: ownedCount } = await supabase
-    .from("projects").select("*", { count: "exact", head: true }).eq("user_id", user.id);
-  const limit = projectLimit(planRow?.plan, planRow?.bonus_projects ?? 0);
+    .from("projects").select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .not("status", "in", "(failed,provisioning)");
+  const limit = projectLimit(planRow?.plan, planRow?.bonus_projects ?? 0, planRow);
   if ((ownedCount ?? 0) >= limit) {
     const tier = normalizePlan(planRow?.plan);
     return NextResponse.json(
       tier === "free"
         ? { error: "Free includes 2 projects. Refer a friend to earn a bonus, or upgrade to Core for up to 8.", code: "plan_limit" }
         : { error: `Your plan includes ${limit} projects. Delete one you don't need to free a slot.`, code: "plan_limit" },
-      { status: 403 },
-    );
-  }
-
-  // Hard ceiling (all plans): every project provisions its OWN Supabase project,
-  // so cap the total to stay under the Supabase org limit. Tune with MAX_PROJECTS.
-  const MAX_PROJECTS = parseInt(process.env.MAX_PROJECTS ?? "8", 10);
-  const { count: totalProjects } = await supabase
-    .from("projects").select("*", { count: "exact", head: true }).eq("user_id", user.id);
-  if ((totalProjects ?? 0) >= MAX_PROJECTS) {
-    return NextResponse.json(
-      {
-        error: `You've reached the project limit (${MAX_PROJECTS}). Each project gets its own Supabase database, so this keeps you under your Supabase org's limit. Delete one you don't need, or raise MAX_PROJECTS after upgrading Supabase.`,
-        code: "project_limit",
-      },
       { status: 403 },
     );
   }
@@ -200,19 +190,22 @@ export async function POST(request: Request) {
 
         // Pilot (anchor & monitor): default-on auto-capture for new projects. Register
         // the push webhook + flip the flag so Plan / On-track / What-it-knows
-        // start working automatically. Best-effort — never fail provisioning.
+        // start working automatically. Pilot is a Pro feature, so only wire this
+        // up for Pro users. Best-effort — never fail provisioning.
         try {
-          const repoMatch = result.githubRepoUrl.match(/github\.com\/([^/]+)\/([^/?#]+)/);
-          const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? request.headers.get("origin") ?? "";
-          if (repoMatch && appUrl) {
-            await registerPushWebhook({
-              token: githubToken,
-              owner: repoMatch[1],
-              repo: repoMatch[2].replace(/\.git$/, ""),
-              callbackUrl: `${appUrl}/api/github/webhook`,
-              secret: process.env.GITHUB_WEBHOOK_SECRET,
-            });
-            await supabase.from("projects").update({ auto_capture: true }).eq("id", project.id);
+          if (await isProUser(supabase, user.id)) {
+            const repoMatch = result.githubRepoUrl.match(/github\.com\/([^/]+)\/([^/?#]+)/);
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? request.headers.get("origin") ?? "";
+            if (repoMatch && appUrl) {
+              await registerPushWebhook({
+                token: githubToken,
+                owner: repoMatch[1],
+                repo: repoMatch[2].replace(/\.git$/, ""),
+                callbackUrl: `${appUrl}/api/github/webhook`,
+                secret: process.env.GITHUB_WEBHOOK_SECRET,
+              });
+              await supabase.from("projects").update({ auto_capture: true }).eq("id", project.id);
+            }
           }
         } catch (e) {
           console.warn("[provision] default-on auto-capture failed (non-fatal):", e);
