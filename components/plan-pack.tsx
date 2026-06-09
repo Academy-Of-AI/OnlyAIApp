@@ -129,7 +129,7 @@ export function PlanPack({
     } catch { /* ignore */ }
   }, [project.id, initialPack, result]);
 
-  async function generate() {
+  async function generate(modeOverride?: "bypass") {
     if (!idea.trim() || running || !repo) return;
     setRunning(true); setErr(null); setResult(null); setStepIdx(0);
     try {
@@ -138,7 +138,9 @@ export function PlanPack({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           idea: idea.trim(),
-          ...(uploadDocs && uploadDocs.length > 0 ? { docs: uploadDocs, mode: uploadMode } : {}),
+          ...(modeOverride === "bypass"
+            ? { mode: "bypass", ...(uploadDocs && uploadDocs.length > 0 ? { docs: uploadDocs } : {}) }
+            : (uploadDocs && uploadDocs.length > 0 ? { docs: uploadDocs, mode: uploadMode } : {})),
         }),
       });
       if (!res.ok || !res.body) {
@@ -266,7 +268,7 @@ export function PlanPack({
             />
             <div className="flex items-center gap-3 flex-wrap">
               <button
-                onClick={generate}
+                onClick={() => generate()}
                 disabled={running || !idea.trim() || !repo}
                 className="btn-brand text-sm font-semibold px-4 py-2"
               >
@@ -276,8 +278,19 @@ export function PlanPack({
                   : uploadDocs ? "✦ Generate plan from my docs"
                   : "✦ Generate the Plan Pack"}
               </button>
+              <button
+                onClick={() => generate("bypass")}
+                disabled={running || !idea.trim() || !repo}
+                className="btn-ghost text-sm px-4 py-2"
+                title="Commit your docs to /docs and hand straight to your agent — no AI, instant. Best if you already wrote a PRD/spec."
+              >
+                ⏭ Skip — use my docs as-is
+              </button>
               {!repo && <span className="text-xs text-warn">Finish provisioning first.</span>}
             </div>
+            <p className="text-xs text-outline">
+              Already wrote a PRD/spec (or pasted long docs)? <b>Skip</b> commits them to <span className="font-mono">/docs</span> and hands to your agent <b>instantly</b> — no waiting on generation, no timeouts.
+            </p>
 
             {(running || (stepIdx >= 0 && !result)) && (
               <div className="border-t border-outline-variant pt-3 space-y-1.5">

@@ -346,8 +346,10 @@ export async function POST(
       content: String(d.content),
       kind: d.kind === "skill" ? "skill" : "prd",
     }));
-  const mode: "none" | "ground_truth" | "skip" =
-    body?.mode === "skip" ? "skip" : docsInput.length > 0 ? "ground_truth" : "none";
+  const mode: "none" | "ground_truth" | "skip" | "bypass" =
+    body?.mode === "bypass" ? "bypass"
+      : body?.mode === "skip" ? "skip"
+      : docsInput.length > 0 ? "ground_truth" : "none";
 
   const prdDocs = docsInput.filter((d) => d.kind !== "skill");
   const skillDocs = docsInput.filter((d) => d.kind === "skill");
@@ -369,7 +371,7 @@ export async function POST(
   const { data: profile } = await supabase
     .from("profiles").select("build_credits, plan").eq("id", user.id).single();
   const isPro = profile?.plan === "pro";
-  if (!ownerFunded && !isPro && (!profile || profile.build_credits <= 0)) {
+  if (!ownerFunded && !isPro && mode !== "bypass" && (!profile || profile.build_credits <= 0)) {
     return NextResponse.json(
       { error: "You're out of credits — get 3 for $10, or go Pro for unlimited.", code: "no_credits" },
       { status: 402 },
@@ -417,6 +419,55 @@ export async function POST(
       try {
         // Credit is charged on SUCCESS only (at the end) — a timeout or error never
         // burns it, so free/lite users can always retry without getting stuck.
+
+        // ── BYPASS: no AI. The user already wrote their spec — just commit it to
+        // /docs + a kickoff CLAUDE.md and hand straight to the agent. Instant,
+        // never times out, costs no credit. (The agent builds the DB from the docs.)
+        if (mode === "bypass") {
+          send({ step: "planning", message: "Using your docs as the plan…" });
+          const userFiles = prdDocs.length > 0
+            ? prdDocs.map((d) => ({ path: `docs/${safeDocName(d.name)}`, content: d.content }))
+            : [{ path: "docs/PRD.md", content: idea as string }];
+          const skillFiles = skillDocs.map((d) => ({ path: `.claude/skills/${safeDocName(d.name)}`, content: d.content }));
+          const allFiles = [
+            ...userFiles,
+            ...skillFiles,
+            {
+              path: "CLAUDE.md",
+              content: claudeMd(project.name as string, project.name as string, userFiles.map((f) => f.path), { hasMigration: false, applied: false }, {
+                ownDocs: true,
+                skillFiles: skillFiles.map((f) => f.path.split("/").pop() as string),
+                commit: commitIdent,
+              }),
+            },
+          ];
+          send({ step: "committing", message: "Saving your docs to the repo…" });
+          const { data: repoInfo } = await octokit.repos.get({ owner, repo });
+          const branch = repoInfo.default_branch;
+          const { data: refData } = await octokit.git.getRef({ owner, repo, ref: `heads/${branch}` });
+          const latestCommitSha = refData.object.sha;
+          const { data: latestCommit } = await octokit.git.getCommit({ owner, repo, commit_sha: latestCommitSha });
+          const treeItems = await Promise.all(allFiles.map(async (file) => {
+            const { data: blob } = await octokit.git.createBlob({ owner, repo, content: Buffer.from(file.content).toString("base64"), encoding: "base64" });
+            return { path: file.path, mode: "100644" as const, type: "blob" as const, sha: blob.sha };
+          }));
+          const { data: newTree } = await octokit.git.createTree({ owner, repo, base_tree: latestCommit.tree.sha, tree: treeItems });
+          const { data: newCommit } = await octokit.git.createCommit({ owner, repo, message: "docs: add your specs (bypass — no AI generation)", tree: newTree.sha, parents: [latestCommitSha] });
+          await octokit.git.updateRef({ owner, repo, ref: `heads/${branch}`, sha: newCommit.sha });
+          const packJson = { files: allFiles.map((f) => ({ path: f.path, content: f.content })), plan: null, sprints: [], summary: project.name, repoUrl: project.github_repo_url, commitEmail: commitIdent?.email ?? null, commitName: commitIdent?.name ?? null };
+          try { await supabase.from("projects").update({ build_prompt: idea, plan_pack: packJson }).eq("id", id); }
+          catch { try { await supabase.from("projects").update({ build_prompt: idea }).eq("id", id); } catch { /* non-fatal */ } }
+          send({
+            step: "done",
+            message: "Your docs are committed to /docs — ready to hand to your agent ✓",
+            files: allFiles.map((f) => ({ path: f.path, content: f.content })),
+            plan: null, sprints: [], summary: project.name,
+            repoUrl: project.github_repo_url, schemaApplied: false,
+            commitEmail: commitIdent?.email ?? null, commitName: commitIdent?.name ?? null,
+          });
+          return; // finally{} closes the stream
+        }
+
         const anthropic = new Anthropic({ apiKey: anthropicKey });
 
         let docs: Array<{ path: string; content: string }> = [];
