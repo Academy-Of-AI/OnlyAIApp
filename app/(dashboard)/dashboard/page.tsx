@@ -1,6 +1,7 @@
 import { OptInNudge } from "@/components/optin-nudge";
 import { ReferralCard } from "@/components/referral-card";
 import { GetStartedChecklist } from "@/components/get-started-checklist";
+import { UpdateConnectionButton } from "@/components/update-connection-button";
 import { HowItWorksModal } from "@/components/how-it-works-modal";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePlan, hasOptedIn } from "@/lib/plan";
@@ -130,6 +131,15 @@ export default async function HomePage({
             <p className="text-xs text-on-surface-variant">Real apps from real builders</p>
           </Link>
         </div>
+      )}
+
+      {/* Self-serve GitHub recovery — a build failing with a GitHub error
+          (expired/revoked token) is the #1 stuck state; give it a one-click fix. */}
+      {hasGitHub && (
+        <p className="text-xs text-outline text-center flex items-center justify-center gap-1.5">
+          Build failing with a GitHub error?
+          <UpdateConnectionButton provider="github" label="Reconnect GitHub" />
+        </p>
       )}
 
       {/* Momentum */}

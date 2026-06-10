@@ -42,7 +42,7 @@ export default async function SignInPage({
 
         {emailError && (
           <div className="bg-warn/10 border border-warn/30 text-warn text-xs px-3 py-2.5 rounded-lg leading-relaxed">
-            📭 Couldn’t email a sign-in link right now. Use <b>Continue with GitHub</b> below — it’s instant, no email needed.
+            📭 Couldn’t email a sign-in link just now — please try again in a moment.
           </div>
         )}
 
@@ -67,12 +67,14 @@ export default async function SignInPage({
             </div>
 
             {/* GitHub — also signs you in, and grants repo access for building.
-                Highlighted when the email path just failed. */}
+                NOT auto-recommended on email failure: pushing a half-signed-up
+                user here can mint a SECOND account and trigger the "GitHub already
+                linked" lockout. Let them retry email; offer GitHub neutrally. */}
             <form action={signInWithGitHub}>
               <input type="hidden" name="next" value={next} />
-              <button type="submit" className={`w-full flex items-center justify-center gap-2.5 py-2.5 text-sm ${emailError ? "btn-brand ring-2 ring-offset-2 ring-[var(--color-brand)]" : "btn-ghost"}`}>
+              <button type="submit" className="w-full flex items-center justify-center gap-2.5 py-2.5 text-sm btn-ghost">
                 <GitHubIcon />
-                Continue with GitHub{emailError ? " — recommended" : ""}
+                Continue with GitHub
               </button>
             </form>
 

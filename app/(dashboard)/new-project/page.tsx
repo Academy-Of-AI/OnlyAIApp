@@ -211,10 +211,10 @@ export default function NewProjectPage() {
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 text-lg">▲</span>
               <div>
-                <p className="text-sm font-medium text-on-surface">Live Vercel deployment</p>
+                <p className="text-sm font-medium text-on-surface">Live hosting on Vercel <span className="text-xs text-outline font-normal">· connect Vercel to go live</span></p>
                 <p className="text-xs text-on-surface-variant mt-0.5">
-                  Your project is instantly deployed to Vercel&apos;s global CDN. Every push to GitHub
-                  automatically triggers a new deployment — CI/CD out of the box.
+                  Connect Vercel (free) and we deploy your app to a live URL — every push to GitHub
+                  auto-redeploys. CI/CD out of the box.
                 </p>
               </div>
             </div>
@@ -223,9 +223,9 @@ export default function NewProjectPage() {
               <div>
                 <p className="text-sm font-medium text-on-surface">Public preview URL</p>
                 <p className="text-xs text-on-surface-variant mt-0.5">
-                  A real{" "}
+                  Once it&apos;s deployed, you get a real{" "}
                   <code className="mono">*.vercel.app</code>{" "}
-                  URL ready to share with clients or testers — no extra DNS setup needed.
+                  URL to share with clients or testers — no extra DNS setup.
                 </p>
               </div>
             </div>

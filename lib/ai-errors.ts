@@ -17,7 +17,11 @@ export function friendlyAiError(err: unknown): string | null {
   if (/rate limit|overloaded|too many requests|\b429\b|\b529\b/.test(raw)) {
     return "The AI service is busy right now — give it a moment and try again.";
   }
-  if (/authentication|invalid x-api-key|api key|unauthorized|\b401\b/.test(raw)) {
+  // ONLY genuine Anthropic auth errors. A bare 401 / "unauthorized" / "api key"
+  // is almost always a GitHub or Supabase token problem — those must NOT be
+  // blamed on the AI key (that mislabel sent every GitHub-token failure to
+  // "check your ANTHROPIC_API_KEY"). Require an Anthropic-shaped signal.
+  if (/x-api-key|anthropic|authentication_error/.test(raw)) {
     return "AI isn't configured correctly — check the ANTHROPIC_API_KEY in your Vercel settings.";
   }
   if (/max_tokens|too large|context|token/.test(raw)) {

@@ -6,7 +6,7 @@ import { decrypt } from "@/lib/crypto";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { friendlyAiError } from "@/lib/ai-errors";
 import { runMigration } from "@/lib/supabase-mgmt";
-import { getCommitIdentity } from "@/lib/github";
+import { getCommitIdentity, friendlyGithubError } from "@/lib/github";
 import { normalizePlan, planPackFairUseCap, currentPlanPackPeriod } from "@/lib/plan";
 import { fixMojibake } from "@/lib/text";
 
@@ -753,7 +753,14 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
         });
       } catch (err) {
         console.error("[plan-pack] error:", err);
-        const msg = friendlyAiError(err) ?? (err instanceof Error ? err.message : "Plan generation failed.");
+        // The commit step is pure GitHub (octokit) — a GitHub 401 here is NOT an
+        // AI problem. Try the Anthropic-specific mapper first, then GitHub for any
+        // HTTP error, before falling back to the raw message.
+        const httpStatus = typeof (err as { status?: unknown } | null)?.status === "number"
+          ? (err as { status: number }).status : null;
+        const msg = friendlyAiError(err)
+          ?? (httpStatus !== null ? friendlyGithubError(err) : null)
+          ?? (err instanceof Error ? err.message : "Plan generation failed.");
         try { send({ step: "error", message: msg }); } catch {}
       } finally {
         controller.close();
