@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { MODELS } from "@/lib/ai-models";
 import { Octokit } from "@octokit/rest";
 import { NextResponse } from "next/server";
 import { decrypt } from "@/lib/crypto";
@@ -10,7 +11,7 @@ import { normalizePlan, planPackFairUseCap, currentPlanPackPeriod } from "@/lib/
 
 export const maxDuration = 300;
 
-const PLAN_MODEL = process.env.BUILD_MODEL ?? "claude-sonnet-4-5";
+const PLAN_MODEL = MODELS.plan;
 
 /**
  * POST /api/projects/:id/plan-pack

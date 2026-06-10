@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { MODELS } from "@/lib/ai-models";
 import { isProUser, PRO_REQUIRED } from "@/lib/plan";
 import { createClient } from "@/lib/supabase/server";
 import { syncClaudeMd } from "@/lib/sync-claude-md";
@@ -38,7 +39,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   let milestones: Array<{ title: string; detail: string }> = [];
   try {
     const res = await anthropic.messages.create({
-      model: "claude-opus-4-5",
+      model: MODELS.reason,
       max_tokens: 3000,
       tools: [{
         name: "set_milestones",

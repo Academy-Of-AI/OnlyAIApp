@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { MODELS } from "@/lib/ai-models";
 import { createClient } from "@/lib/supabase/server";
 import { artifactLimit } from "@/lib/plan";
 import { NextResponse } from "next/server";
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
   try {
     const anthropic = new Anthropic({ apiKey: key });
     const res = await anthropic.messages.create({
-      model: process.env.BUILD_MODEL || "claude-opus-4-5",
+      model: MODELS.light,
       max_tokens: 700,
       messages: [{ role: "user", content: PROMPTS[type](ctx, name) }],
     });

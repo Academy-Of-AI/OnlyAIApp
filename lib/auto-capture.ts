@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { MODELS } from "@/lib/ai-models";
 import { Octokit } from "@octokit/rest";
 import { logActivity } from "@/lib/activity";
 import { decrypt } from "@/lib/crypto";
@@ -83,7 +84,7 @@ export async function runDigest(
   let digest: Digest | null = null;
   try {
     const res = await anthropic.messages.create({
-      model: "claude-opus-4-5",
+      model: MODELS.light,
       max_tokens: 2000,
       tools: [{
         name: "digest",
@@ -144,6 +145,7 @@ Call digest. Only surface durable, specific facts and real status changes.`,
     await logUsage(admin, {
       userId: project.user_id, projectId: project.id, kind: "digest",
       inputTokens: res.usage?.input_tokens, outputTokens: res.usage?.output_tokens,
+      model: MODELS.light,
     });
   } catch { return; }
   if (!digest) return;

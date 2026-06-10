@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { MODELS } from "@/lib/ai-models";
 import { notify } from "@/lib/notify";
 import { isProUser } from "@/lib/plan";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -53,7 +54,7 @@ export async function GET(req: Request) {
     let retro = "";
     try {
       const res = await anthropic.messages.create({
-        model: "claude-opus-4-5",
+        model: MODELS.reason,
         max_tokens: 500,
         messages: [{
           role: "user",

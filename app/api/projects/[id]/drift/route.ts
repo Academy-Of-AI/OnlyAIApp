@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { MODELS } from "@/lib/ai-models";
 import { Octokit } from "@octokit/rest";
 import { decrypt } from "@/lib/crypto";
 import { isProUser, PRO_REQUIRED } from "@/lib/plan";
@@ -109,7 +110,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   let report: DriftReport | null = null;
   try {
     const res = await anthropic.messages.create({
-      model: "claude-opus-4-5",
+      model: MODELS.reason,
       max_tokens: 2000,
       tools: [{
         name: "report_drift",
