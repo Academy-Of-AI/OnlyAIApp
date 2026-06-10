@@ -128,7 +128,7 @@ const sections: FaqSection[] = [
     items: [
       {
         q: "What is Pilot?",
-        a: "Pilot is mission control for your live apps. It watches deploy health and detects drift across all your projects, auto-captures what changed, and runs launch-readiness checks so you know an app is actually ready before you share it. It's a Pro feature.",
+        a: "Pilot is mission control for your live apps. Free and Core include Pilot Lite — your latest project's deploy status, a plain-English health read, and your one next step. The full multi-project board (drift across every project, auto-capture of what changed, and launch-readiness checks before you share) is Pro.",
       },
       {
         q: "Why is Pilot paid?",

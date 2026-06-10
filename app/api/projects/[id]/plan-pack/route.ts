@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { Octokit } from "@octokit/rest";
 import { NextResponse } from "next/server";
 import { decrypt } from "@/lib/crypto";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { friendlyAiError } from "@/lib/ai-errors";
 import { runMigration } from "@/lib/supabase-mgmt";
 import { getCommitIdentity } from "@/lib/github";
@@ -724,10 +724,17 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
         // Meter on SUCCESS only. Free users spend a build credit; Core/Pro count
         // one against the monthly soft fair-use cap (never charged money). Owner-
         // funded stays unmetered. (Bypass returns earlier, so it never reaches here.)
-        if (!ownerFunded && isFree) {
-          try { await supabase.rpc("use_build_credit", { p_user_id: user.id }); } catch { /* non-fatal */ }
-        } else if (!ownerFunded && !isFree) {
-          try { await supabase.rpc("bump_plan_pack_usage", { p_user_id: user.id, p_period: fairPeriod }); } catch { /* non-fatal */ }
+        //
+        // Metered via the SERVICE-ROLE client on purpose: these RPCs are
+        // EXECUTE-revoked from authenticated/anon (migration 008) so a user can't
+        // call them directly to reset their own cap or self-grant credits. Best-
+        // effort — the soft cap fails open if metering errors.
+        if (!ownerFunded) {
+          try {
+            const admin = await createAdminClient();
+            if (isFree) await admin.rpc("use_build_credit", { p_user_id: user.id });
+            else await admin.rpc("bump_plan_pack_usage", { p_user_id: user.id, p_period: fairPeriod });
+          } catch { /* non-fatal */ }
         }
 
         send({

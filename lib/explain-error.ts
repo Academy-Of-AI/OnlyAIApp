@@ -12,7 +12,10 @@ export interface ErrorExplanation {
   fixPrompt: string;
 }
 
-const EXPLAIN_MODEL = process.env.BUILD_MODEL ?? "claude-3-5-haiku-latest";
+// Deliberately NOT BUILD_MODEL: explain-error is free-allowed and runs on the
+// owner key, so it must stay on a cheap model even when BUILD_MODEL is set to a
+// Sonnet/Opus-class override for plan generation. Override via EXPLAIN_MODEL only.
+const EXPLAIN_MODEL = process.env.EXPLAIN_MODEL ?? "claude-3-5-haiku-latest";
 
 /** Strip ANSI colour codes + carriage returns so heuristics + the LLM see clean text. */
 function clean(errorText: string): string {

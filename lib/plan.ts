@@ -69,7 +69,9 @@ export function hasOptedIn(
  * Base per tier + 1 per successful referral (bonus_projects, granted when a
  * referee ships their first app) + 1 for opting in to product updates.
  */
-/** Hard ceiling on provisioned projects (also enforced server-side via MAX_PROJECTS). */
+/** Hard ceiling on provisioned projects. projectLimit() never returns more than
+ *  this; the create route enforces it per-request (no DB-level backstop yet —
+ *  tracked as a follow-up: an atomic count guard to close the read-then-insert race). */
 export const PROJECT_CEILING = 8;
 
 export function projectLimit(

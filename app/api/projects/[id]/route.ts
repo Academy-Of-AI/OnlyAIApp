@@ -1,5 +1,6 @@
 import { decrypt } from "@/lib/crypto";
 import { renameRepo } from "@/lib/github";
+import { projectLimit } from "@/lib/plan";
 import { createClient } from "@/lib/supabase/server";
 import { renameVercelProject, deleteVercelProject } from "@/lib/vercel";
 import { deleteSupabaseProject } from "@/lib/supabase-mgmt";
@@ -20,7 +21,8 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: planRow } = await supabase.from("profiles").select("plan").eq("id", user.id).single();
+  const { data: planRow } = await supabase
+    .from("profiles").select("plan, phone, marketing_consent, bonus_projects").eq("id", user.id).single();
 
   const { data: project } = await supabase
     .from("projects")
@@ -28,10 +30,19 @@ export async function DELETE(
     .eq("id", id).eq("user_id", user.id).single();
   if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
-  // Free users can't delete (anti-recycle); Core/Pro can. Exception: a 'failed'
-  // project never consumed a real slot, so allow anyone to delete it to recover
-  // the slot.
-  if (planRow?.plan !== "pro" && planRow?.plan !== "core" && project.status !== "failed") {
+  // A user who is OVER their current limit (e.g. a lapsed Core/Pro now on free,
+  // still holding more projects than free allows) must be able to shed the
+  // excess — otherwise they're trapped (can't delete, can't create). Count live
+  // projects and compare to their limit.
+  const { count: ownedCount } = await supabase
+    .from("projects").select("*", { count: "exact", head: true })
+    .eq("user_id", user.id).not("status", "in", "(failed,provisioning)");
+  const overLimit = (ownedCount ?? 0) > projectLimit(planRow?.plan, planRow?.bonus_projects ?? 0, planRow);
+
+  // Free users can't delete (anti-recycle); Core/Pro can. Exceptions: a 'failed'
+  // project never consumed a real slot, and an over-limit user must be able to
+  // free a slot to get unstuck.
+  if (planRow?.plan !== "pro" && planRow?.plan !== "core" && project.status !== "failed" && !overLimit) {
     return NextResponse.json(
       { error: "Free projects can't be deleted — upgrade to Core to delete and recreate projects.", code: "delete_locked" },
       { status: 403 },

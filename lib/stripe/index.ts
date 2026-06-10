@@ -19,8 +19,9 @@ export const stripe = new Proxy({} as Stripe, {
 });
 
 // Keep in sync with lib/plan.ts (PROJECT_LIMITS). Prices in whole USD/mo.
+// free base is 1 (the first 50 builders get +1 via bonus_projects — see lib/plan).
 export const PLANS = {
-  free: { name: "Free", price: 0,  projects: 2 },
+  free: { name: "Free", price: 0,  projects: 1 },
   core: { name: "Core", price: 8,  projects: 8 },
   pro:  { name: "Pro",  price: 17, projects: 8 },
 } as const;
