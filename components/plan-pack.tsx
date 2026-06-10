@@ -399,8 +399,15 @@ export function PlanPack({
 
         {/* HAND OFF */}
         {tab === "Hand off" && result && (
-          <div className="space-y-3">
-            <p className="text-sm text-on-surface-variant">One command — clone the repo and start your agent with the plan baked in. It already knows what to build (your CLAUDE.md enforces it).</p>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-on-surface font-medium">Build it with your AI agent — 3 steps:</p>
+              <ol className="mt-2 space-y-1.5 text-sm text-on-surface-variant">
+                <li><b className="text-on-surface">1.</b> Have a coding agent installed — <a href="https://claude.com/claude-code" target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">Claude Code</a> (or Codex).</li>
+                <li><b className="text-on-surface">2.</b> Open your terminal and paste the command below — it clones your repo and starts the agent with the plan baked in.</li>
+                <li><b className="text-on-surface">3.</b> The agent reads <span className="font-mono text-xs">/docs</span>, confirms the plan, then builds — committing &amp; deploying as it goes. You just review and say “go”.</li>
+              </ol>
+            </div>
             <div className="flex items-start gap-2">
               <code className="flex-1 text-xs font-mono bg-surface border border-outline-variant rounded-lg px-3 py-2 text-brand-dim leading-relaxed break-words whitespace-pre-wrap">{handoffCmd}</code>
               <button onClick={() => copy(handoffCmd)} className="btn-ghost text-xs px-3 py-2 shrink-0">{copied ? "Copied" : "Copy"}</button>

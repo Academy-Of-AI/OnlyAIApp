@@ -1,6 +1,7 @@
 import { OptInNudge } from "@/components/optin-nudge";
 import { ReferralCard } from "@/components/referral-card";
 import { GetStartedChecklist } from "@/components/get-started-checklist";
+import { HowItWorksModal } from "@/components/how-it-works-modal";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePlan, hasOptedIn } from "@/lib/plan";
 import { reconcileReferralReward } from "@/lib/referrals";
@@ -49,6 +50,9 @@ export default async function HomePage({
 
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6">
+      {/* First-login orientation (shows once per browser) */}
+      <HowItWorksModal hasGitHub={!!hasGitHub} />
+
       {/* Alerts */}
       {params.upgraded && (
         <div className="panel border-l-2 border-l-success text-success text-sm px-4 py-3">🎉 You&apos;re upgraded — your new plan is active. Enjoy your unlocked perks.</div>
@@ -67,7 +71,8 @@ export default async function HomePage({
           Hey {firstName} — let’s ship something 🚀
         </h1>
         <p className="text-sm text-on-surface-variant mt-1">
-          Build real things. Show them off. Level up your career. <span className="opacity-80">(yes, it’s allowed to be fun.)</span>
+          Build real things. Show them off. Level up your career.{" "}
+          <a href="/dashboard?tour=1" className="text-brand-dim hover:underline">· How it works</a>
         </p>
       </div>
 
