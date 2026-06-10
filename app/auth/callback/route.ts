@@ -45,8 +45,14 @@ export async function GET(request: Request) {
     }
 
     console.error("[auth/callback] exchangeCodeForSession failed:", error.message);
+    // The #1 magic-link failure: the link opened in a DIFFERENT browser/app than
+    // the one it was requested from, so the PKCE verifier cookie isn't here.
+    // Don't show the raw "code verifier" error — guide them.
+    const friendly = /verifier|code challenge|pkce|flow state/i.test(error.message)
+      ? "Open the sign-in link in the same browser you requested it from — or just use “Continue with GitHub”, it’s instant."
+      : "That sign-in link didn’t work (it may have expired). Request a new one, or use “Continue with GitHub”.";
     return NextResponse.redirect(
-      `${origin}/sign-in?auth_error=${encodeURIComponent(error.message)}`,
+      `${origin}/sign-in?auth_error=${encodeURIComponent(friendly)}`,
     );
   }
 
@@ -61,7 +67,7 @@ export async function GET(request: Request) {
 
     console.error("[auth/callback] verifyOtp failed:", error.message);
     return NextResponse.redirect(
-      `${origin}/sign-in?auth_error=${encodeURIComponent(error.message)}`,
+      `${origin}/sign-in?auth_error=${encodeURIComponent("That sign-in link has expired or was already used. Request a new one, or use “Continue with GitHub”.")}`,
     );
   }
 

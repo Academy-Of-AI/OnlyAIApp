@@ -97,6 +97,18 @@ body {
 }
 .btn-ghost:hover { border-color: var(--color-outline); }
 
+/* Clickable affordance — native <button>/<summary> default to the arrow cursor
+   (Tailwind v4 preflight doesn't add it), so users can't tell they're clickable.
+   Give every interactive element the hand; disabled stays default. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href],
+summary,
+label:has(> input:is([type="checkbox"], [type="radio"])) {
+  cursor: pointer;
+}
+button:disabled, [aria-disabled="true"] { cursor: default; }
+
 /* Chips / badges (status) */
 .chip {
   display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700;

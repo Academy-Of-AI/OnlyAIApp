@@ -346,7 +346,13 @@ export function PlanPack({
               <p className="text-xs text-outline">Built to keep working reliably — even with the AI switched off.</p>
             </div>
             <div className="space-y-2 border-t border-outline-variant pt-3">
-              <p className="text-xs text-on-surface-variant uppercase tracking-wider">The pack — committed to <span className="font-mono">/docs</span></p>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="text-xs text-on-surface-variant uppercase tracking-wider">The pack — committed to <span className="font-mono">/docs</span></p>
+                {result.repoUrl && (
+                  <a href={`${result.repoUrl.replace(/\.git$/, "")}/tree/main/docs`} target="_blank" rel="noopener noreferrer"
+                    className="text-xs text-brand hover:text-brand-dim font-medium shrink-0">View these on GitHub ↗</a>
+                )}
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 {allFiles.map((f, i) => (
                   <button
