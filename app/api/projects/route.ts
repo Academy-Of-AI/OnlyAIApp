@@ -2,6 +2,7 @@ import { decrypt } from "@/lib/crypto";
 import { registerPushWebhook, getCommitIdentity, getGithubUser } from "@/lib/github";
 import { provisionProject, type ProgressEvent } from "@/lib/provisioning";
 import { createClient } from "@/lib/supabase/server";
+import { getSupabaseConn } from "@/lib/supabase-conn";
 import { getTemplate } from "@/lib/templates";
 import { projectLimit, normalizePlan, isProUser } from "@/lib/plan";
 import { NextResponse } from "next/server";
@@ -133,9 +134,10 @@ export async function POST(request: Request) {
   let resendApiKey:  string | undefined;
 
   if (supabaseConn) {
-    supabaseToken = await decrypt(supabaseConn.access_token as string);
-    const meta = supabaseConn.metadata as { org_id?: string } | null;
-    supabaseOrgId = meta?.org_id;
+    // Refresh-aware: a one-click OAuth Supabase token is short-lived; the helper
+    // refreshes it transparently (and passes a paste-token through unchanged).
+    const sc = await getSupabaseConn(supabase, user.id);
+    if (sc) { supabaseToken = sc.token; supabaseOrgId = sc.orgId; }
   }
 
   if (resendConn) {

@@ -7,17 +7,18 @@ type Step = { label: string; href: string; cta: string; done: boolean; external?
  * incomplete step gets the primary CTA. Hides once the user has shipped (graduated).
  */
 export function GetStartedChecklist({
-  hasGitHub, hasVercel = false, hasProject, hasShipped,
+  hasGitHub, hasVercel = false, hasSupabase = false, hasProject, hasShipped,
 }: {
-  hasGitHub: boolean; hasVercel?: boolean; hasProject: boolean; hasShipped: boolean;
+  hasGitHub: boolean; hasVercel?: boolean; hasSupabase?: boolean; hasProject: boolean; hasShipped: boolean;
 }) {
   const allDone = hasGitHub && hasVercel && hasProject && hasShipped;
 
   const steps: Step[] = [
     { label: "Connect GitHub", href: "/api/github/connect", cta: "Connect", done: hasGitHub, external: true },
-    // Connecting Vercel is what makes a project auto-deploy to a LIVE URL on
-    // provision — without it you only get a repo. One-click OAuth (un-orphaned).
+    // Connect your cloud once (one-click OAuth) — then every project
+    // auto-provisions + deploys to a LIVE URL. Without Vercel you only get a repo.
     { label: "Connect Vercel — so your app auto-deploys live", href: "/api/vercel/oauth", cta: "Connect Vercel", done: hasVercel, external: true },
+    { label: "Connect Supabase — your app's own database", href: "/api/supabase/oauth", cta: "Connect Supabase", done: hasSupabase, external: true },
     { label: "Pick a track & start building", href: "/tracks", cta: "Pick a track", done: hasProject },
     { label: "Show off your proof", href: "/portfolio", cta: "Open Portfolio", done: hasShipped },
   ];

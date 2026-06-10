@@ -2,6 +2,7 @@ import { decrypt } from "@/lib/crypto";
 import { getProjectKeys } from "@/lib/supabase-mgmt";
 import { addVercelEnvVars, createVercelProject, getVercelProjectDomain, triggerVercelDeployment } from "@/lib/vercel";
 import { createClient } from "@/lib/supabase/server";
+import { getSupabaseConn } from "@/lib/supabase-conn";
 import { NextResponse } from "next/server";
 
 export const maxDuration = 60;
@@ -92,12 +93,9 @@ export async function POST(
     const envVars: Record<string, string> = { NEXT_PUBLIC_APP_URL: domain };
     if (project.supabase_project_ref) {
       try {
-        const { data: sConn } = await supabase
-          .from("oauth_connections").select("access_token")
-          .eq("user_id", user.id).eq("provider", "supabase").single();
-        if (sConn?.access_token) {
-          const sToken = await decrypt(sConn.access_token as string);
-          const keys = await getProjectKeys(sToken, project.supabase_project_ref as string);
+        const sc = await getSupabaseConn(supabase, user.id);
+        if (sc?.token) {
+          const keys = await getProjectKeys(sc.token, project.supabase_project_ref as string);
           envVars["NEXT_PUBLIC_SUPABASE_URL"] = keys.projectUrl;
           envVars["NEXT_PUBLIC_SUPABASE_ANON_KEY"] = keys.anonKey;
         }

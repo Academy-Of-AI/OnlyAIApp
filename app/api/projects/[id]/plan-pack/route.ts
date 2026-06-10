@@ -4,6 +4,7 @@ import { Octokit } from "@octokit/rest";
 import { NextResponse } from "next/server";
 import { decrypt } from "@/lib/crypto";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { getSupabaseConn } from "@/lib/supabase-conn";
 import { friendlyAiError } from "@/lib/ai-errors";
 import { runMigration } from "@/lib/supabase-mgmt";
 import { getCommitIdentity, friendlyGithubError } from "@/lib/github";
@@ -619,12 +620,9 @@ Call write_docs with ALL the doc files (concise, specific to THIS idea) and a on
           send({ step: "wiring", message: "Wiring your database (applying the schema)…" });
           if (supabaseRef) {
             try {
-              const { data: supaConn } = await supabase
-                .from("oauth_connections").select("access_token")
-                .eq("user_id", user.id).eq("provider", "supabase").single();
-              if (supaConn?.access_token) {
-                const supaToken = await decrypt(supaConn.access_token as string);
-                await runMigration(supaToken, supabaseRef, migrationSql);
+              const sc = await getSupabaseConn(supabase, user.id);
+              if (sc?.token) {
+                await runMigration(sc.token, supabaseRef, migrationSql);
                 schemaApplied = true;
                 send({ step: "wiring_done", message: "Database wired — your schema is live ✓" });
               } else {

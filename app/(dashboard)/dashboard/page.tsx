@@ -34,6 +34,7 @@ export default async function HomePage({
 
   const hasGitHub = connections?.some((c) => c.provider === "github");
   const hasVercel = connections?.some((c) => c.provider === "vercel");
+  const hasSupabase = connections?.some((c) => c.provider === "supabase");
   const showOptInNudge = normalizePlan(profile?.plan) === "free" && !hasOptedIn(profile);
 
   const list = projects ?? [];
@@ -79,7 +80,7 @@ export default async function HomePage({
       </div>
 
       {/* Guided onboarding rail (also handles the GitHub connect step) */}
-      <GetStartedChecklist hasGitHub={!!hasGitHub} hasVercel={!!hasVercel} hasProject={list.length > 0} hasShipped={shipped > 0} />
+      <GetStartedChecklist hasGitHub={!!hasGitHub} hasVercel={!!hasVercel} hasSupabase={!!hasSupabase} hasProject={list.length > 0} hasShipped={shipped > 0} />
 
       {/* Free-tier opt-in nudge → +1 project */}
       {hasGitHub && showOptInNudge && <OptInNudge />}
