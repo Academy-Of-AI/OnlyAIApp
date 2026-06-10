@@ -88,8 +88,21 @@ export async function GET(request: Request) {
     via: "oauth",
   });
 
-  // Clear CSRF cookie
-  const redirectRes = NextResponse.redirect(`${origin}/dashboard?connected=vercel`);
+  // Return to where the connect started (e.g. the project, to auto-deploy).
+  const nextCookie = cookieHeader
+    .split(";").map((c) => c.trim())
+    .find((c) => c.startsWith("vercel_oauth_next="))
+    ?.split("=").slice(1).join("=");
+  let dest = "/dashboard?connected=vercel";
+  if (nextCookie) {
+    try {
+      const decoded = decodeURIComponent(nextCookie);
+      if (decoded.startsWith("/") && !decoded.startsWith("//")) dest = decoded;
+    } catch { /* keep default */ }
+  }
+
+  const redirectRes = NextResponse.redirect(`${origin}${dest}`);
   redirectRes.cookies.set("vercel_oauth_state", "", { maxAge: 0, path: "/" });
+  redirectRes.cookies.set("vercel_oauth_next", "", { maxAge: 0, path: "/" });
   return redirectRes;
 }

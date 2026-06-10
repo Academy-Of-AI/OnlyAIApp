@@ -68,9 +68,16 @@ export function DeployButton({ projectId, projectPath }: { projectId: string; pr
       <div className="panel p-4 space-y-3">
         <div>
           <p className="text-sm font-medium text-on-surface">One step to go live: connect Vercel (free)</p>
-          <p className="text-xs text-on-surface-variant mt-0.5">We&apos;ll deploy straight after — no terminal, no setup. Your app stays in your own Vercel account.</p>
+          <p className="text-xs text-on-surface-variant mt-0.5">One click — we deploy straight after. Your app stays in your own Vercel account; no terminal.</p>
         </div>
-        <VercelConnectForm redirectTo={`${projectPath}?deploy=1`} />
+        <a
+          href={`/api/vercel/oauth?next=${encodeURIComponent(`${projectPath}?deploy=1`)}`}
+          className="btn-brand inline-flex items-center justify-center gap-2 text-sm font-semibold px-5 py-2.5 w-full"
+        >▲ Connect Vercel — one click</a>
+        <details className="text-xs text-on-surface-variant">
+          <summary className="cursor-pointer hover:text-on-surface select-none">Prefer to paste a token instead?</summary>
+          <div className="mt-2"><VercelConnectForm redirectTo={`${projectPath}?deploy=1`} /></div>
+        </details>
       </div>
     );
   }
