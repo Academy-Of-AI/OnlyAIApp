@@ -14,9 +14,9 @@ export async function GET(request: Request) {
 
   const clientId = process.env.VERCEL_OAUTH_CLIENT_ID;
   if (!clientId) {
-    // Not configured — degrade gracefully (the connect UI still offers the
-    // token-paste fallback) instead of dumping a JSON 500 on the user.
-    return NextResponse.redirect(`${origin}/dashboard?error=vercel_oauth_unconfigured`);
+    // Not configured — send to settings, where the token-paste fallback lives,
+    // instead of a dead-end error on the dashboard.
+    return NextResponse.redirect(`${origin}/settings?error=vercel_oauth_unconfigured`);
   }
 
   // Where to return after connecting (e.g. back to the project to auto-deploy).
