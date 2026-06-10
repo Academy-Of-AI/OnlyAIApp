@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { fixMojibake } from "@/lib/text";
 
 type Project = {
   id: string;
@@ -264,6 +265,19 @@ export function PlanPack({
             <textarea
               value={idea}
               onChange={(e) => setIdea(e.target.value)}
+              onPaste={(e) => {
+                // Repair mojibake on paste (pasting a plan copied from a source
+                // with broken encoding — "â†'" for "→", "Â·" for "·").
+                const pasted = e.clipboardData?.getData("text") ?? "";
+                const fixed = fixMojibake(pasted);
+                if (fixed !== pasted) {
+                  e.preventDefault();
+                  const el = e.currentTarget;
+                  const start = el.selectionStart ?? idea.length;
+                  const end = el.selectionEnd ?? idea.length;
+                  setIdea(idea.slice(0, start) + fixed + idea.slice(end));
+                }
+              }}
               disabled={running || !repo}
               rows={3}
               placeholder="e.g. A tool to run my consultancy: capture leads from calls, auto-draft proposals, track who's paid, and tell me who to follow up with today. For me + 2 associates."

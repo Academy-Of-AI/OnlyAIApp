@@ -1,6 +1,7 @@
 import { decrypt } from "@/lib/crypto";
 import { renameRepo } from "@/lib/github";
 import { projectLimit } from "@/lib/plan";
+import { fixMojibake, MAX_BUILD_PROMPT } from "@/lib/text";
 import { createClient } from "@/lib/supabase/server";
 import { renameVercelProject, deleteVercelProject } from "@/lib/vercel";
 import { deleteSupabaseProject } from "@/lib/supabase-mgmt";
@@ -156,7 +157,9 @@ export async function PATCH(
   }
 
   if (body.build_prompt !== undefined) {
-    updates.build_prompt = body.build_prompt.slice(0, 2000);
+    // Repair mojibake, then cap generously (a real PRD/plan is tens of KB — the
+    // old 2000-char cap truncated uploaded plans).
+    updates.build_prompt = fixMojibake(body.build_prompt).slice(0, MAX_BUILD_PROMPT);
   }
 
   if (body.track !== undefined) {

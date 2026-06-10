@@ -8,6 +8,7 @@ import { friendlyAiError } from "@/lib/ai-errors";
 import { runMigration } from "@/lib/supabase-mgmt";
 import { getCommitIdentity } from "@/lib/github";
 import { normalizePlan, planPackFairUseCap, currentPlanPackPeriod } from "@/lib/plan";
+import { fixMojibake } from "@/lib/text";
 
 export const maxDuration = 300;
 
@@ -337,7 +338,7 @@ export async function POST(
     docs?: Array<{ name?: unknown; content?: unknown; kind?: unknown }>;
     mode?: unknown;
   };
-  const ideaOverride = typeof body?.idea === "string" && body.idea.trim() ? body.idea.trim() : null;
+  const ideaOverride = typeof body?.idea === "string" && body.idea.trim() ? fixMojibake(body.idea.trim()) : null;
 
   // Power-user "bring your own docs" payload (optional).
   const docsInput: InDoc[] = (Array.isArray(body?.docs) ? body!.docs! : [])
@@ -345,7 +346,7 @@ export async function POST(
     .slice(0, 8)
     .map((d) => ({
       name: String(d.name),
-      content: String(d.content),
+      content: fixMojibake(String(d.content)),
       kind: d.kind === "skill" ? "skill" : "prd",
     }));
   const mode: "none" | "ground_truth" | "skip" | "bypass" =

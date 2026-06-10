@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { fixMojibake } from "@/lib/text";
 
 const FIELDS = [
   { key: "problem", q: "What do you want to build? (the painful, repetitive thing it handles)", ph: "e.g. My reps lose track of change requests & touchpoints across leads — it's all in WhatsApp and spreadsheets.", area: true },
@@ -59,7 +60,7 @@ export function ScopeForm({ initial = {}, modifier = "", trackKey = "" }: { init
     if (!list) return;
     const md = Array.from(list).filter((f) => /\.(md|markdown|txt)$/i.test(f.name));
     const read = await Promise.all(
-      md.map(async (f) => ({ name: f.name, content: await f.text(), kind: guessKind(f.name) })),
+      md.map(async (f) => ({ name: f.name, content: fixMojibake(await f.text()), kind: guessKind(f.name) })),
     );
     setDocs((prev) => {
       const byName = new Map(prev.map((d) => [d.name, d]));
