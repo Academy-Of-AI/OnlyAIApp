@@ -1,5 +1,39 @@
 import { createClient } from "@/lib/supabase/server";
+import { encrypt } from "@/lib/crypto";
+import { getGithubUser } from "@/lib/github";
 import { NextResponse } from "next/server";
+
+/**
+ * Bridge a GitHub OAuth sign-in into a usable connection. The provider_token
+ * (the GitHub access token) is only present on the session right after the code
+ * exchange, so we capture it HERE and store it in oauth_connections — exactly
+ * like /api/github/connect does — so "Continue with GitHub" both signs the user
+ * in AND grants the repo access they need to provision. Without this, a
+ * GitHub-signed-in user is still told to "Connect GitHub" (oauth_connections is
+ * empty). Best-effort: never blocks sign-in.
+ */
+async function bridgeGithubToken(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  session: { provider_token?: string | null; user?: { id?: string } | null } | null,
+): Promise<void> {
+  const providerToken = session?.provider_token ?? null;
+  const userId = session?.user?.id ?? null;
+  if (!providerToken || !userId) return;
+  try {
+    const { login, id } = await getGithubUser(providerToken);
+    const encrypted = await encrypt(providerToken);
+    await supabase.from("oauth_connections").upsert({
+      user_id: userId,
+      provider: "github",
+      access_token: encrypted,
+      provider_user_id: String(id),
+      metadata: { login },
+    });
+    await supabase.from("profiles").update({ github_username: login }).eq("id", userId);
+  } catch (e) {
+    console.warn("[auth/callback] GitHub token bridge failed (non-fatal):", e);
+  }
+}
 
 // Email-link OTP types Supabase delivers via ?type=. Kept as a local literal
 // list (rather than importing EmailOtpType, which isn't re-exported from the
@@ -38,9 +72,11 @@ export async function GET(request: Request) {
   // PKCE magic links / OAuth: exchange the ?code= for a session.
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      // One click = signed in + repo access ready (no second "Connect GitHub").
+      await bridgeGithubToken(supabase, data?.session ?? null).catch(() => {});
       return NextResponse.redirect(`${origin}${next}`);
     }
 

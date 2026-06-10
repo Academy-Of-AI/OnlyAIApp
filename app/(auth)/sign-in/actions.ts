@@ -47,6 +47,10 @@ export async function signInWithGitHub(formData: FormData) {
     provider: "github",
     options: {
       redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      // Request repo access AT SIGN-IN so one click both signs in AND grants the
+      // token needed to provision — the callback bridges it into oauth_connections.
+      // This ends the "you just signed in with GitHub, now Connect GitHub" trap.
+      scopes: "read:user user:email repo",
     },
   });
 

@@ -129,6 +129,14 @@ export async function POST(
         { status: 409 },
       );
     }
+    // Vercel can't see/link the GitHub repo unless the Vercel GitHub app is
+    // installed on it — common for a brand-new Vercel user who only made a token.
+    if (/git repository|repository was not found|installation|github app|not connected to git|unable to link|could not.*link/i.test(raw)) {
+      return NextResponse.json(
+        { error: "Vercel couldn't link your GitHub repo. Install the Vercel GitHub app on it (vercel.com → Add New… → Project → Import your repo once), then try again — or just push to GitHub and Vercel deploys automatically.", code: "vercel_github_app" },
+        { status: 400 },
+      );
+    }
     return NextResponse.json({ error: "Couldn't start the deploy — please try again in a moment." }, { status: 500 });
   }
 }
