@@ -79,8 +79,8 @@ export default async function SignInPage({
             </form>
 
             <p className="text-center text-xs text-on-surface-variant leading-relaxed">
-              Email gets you in to explore. When you build your first app you’ll connect GitHub —
-              that’s how your code becomes truly yours.
+              Continuing with GitHub lets us create your app’s code repo <b>in your own account</b> —
+              that’s how the app becomes truly yours. We only ever touch repos we create for you.
             </p>
           </>
         )}
