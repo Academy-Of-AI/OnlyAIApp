@@ -5,6 +5,12 @@
 export function friendlyAiError(err: unknown): string | null {
   const raw = (err instanceof Error ? err.message : String(err ?? "")).toLowerCase();
 
+  // Monthly usage/spend cap reached on the owner account (Anthropic Console →
+  // Settings → Limits). Distinct from a zero balance: access auto-returns next
+  // month. Keep the user moving via the no-AI "Skip" path, which still works.
+  if (/usage limit|reached your specified|regain access|spend limit|monthly limit/.test(raw)) {
+    return "Plan generation is paused — we've hit this month's AI capacity. You can keep going right now: tap 'Skip — use my docs as-is' to commit your spec and hand it straight to your agent (no AI needed). Full generation will be back shortly. (Owner: raise the monthly cap at console.anthropic.com → Settings → Limits.)";
+  }
   if (/credit balance is too low|plans & billing|billing|insufficient|quota/.test(raw)) {
     return "The AI service is temporarily unavailable — the account powering it has run low on credit. (Owner: top up at console.anthropic.com → Billing, then try again.)";
   }
