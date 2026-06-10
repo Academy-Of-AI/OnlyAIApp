@@ -9,6 +9,7 @@ import { DeleteProjectButton } from "@/components/delete-project-button";
 import { ExplainError } from "@/components/explain-error";
 import { LaunchCheck } from "@/components/launch-check";
 import { DriftPanel } from "@/components/drift-panel";
+import { DeployButton } from "@/components/deploy-button";
 
 type Project = {
   id: string;
@@ -89,6 +90,14 @@ export function ProjectTabs({
           )}
         </div>
       </div>
+
+      {/* Go live — the in-app deploy. Shown until the app actually has a live URL,
+          so a non-technical user can reach a real URL without a terminal. */}
+      {!liveUrl && project.github_repo_url && project.status !== "provisioning" && (
+        <div className="mb-6">
+          <DeployButton projectId={project.id} projectPath={`/projects/${project.id}`} />
+        </div>
+      )}
 
       {/* The 3 Ps — the only nav (no tab bar) */}
       <div className="grid grid-cols-3 gap-2 text-sm mb-8">
