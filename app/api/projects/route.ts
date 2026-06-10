@@ -58,15 +58,23 @@ export async function POST(request: Request) {
   // product-updates opt-in, +1 per referral; core/pro = 8). Capped at 8.
   const { data: planRow } = await supabase
     .from("profiles").select("plan, phone, marketing_consent, github_id, bonus_projects").eq("id", user.id).single();
-  // Only count slots that are actually in use: a 'failed' first attempt (or a
-  // stale 'provisioning' row that never finished) must NOT permanently burn a
-  // free slot. We exclude both so a user can retry after a failure.
-  const { count: ownedCount } = await supabase
-    .from("projects").select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .not("status", "in", "(failed,provisioning)");
+  // Slots in use — mirror project_slots_used() in migration 009 EXACTLY: count
+  // everything except 'failed' and never-finished (stale > 15 min) 'provisioning',
+  // so a failed/abandoned attempt never permanently burns a slot, while a fresh
+  // in-flight provisioning DOES count. (Filtered in JS — ≤8 rows — to match the
+  // SQL precisely without PostgREST or-filter gymnastics.)
+  const { data: ownRows } = await supabase
+    .from("projects").select("status, created_at").eq("user_id", user.id);
+  const staleCutoff = Date.now() - 15 * 60 * 1000;
+  const ownedCount = (ownRows ?? []).filter((p) => {
+    if (p.status === "failed") return false;
+    if (p.status === "provisioning" && new Date(p.created_at as string).getTime() < staleCutoff) return false;
+    return true;
+  }).length;
   const limit = projectLimit(planRow?.plan, planRow?.bonus_projects ?? 0, planRow);
-  if ((ownedCount ?? 0) >= limit) {
+  // Single source for the friendly over-limit response (used by the pre-check
+  // AND the DB-backstop rejection below, so they never drift).
+  const planLimitResponse = () => {
     const tier = normalizePlan(planRow?.plan);
     return NextResponse.json(
       tier === "free"
@@ -74,7 +82,8 @@ export async function POST(request: Request) {
         : { error: `Your plan includes ${limit} projects. Delete one you don't need to free a slot.`, code: "plan_limit" },
       { status: 403 },
     );
-  }
+  };
+  if (ownedCount >= limit) return planLimitResponse();
 
   // Load GitHub + Vercel + Supabase (optional) connections
   const { data: connections } = await supabase
@@ -146,6 +155,10 @@ export async function POST(request: Request) {
     .single();
 
   if (insertError || !project) {
+    // The DB backstop (trigger trg_enforce_project_limit, migration 009) rejects
+    // an insert that would exceed the limit — the concurrent-create race the
+    // pre-check above can't catch. Map it to the same friendly 403, not a 500.
+    if (insertError?.message?.includes("project_limit_exceeded")) return planLimitResponse();
     return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
   }
 

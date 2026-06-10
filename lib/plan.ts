@@ -70,8 +70,10 @@ export function hasOptedIn(
  * referee ships their first app) + 1 for opting in to product updates.
  */
 /** Hard ceiling on provisioned projects. projectLimit() never returns more than
- *  this; the create route enforces it per-request (no DB-level backstop yet —
- *  tracked as a follow-up: an atomic count guard to close the read-then-insert race). */
+ *  this; the create route pre-checks it, and a BEFORE INSERT trigger
+ *  (trg_enforce_project_limit, migration 009) is the atomic backstop that closes
+ *  the concurrent-create race. Keep project_limit_for() in migration 009 in sync
+ *  with projectLimit() below if you change the formula. */
 export const PROJECT_CEILING = 8;
 
 export function projectLimit(
