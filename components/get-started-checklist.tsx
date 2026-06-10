@@ -7,16 +7,18 @@ type Step = { label: string; href: string; cta: string; done: boolean; external?
  * incomplete step gets the primary CTA. Hides once the user has shipped (graduated).
  */
 export function GetStartedChecklist({
-  hasGitHub, hasProject, hasShipped,
+  hasGitHub, hasVercel = false, hasProject, hasShipped,
 }: {
-  hasGitHub: boolean; hasProject: boolean; hasShipped: boolean;
+  hasGitHub: boolean; hasVercel?: boolean; hasProject: boolean; hasShipped: boolean;
 }) {
-  const allDone = hasGitHub && hasProject && hasShipped;
+  const allDone = hasGitHub && hasVercel && hasProject && hasShipped;
 
   const steps: Step[] = [
     { label: "Connect GitHub", href: "/api/github/connect", cta: "Connect", done: hasGitHub, external: true },
+    // Connecting Vercel is what makes a project auto-deploy to a LIVE URL on
+    // provision — without it you only get a repo. One-click OAuth (un-orphaned).
+    { label: "Connect Vercel — so your app auto-deploys live", href: "/api/vercel/oauth", cta: "Connect Vercel", done: hasVercel, external: true },
     { label: "Pick a track & start building", href: "/tracks", cta: "Pick a track", done: hasProject },
-    { label: "Ship it live", href: "/projects", cta: "Open your build", done: hasShipped },
     { label: "Show off your proof", href: "/portfolio", cta: "Open Portfolio", done: hasShipped },
   ];
   const firstTodo = steps.findIndex((s) => !s.done);
