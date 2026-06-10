@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { HOW_IT_WORKS_STEPS as STEPS } from "@/lib/how-it-works";
 
 /**
  * First-login orientation modal. Shows ONCE per browser (localStorage-gated) so a
@@ -9,13 +10,6 @@ import { useEffect, useState } from "react";
  * Re-openable any time via the "How it works" control in the sidebar/help.
  */
 const SEEN_KEY = "oaa_how_it_works_v1";
-
-const STEPS = [
-  { icon: "🧭", title: "Pick what to build", body: "Choose a track or describe your own idea in a sentence." },
-  { icon: "📋", title: "We plan it & wire it up", body: "You get a clear, sequenced plan — and your GitHub repo, database & hosting set up for you." },
-  { icon: "🤖", title: "Build with your AI agent", body: "Hand off to Claude Code or Codex. The plan is baked in, so your agent knows exactly what to build." },
-  { icon: "🚀", title: "Ship it & show your proof", body: "Deploy a real, live app you own — then show it on your portfolio & the showcase." },
-];
 
 export function HowItWorksModal({ hasGitHub }: { hasGitHub: boolean }) {
   const [open, setOpen] = useState(false);

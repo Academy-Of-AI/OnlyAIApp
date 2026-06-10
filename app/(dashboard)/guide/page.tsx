@@ -1,69 +1,76 @@
 import Link from "next/link";
+import { HOW_IT_WORKS_STEPS } from "@/lib/how-it-works";
+
+// Deeper "while you build" detail — kept here (the guide is the fuller reference)
+// but framed as supporting the 4-step journey, not a competing numbered list.
+const BEHIND = [
+  {
+    icon: "🛟", title: "Pilot keeps watch",
+    body: "See whether each app is live, get plain-English explanations when something breaks, and undo a bad change in one click — no technical dashboards to dig through.",
+    href: "/pilot", cta: "Open Pilot",
+  },
+  {
+    icon: "🧠", title: "It remembers everything",
+    body: "Your decisions and lessons are saved into a CLAUDE.md notes file your AI reads every session — so it starts already up to speed instead of forgetting between sessions.",
+  },
+  {
+    icon: "🎯", title: "It keeps you on track",
+    body: "We compare what your AI builds against your plan and gently flag drift — so small detours don't quietly turn into days of lost work.",
+  },
+];
 
 export default function GuidePage() {
-  const steps = [
-    {
-      n: "1", title: "Set up your project",
-      body: "One click sets up everything your app needs — a private place to store your code, a home for your data, and live web hosting — all connected for you. In about a minute you have a working app online, ready for your AI to build on.",
-      href: "/new-project", cta: "New project",
-    },
-    {
-      n: "2", title: "Write down your plan",
-      body: "Tell us what you want to build. Claude turns it into a clear, step-by-step plan you and your AI assistant both follow. We save it into a notes file your AI reads every time, so it always remembers where the project is headed.",
-    },
-    {
-      n: "3", title: "Build with your AI assistant",
-      body: "Open your project in the AI coding tool you like. Because that notes file holds your goal, the current step, and past decisions, your AI starts every session already up to speed — no need to re-explain.",
-    },
-    {
-      n: "4", title: "Save what you learn",
-      body: "As you go, jot down decisions and things to remember. We add them to the notes file so your AI keeps getting smarter about your project instead of forgetting between sessions.",
-    },
-    {
-      n: "5", title: "Keep an eye on things from Pilot",
-      body: "See whether each of your apps is live, get plain-English explanations when something breaks, manage your project's settings, and undo a bad change with one click. No need to dig through technical dashboards.",
-      href: "/pilot", cta: "Open Pilot",
-    },
-    {
-      n: "6", title: "Stay on track",
-      body: "We compare what your AI is building against your plan and gently flag when it starts drifting off course — so small detours don't quietly turn into days of lost work.",
-    },
-  ];
-
   return (
     <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
       <Link href="/dashboard" className="text-sm text-on-surface-variant hover:text-on-surface transition-colors">← Dashboard</Link>
       <h1 className="text-3xl font-bold font-display tracking-tight text-on-surface mt-4 mb-2">How OnlyAIApp works</h1>
       <p className="text-on-surface-variant mb-10">
-        The easy command-center for apps your AI builds. You set things up and keep watch; your AI
-        assistant does the building. It all stays connected through <span className="mono-on">CLAUDE.md</span> —
-        a notes file your AI assistant reads every time, so it always remembers your project.
+        Idea to a real app you own, in four steps. You pick what to build and keep watch; your AI
+        agent does the building — and it all stays on track automatically.
       </p>
 
+      {/* The 4-step journey — same source as the first-login popup, so they always match */}
       <ol className="space-y-6">
-        {steps.map((s) => (
-          <li key={s.n} className="flex gap-4">
-            <span className="shrink-0 w-8 h-8 rounded-full bg-brand-container text-brand-dim grid place-items-center text-sm font-semibold">
-              {s.n}
-            </span>
+        {HOW_IT_WORKS_STEPS.map((s, i) => (
+          <li key={s.title} className="flex gap-4">
+            <span className="shrink-0 w-9 h-9 rounded-xl bg-brand-container text-brand-dim grid place-items-center text-lg">{s.icon}</span>
             <div>
-              <h3 className="font-semibold font-display text-on-surface">{s.title}</h3>
+              <h3 className="font-semibold font-display text-on-surface">
+                <span className="text-on-surface-variant font-mono text-xs mr-1.5">{i + 1}</span>{s.title}
+              </h3>
               <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">{s.body}</p>
               {s.href && (
-                <Link href={s.href}
-                  className="inline-block mt-2 text-xs font-medium text-brand hover:text-brand-dim transition-colors">
-                  {s.cta} →
-                </Link>
+                <Link href={s.href} className="inline-block mt-2 text-xs font-medium text-brand hover:text-brand-dim transition-colors">{s.cta} →</Link>
               )}
             </div>
           </li>
         ))}
       </ol>
 
+      {/* Behind the scenes — the deeper detail the popup doesn't have room for */}
+      <div className="mt-12 border-t border-outline-variant pt-8">
+        <p className="eyebrow">⚙️ While you build</p>
+        <h2 className="font-display font-semibold text-xl text-on-surface mt-1 mb-5">Working for you behind the scenes</h2>
+        <div className="space-y-5">
+          {BEHIND.map((s) => (
+            <div key={s.title} className="flex gap-4">
+              <span className="shrink-0 w-9 h-9 rounded-xl bg-surface-high grid place-items-center text-lg">{s.icon}</span>
+              <div>
+                <h3 className="font-semibold font-display text-on-surface">{s.title}</h3>
+                <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">{s.body}</p>
+                {s.href && (
+                  <Link href={s.href} className="inline-block mt-2 text-xs font-medium text-brand hover:text-brand-dim transition-colors">{s.cta} →</Link>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="mt-12 border-t border-outline-variant pt-6">
         <p className="text-sm text-on-surface-variant">
           The longer you work on a project, the more your AI remembers — every decision and lesson
-          builds up in your notes file, so your assistant only gets more helpful over time.
+          builds up, so your assistant only gets more helpful over time.
         </p>
       </div>
     </main>
