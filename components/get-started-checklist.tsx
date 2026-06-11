@@ -33,9 +33,13 @@ type VercelAppStatus = { connected: boolean; installed: boolean; requireReauth: 
  * the user returns from the install tab.
  */
 export function GetStartedChecklist({
-  hasGitHub, hasVercel = false, hasSupabase = false, hasProject, hasShipped,
+  hasGitHub, hasVercel = false, hasSupabase = false, hasProject,
+  hasPlan = false, hasMemory = false, hasShipped, projectId = null, isPro,
 }: {
-  hasGitHub: boolean; hasVercel?: boolean; hasSupabase?: boolean; hasProject: boolean; hasShipped: boolean;
+  hasGitHub: boolean; hasVercel?: boolean; hasSupabase?: boolean; hasProject: boolean;
+  hasPlan?: boolean; hasMemory?: boolean; hasShipped: boolean; projectId?: string | null;
+  /** AI plan generation is Pro-gated — when false, the objective step routes to Upgrade. */
+  isPro?: boolean;
 }) {
   const [appStatus, setAppStatus] = useState<VercelAppStatus | null>(null);
   const [checking, setChecking] = useState(false);
@@ -71,8 +75,14 @@ export function GetStartedChecklist({
   const vercelAppVerified = !!appStatus?.installed && !appStatus.requireReauth;
   const vercelAppDone = hasShipped || vercelAppVerified;
 
-  const allDone = hasGitHub && hasVercel && hasProject && hasShipped;
+  const allDone = hasShipped;
 
+  // ONE shared end-to-end journey, rendered identically on Home AND /projects (so
+  // the two can never tell conflicting stories). Setup steps first, then the
+  // per-project build loop. `pid` (the active/first project) powers the build-loop
+  // links; before a project exists they point at /tracks and read as "future".
+  const pid = projectId;
+  const objectiveGated = isPro === false; // free users can't generate an AI plan
   const steps: Step[] = [
     { label: "Connect GitHub", href: "/api/github/connect", cta: "Connect", done: hasGitHub, external: true },
     // Connect your cloud once (one-click OAuth) — then every project auto-provisions.
@@ -81,8 +91,12 @@ export function GetStartedChecklist({
     // its GitHub app installed (with repo access) to deploy. Verified, not guessed.
     { label: "Give Vercel access to your repos — install its GitHub app", href: VERCEL_APP_URL, cta: "Install Vercel app", done: vercelAppDone, external: true, newTab: true, isVercelApp: true },
     { label: "Connect Supabase — your app's own database", href: "/api/supabase/oauth", cta: "Connect Supabase", done: hasSupabase, external: true },
-    { label: "Pick a track & start building", href: "/tracks", cta: "Pick a track", done: hasProject },
-    { label: "Show off your proof", href: "/portfolio", cta: "Open Portfolio", done: hasShipped },
+    { label: "Start your first build — pick a track", href: "/tracks", cta: "Pick a track", done: hasProject },
+    objectiveGated
+      ? { label: "Set your objective (AI plan — a Pro feature)", href: "/upgrade", cta: "Upgrade", done: hasPlan }
+      : { label: "Set your objective — the plan your agent follows", href: pid ? `/projects/${pid}/plan` : "/tracks", cta: "Set objective", done: hasPlan },
+    { label: "Build it with your AI agent", href: pid ? `/projects/${pid}` : "/tracks", cta: "Open build", done: hasMemory },
+    { label: "Ship it live — a real app you own", href: pid ? `/projects/${pid}` : "/tracks", cta: "Open build", done: hasShipped },
   ];
   // The Vercel GitHub-app install can't be confirmed BEFORE the first build (our
   // integration token can't read Vercel's git connection — see /api/vercel/github-app).

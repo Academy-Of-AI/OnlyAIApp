@@ -1,4 +1,4 @@
-import { GettingStarted } from "@/components/getting-started";
+import { GetStartedChecklist } from "@/components/get-started-checklist";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/date";
@@ -16,16 +16,20 @@ export default async function ProjectsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: projects }, { data: connections }, { count: planCount }, { count: memoryCount }] = await Promise.all([
+  const [{ data: projects }, { data: connections }, { count: planCount }, { count: memoryCount }, { data: profile }] = await Promise.all([
     supabase.from("projects").select("*").eq("user_id", user!.id).is("archived_at", null).order("created_at", { ascending: false }),
     supabase.from("oauth_connections").select("provider").eq("user_id", user!.id),
     supabase.from("project_plans").select("*", { count: "exact", head: true }).eq("user_id", user!.id),
     supabase.from("project_memory").select("*", { count: "exact", head: true }).eq("user_id", user!.id),
+    supabase.from("profiles").select("plan").eq("id", user!.id).single(),
   ]);
 
   const hasGitHub = connections?.some((c) => c.provider === "github");
+  const hasVercel = connections?.some((c) => c.provider === "vercel");
+  const hasSupabase = connections?.some((c) => c.provider === "supabase");
   const canCreate = hasGitHub;
   const hasShipped = projects?.some((p) => p.status === "deployed") ?? false;
+  const isPro = profile?.plan === "pro";
 
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
@@ -46,11 +50,13 @@ export default async function ProjectsPage() {
 
       {/* Onboarding checklist — only while still working toward the first ship */}
       {!!projects?.length && !hasShipped && (
-        <GettingStarted
+        <GetStartedChecklist
+          hasGitHub={!!hasGitHub} hasVercel={!!hasVercel} hasSupabase={!!hasSupabase}
           hasProject={!!projects?.length}
-          hasPlan={(planCount ?? 0) > 0}
-          hasMemory={(memoryCount ?? 0) > 0}
-          firstProjectId={projects?.[0]?.id ?? null}
+          hasPlan={(planCount ?? 0) > 0} hasMemory={(memoryCount ?? 0) > 0}
+          hasShipped={hasShipped}
+          projectId={projects?.[0]?.id ?? null}
+          isPro={isPro}
         />
       )}
 

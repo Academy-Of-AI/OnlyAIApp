@@ -25,11 +25,15 @@ export default async function HomePage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: projects }, { data: connections }, { data: profile }, { data: wall }] = await Promise.all([
+  const [{ data: projects }, { data: connections }, { data: profile }, { data: wall }, { count: planCount }, { count: memoryCount }] = await Promise.all([
     supabase.from("projects").select("*").eq("user_id", user!.id).is("archived_at", null).order("created_at", { ascending: false }),
     supabase.from("oauth_connections").select("provider").eq("user_id", user!.id),
     supabase.from("profiles").select("plan, phone, marketing_consent, github_username").eq("id", user!.id).single(),
     supabase.from("wall_submissions").select("title, tagline, builder_name, demo_url").order("created_at", { ascending: false }).limit(1),
+    // Per-project journey signals (Set objective / Build) — mirror /projects so the
+    // single shared checklist reads identically on both pages.
+    supabase.from("project_plans").select("*", { count: "exact", head: true }).eq("user_id", user!.id),
+    supabase.from("project_memory").select("*", { count: "exact", head: true }).eq("user_id", user!.id),
   ]);
 
   const hasGitHub = connections?.some((c) => c.provider === "github");
@@ -93,7 +97,14 @@ export default async function HomePage({
       </div>
 
       {/* Guided onboarding rail (also handles the GitHub connect step) */}
-      <GetStartedChecklist hasGitHub={!!hasGitHub} hasVercel={!!hasVercel} hasSupabase={!!hasSupabase} hasProject={list.some((p) => p.status !== "failed")} hasShipped={shipped > 0} />
+      <GetStartedChecklist
+        hasGitHub={!!hasGitHub} hasVercel={!!hasVercel} hasSupabase={!!hasSupabase}
+        hasProject={list.some((p) => p.status !== "failed")}
+        hasPlan={(planCount ?? 0) > 0} hasMemory={(memoryCount ?? 0) > 0}
+        hasShipped={shipped > 0}
+        projectId={activeBuild?.id ?? null}
+        isPro={normalizePlan(profile?.plan) === "pro"}
+      />
 
       {/* Free-tier opt-in nudge → +1 project */}
       {hasGitHub && showOptInNudge && <OptInNudge />}
