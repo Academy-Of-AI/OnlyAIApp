@@ -24,8 +24,14 @@ export default async function ProjectPage({
   if (!project) notFound();
 
   // Pilot is Pro-only — gate the per-project Pilot view.
-  const { data: planRow } = await supabase.from("profiles").select("plan").eq("id", user!.id).single();
+  const { data: planRow } = await supabase.from("profiles").select("plan, build_credits").eq("id", user!.id).single();
   const isPro = planRow?.plan === "pro";
+  // Free tier: how many AI-written Plan Packs remain (build_credits). Shown up
+  // front on the Plan view so the 3-plan allowance is never a surprise wall.
+  // null for Core/Pro (unlimited — no counter shown).
+  const freePlansLeft = (planRow?.plan === "core" || planRow?.plan === "pro")
+    ? null
+    : Math.max(0, (planRow?.build_credits as number | null) ?? 0);
 
   // Inferred context (zero-forms) — shown read-only inside the Build loop
   const { data: memoryRows } = await supabase
@@ -123,7 +129,7 @@ export default async function ProjectPage({
 
       <ProjectTabs
         project={project} memory={memory} liveUrl={liveUrl} initialPack={initialPack}
-        autoCapture={!!project.auto_capture} isPro={isPro} hardened={hardened} stalled={stalled}
+        autoCapture={!!project.auto_capture} isPro={isPro} hardened={hardened} stalled={stalled} freePlansLeft={freePlansLeft}
         addons={<ProjectAddOns projectId={id} isPro={isPro} canDomain={canDomain} envKeys={envKeys} />}
       />
     </main>

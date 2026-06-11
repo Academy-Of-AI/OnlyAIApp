@@ -49,10 +49,12 @@ type TabName = (typeof TABS)[number];
 const KICKOFF = "Read everything in /docs, confirm the plan in 3 lines, then build straight through the sprints until the app actually works end-to-end — the PRD's success scenario, not just auth + an empty dashboard. Set up the database from supabase/migrations if it isn't applied yet, then run `vercel env pull .env.local` and build on those tables; commit + push after each sprint to deploy. Stop only when a real user can do the core job.";
 
 export function PlanPack({
-  project, initialPack = null,
+  project, initialPack = null, freePlansLeft = null,
 }: {
   project: Project;
   initialPack?: Result | null;
+  /** Free tier: AI Plan Packs remaining (build_credits). null = paid/unlimited. */
+  freePlansLeft?: number | null;
 }) {
   const router = useRouter();
   const repo = project.github_repo_url;
@@ -305,6 +307,17 @@ export function PlanPack({
               </button>
               {!repo && <span className="text-xs text-warn">Finish provisioning first.</span>}
             </div>
+            {/* Free-tier AI-plan allowance — surfaced up front so it's never a
+                surprise wall. The "Skip → use my docs" path stays free even at 0. */}
+            {freePlansLeft !== null && (
+              <p className="text-xs text-outline">
+                {freePlansLeft > 0 ? (
+                  <>✦ Free includes <b className="text-on-surface-variant">3 AI-written plans</b> — <b className="text-on-surface-variant">{freePlansLeft} left</b>. <a href="/upgrade" className="text-brand hover:underline">Core</a> for unlimited.</>
+                ) : (
+                  <>You&apos;ve used your <b className="text-on-surface-variant">3 free AI plans</b>. You can still <b>Skip → use your own docs</b> (free), or <a href="/upgrade" className="text-brand font-semibold hover:underline">upgrade to Core</a> for unlimited.</>
+                )}
+              </p>
+            )}
             <p className="text-xs text-outline">
               Already wrote a PRD/spec (or pasted long docs)? <b>Skip</b> commits them to <span className="font-mono">/docs</span> and hands to your agent <b>instantly</b> — no waiting on generation, no timeouts.
             </p>

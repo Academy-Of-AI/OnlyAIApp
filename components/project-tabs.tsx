@@ -59,6 +59,7 @@ export function ProjectTabs({
   hardened,
   addons = null,
   stalled = false,
+  freePlansLeft = null,
 }: {
   project: Project;
   memory?: Array<{ kind: string; content: string }>;
@@ -67,6 +68,7 @@ export function ProjectTabs({
   autoCapture?: boolean;
   isPro?: boolean;
   hardened?: Hardened;
+  freePlansLeft?: number | null;
   addons?: React.ReactNode;
   stalled?: boolean;
 }) {
@@ -127,7 +129,7 @@ export function ProjectTabs({
         <button onClick={() => setView("pilot")} className={pnav(view === "pilot")}><span className="text-brand">③</span><span className="font-semibold">Pilot</span></button>
       </div>
 
-      {view === "plan" && <PlanView project={project} initialPack={initialPack} />}
+      {view === "plan" && <PlanView project={project} initialPack={initialPack} freePlansLeft={freePlansLeft} />}
       {view === "pilot" && <PilotView project={project} memory={memory} liveUrl={liveUrl} autoCapture={autoCapture} isPro={isPro} hardened={hardened} onHarden={() => setView("settings")} plan={initialPack?.plan ?? null} sprints={initialPack?.sprints ?? []} />}
       {view === "settings" && <SettingsTab project={project} addons={addons} />}
     </div>
@@ -304,9 +306,9 @@ function FailedProjectView({ project, stalled = false }: { project: Project; sta
 
 /* ── Plan view ─────────────────────────────────────────────────────────── */
 function PlanView({
-  project, initialPack = null,
+  project, initialPack = null, freePlansLeft = null,
 }: {
-  project: Project; initialPack?: PlanPackResult | null;
+  project: Project; initialPack?: PlanPackResult | null; freePlansLeft?: number | null;
 }) {
   return (
     <div className="space-y-6">
@@ -317,7 +319,7 @@ function PlanView({
           repo. Then hand it to your agent (Claude Code) to build it, the reliable way.
         </p>
       </div>
-      <PlanPack project={project} initialPack={initialPack} />
+      <PlanPack project={project} initialPack={initialPack} freePlansLeft={freePlansLeft} />
     </div>
   );
 }
