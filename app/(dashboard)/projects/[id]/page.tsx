@@ -76,7 +76,7 @@ export default async function ProjectPage({
         if (project.status === "building") {
           if (latest.state === "READY") {
             await supabase.from("projects").update({
-              status: "deployed", deployed_at: new Date().toISOString(),
+              status: "deployed", deployed_at: new Date().toISOString(), // pilot-lint-ok: verified writer — only inside `latest.state === "READY"`
               vercel_preview_url: liveUrl ?? project.vercel_preview_url,
             }).eq("id", project.id);
             project.status = "deployed";

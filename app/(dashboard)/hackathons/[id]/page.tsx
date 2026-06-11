@@ -1,5 +1,6 @@
 import { CopyButton } from "@/components/copy-button";
 import { createClient } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/date";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -128,7 +129,7 @@ export default async function HackathonDetailPage({
                         </div>
                       </td>
                       <td className="px-4 py-3 text-xs text-outline tabnum">
-                        {new Date(p.joined_at).toLocaleDateString()}
+                        {formatDate(p.joined_at)}
                       </td>
                     </tr>
                   );

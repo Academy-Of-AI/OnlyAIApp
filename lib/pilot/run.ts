@@ -1,6 +1,7 @@
 import type { CheckContext, CheckResult, PilotCheck } from "./types";
 import { envReadinessCheck } from "./checks/env-readiness";
 import { longRequestCheck } from "./checks/long-request";
+import { deployPrereqCheck } from "./checks/deploy-prereq";
 
 /**
  * The Pilot checks engine.
@@ -11,7 +12,7 @@ import { longRequestCheck } from "./checks/long-request";
  * and can never block a user's deploy (fail-open). This is the deterministic
  * spine; Pilot (the conversational/Pro layer) sits on top of these results.
  */
-const REGISTRY: PilotCheck[] = [envReadinessCheck, longRequestCheck];
+const REGISTRY: PilotCheck[] = [deployPrereqCheck, envReadinessCheck, longRequestCheck];
 
 const PER_CHECK_TIMEOUT_MS = 9000;
 

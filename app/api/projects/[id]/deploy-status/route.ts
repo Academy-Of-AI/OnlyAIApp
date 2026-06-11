@@ -1,5 +1,6 @@
 import { decrypt } from "@/lib/crypto";
 import { getLatestDeploymentStatus, getVercelProjectDomain } from "@/lib/vercel";
+import { firstResolvingUrl } from "@/lib/pilot/canary";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -53,17 +54,25 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const latest = await getLatestDeploymentStatus({ token, projectId, teamId });
 
   if (latest.state === "READY") {
-    // Verified live — resolve the real production alias. getVercelProjectDomain
-    // falls back to a guessed "<name>.vercel.app", which is WRONG for team
-    // accounts (the real alias has a "-<scope>" suffix) and 404s. If we only got
-    // that guess, use the deployment's own URL (always resolves for a READY
-    // deploy) instead of handing the user a dead link.
+    // Verified READY — but "READY" and "the link resolves" are different facts
+    // (drift #1). getVercelProjectDomain falls back to a guessed
+    // "<name>.vercel.app", which is WRONG for team accounts (the real alias has
+    // a "-<scope>" suffix) and 404s. So we canary the candidates and settle
+    // against the FIRST URL that actually answers (< 400): the resolved alias,
+    // then the deployment's own URL (which always resolves for a READY deploy).
     const alias = await getVercelProjectDomain({ token, projectId, projectName: project.name as string, teamId });
     const guessed = `https://${project.name}.vercel.app`;
-    const url = alias && alias !== guessed ? alias : (latest.url ?? alias);
+    const preferred = alias && alias !== guessed ? alias : (latest.url ?? alias);
+    const url = await firstResolvingUrl([preferred, latest.url, alias]);
+
+    // No candidate resolved yet — the build is READY but the alias/DNS hasn't
+    // propagated. Do NOT claim "deployed" against a link we haven't seen answer;
+    // stay "building" so the UI keeps polling until a URL truly resolves.
+    if (!url) return NextResponse.json({ state: "building" });
+
     await supabase
       .from("projects")
-      .update({ status: "deployed", deployed_at: new Date().toISOString(), vercel_preview_url: url })
+      .update({ status: "deployed", deployed_at: new Date().toISOString(), vercel_preview_url: url }) // pilot-lint-ok: verified writer — READY + canary-confirmed URL only
       .eq("id", project.id);
     return NextResponse.json({ state: "ready", url });
   }

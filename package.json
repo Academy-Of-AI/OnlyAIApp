@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "pilot-lint": "node scripts/pilot-lint.mjs",
+    "canary": "node scripts/pilot-canary.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.99.0",

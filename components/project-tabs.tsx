@@ -12,7 +12,7 @@ import { LaunchCheck } from "@/components/launch-check";
 import { DriftPanel } from "@/components/drift-panel";
 import { DeployButton } from "@/components/deploy-button";
 import { STEP_LABELS } from "@/lib/provisioning/steps";
-import { formatDate } from "@/lib/date";
+import { formatDate, formatDateTime } from "@/lib/date";
 
 type Project = {
   id: string;
@@ -676,8 +676,8 @@ function SettingsTab({ project, addons = null }: { project: Project; addons?: Re
 
   const readOnlyRows: { label: string; value: string | null; href?: string; copy?: boolean }[] = [
     { label: "Status",         value: project.status },
-    { label: "Created",        value: new Date(project.created_at).toLocaleString() },
-    { label: "Deployed",       value: project.deployed_at ? new Date(project.deployed_at).toLocaleString() : "—" },
+    { label: "Created",        value: formatDateTime(project.created_at) },
+    { label: "Deployed",       value: project.deployed_at ? formatDateTime(project.deployed_at) : "—" },
     { label: "GitHub repo",    value: project.github_repo_url, href: project.github_repo_url ?? undefined },
     { label: "Supabase ref",   value: project.supabase_project_ref, copy: true },
     { label: "Vercel project", value: project.vercel_project_id },

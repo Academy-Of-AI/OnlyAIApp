@@ -55,6 +55,18 @@ export function artifactLimit(plan: string | null | undefined): number {
   return ARTIFACT_LIMITS[normalizePlan(plan)];
 }
 
+/**
+ * Existing-repo "Plan + drift health read" allowance (lifetime, not monthly).
+ * Free gets ONE — it's the lead magnet: point Pilot at any repo you own and get
+ * a draft plan + an objective-standards health report, no build required. Then
+ * the upgrade wall (shown BEFORE the click — no surprise, drift #8). The owner
+ * AI cost is a single bounded call per read, so a low free number is enough to
+ * prove value without farming. */
+export const HEALTH_READ_LIMITS: Record<PlanTier, number> = { free: 1, core: 10, pro: Infinity };
+export function healthReadLimit(plan: string | null | undefined): number {
+  return HEALTH_READ_LIMITS[normalizePlan(plan)];
+}
+
 export function normalizePlan(plan: string | null | undefined): PlanTier {
   return plan === "pro" ? "pro" : plan === "core" ? "core" : "free";
 }

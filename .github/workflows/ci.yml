@@ -1,0 +1,45 @@
+# CI — the drift catalog, enforced on every push/PR.
+#
+# Three gates, cheapest-first (fail fast):
+#   1. pilot-lint  — the highest-confidence drift classes (no raw toLocale in
+#                    render, no optimistic deploy-status write). Pure Node, ~1s.
+#   2. typecheck   — `tsc --noEmit`. A type error is a build error.
+#   3. build       — `next build`. The real "does it compile to ship" gate.
+#
+# Doctrine (PILOT_GUARDRAILS.md): a guarantee that only lives in a doc drifts.
+# These move the catalog from prose → a gate that fails the build, so the bug
+# can't merge. The post-deploy 200-canary (scripts/pilot-canary.mjs) is the
+# RUNTIME half and runs against the live URL after deploy, not here.
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  drift-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: pilot-lint (drift catalog)
+        run: bun run pilot-lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Build
+        run: bun run build
+        env:
+          # Build-time public vars. Real secrets live in Vercel; the build only
+          # needs these to not throw on import. Safe placeholders for CI.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key

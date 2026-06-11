@@ -64,10 +64,15 @@ export async function POST(
         projectId: project.vercel_project_id as string,
         projectName: project.name as string,
       });
+      // Drift #1: a triggered deploy is NOT a live deploy. We set "building",
+      // not "deployed" — the verifier (deploy-status route / page self-heal)
+      // flips it to "deployed" ONLY after Vercel reports READY and the URL
+      // resolves. Don't hand back a liveUrl yet; the verified link appears once
+      // the build is confirmed live, so the user never gets a 404 link.
       await supabase.from("projects")
-        .update({ vercel_preview_url: domain, status: "deployed", error: null })
+        .update({ status: "building", error: null })
         .eq("id", id);
-      return NextResponse.json({ ok: true, liveUrl: domain, redeploy: true });
+      return NextResponse.json({ ok: true, redeploy: true });
     }
 
     // First deploy: create the Vercel project FROM the existing repo (same flow
@@ -106,11 +111,16 @@ export async function POST(
     // Kick the first build (linking alone doesn't always trigger one).
     await triggerVercelDeployment({ token: vercelToken, projectId: vercelProjectId, projectName: project.name as string }).catch(() => {});
 
+    // Store the new Vercel project id, but keep status "building" — the build
+    // was only just triggered. The verifier settles it to "deployed" once READY
+    // (drift #1: never claim live before it is). We persist the alias so the
+    // verifier/self-heal can resolve the real URL, but don't return it as a
+    // "live" link the user could click into a 404.
     await supabase.from("projects")
-      .update({ vercel_project_id: vercelProjectId, vercel_preview_url: domain, status: "deployed", error: null })
+      .update({ vercel_project_id: vercelProjectId, vercel_preview_url: domain, status: "building", error: null })
       .eq("id", id);
 
-    return NextResponse.json({ ok: true, liveUrl: domain });
+    return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[deploy] error:", err);
     const e = err as { status?: number; message?: string };

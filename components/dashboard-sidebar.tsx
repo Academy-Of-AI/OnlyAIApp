@@ -10,6 +10,7 @@ const ICON = {
   grid: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>,
   compass: <><circle cx="12" cy="12" r="9" /><path d="M15.5 8.5l-2.2 5.3-5.3 2.2 2.2-5.3 5.3-2.2z" strokeLinejoin="round" /></>,
   pilot: <path d="M3 12l18-7-7 18-2.5-8L3 12z" strokeLinejoin="round" strokeLinecap="round" />,
+  pulse: <path d="M3 12h4l2 6 4-14 2 8h6" strokeLinejoin="round" strokeLinecap="round" />,
   star: <path d="M12 3l2.09 5.26L20 9l-4 3.5L17 19l-5-3-5 3 1-6.5L3 9l5.91-.74z" strokeLinejoin="round" />,
   award: <><circle cx="12" cy="9" r="5" /><path d="M9 13.4L8 22l4-2.2L16 22l-1-8.6" strokeLinejoin="round" /></>,
   gift: <><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M5 12v9h14v-9M12 8v13M12 8S11 3 8.5 3 6 5.5 8 8M12 8s1-5 3.5-5S18 5.5 16 8" strokeLinejoin="round" /></>,
@@ -32,6 +33,7 @@ const STUDIO: NavItem[] = [
   { href: "/projects", label: "Projects", icon: <Icon>{ICON.grid}</Icon> },
   { href: "/tracks", label: "Tracks", icon: <Icon>{ICON.compass}</Icon> },
   { href: "/pilot", label: "Pilot", icon: <Icon>{ICON.pilot}</Icon> },
+  { href: "/health", label: "Repo Health", icon: <Icon>{ICON.pulse}</Icon> },
 ];
 const PROOF: NavItem[] = [
   { href: "/directory", label: "Showcase", icon: <Icon>{ICON.star}</Icon> },
