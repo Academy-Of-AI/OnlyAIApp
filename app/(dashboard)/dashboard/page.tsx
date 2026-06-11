@@ -3,6 +3,7 @@ import { ReferralCard } from "@/components/referral-card";
 import { GetStartedChecklist } from "@/components/get-started-checklist";
 import { UpdateConnectionButton } from "@/components/update-connection-button";
 import { HowItWorksModal } from "@/components/how-it-works-modal";
+import { VercelGithubAppNotice } from "@/components/vercel-github-app-notice";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePlan, hasOptedIn } from "@/lib/plan";
 import { reconcileReferralReward } from "@/lib/referrals";
@@ -85,6 +86,11 @@ export default async function HomePage({
 
       {/* Guided onboarding rail (also handles the GitHub connect step) */}
       <GetStartedChecklist hasGitHub={!!hasGitHub} hasVercel={!!hasVercel} hasSupabase={!!hasSupabase} hasProject={list.length > 0} hasShipped={shipped > 0} />
+
+      {/* Hidden onboarding step: Vercel OAuth grants API access, but Vercel also
+          needs its GitHub app installed to deploy the user's repos. Surface it
+          before they provision (and fail). */}
+      {hasVercel && shipped === 0 && <VercelGithubAppNotice />}
 
       {/* Free-tier opt-in nudge → +1 project */}
       {hasGitHub && showOptInNudge && <OptInNudge />}
