@@ -14,14 +14,12 @@ interface Step {
  * the core loop (project + plan + first build captured) is complete.
  */
 export function GettingStarted({
-  accountsConnected,
   hasProject,
   hasPlan,
   hasMemory,
   firstProjectId,
   isPro,
 }: {
-  accountsConnected: boolean;
   hasProject: boolean;
   hasPlan: boolean;
   hasMemory: boolean;
@@ -49,16 +47,19 @@ export function GettingStarted({
     );
   }
 
+  // Per-project continuation of the Home setup checklist — NOT a re-do of it.
+  // (Connecting GitHub/Vercel/Supabase lives on Home; this picks up once you have
+  // a project.) No "Set up Claude Code" row: it can't be detected, so it lived as
+  // a permanently-unchecked lie — it's now the optional "drive in your own editor"
+  // link below instead.
   const steps: Step[] = [
-    { label: "Set up Claude Code (your engine)", done: false, href: "/start", cta: "Guide" },
-    { label: "Connect GitHub", done: accountsConnected, href: "#", cta: "Connect above" },
     { label: "Create your first project", done: hasProject, href: "/new-project", cta: "New project" },
     objectiveGated
       ? { label: "Set your objective (AI plan — a Pro feature)", done: hasPlan,
           href: "/upgrade", cta: "Upgrade" }
-      : { label: "Set your objective (→ a plan your agent follows)", done: hasPlan,
+      : { label: "Set your objective — the plan your agent follows", done: hasPlan,
           href: pid ? `/projects/${pid}/plan` : "/new-project", cta: "Set objective" },
-    { label: "Build it with Claude Code", done: hasMemory,
+    { label: "Build it & ship it live", done: hasMemory,
       href: pid ? `/projects/${pid}` : "/new-project", cta: "Open project" },
   ];
 
@@ -72,7 +73,7 @@ export function GettingStarted({
         <span className="text-xs text-outline tabnum">{completed}/{total}</span>
       </div>
       <p className="text-sm text-on-surface-variant mb-4">
-        Training wheels for Claude Code — we handle setup and keep the agent on course while you learn.
+        Pick up where you left off — set the objective, build it, and ship it live. A real app you own, not a toy.
       </p>
       <div className="h-1.5 bg-surface-high rounded-full overflow-hidden mb-5">
         <div className="h-full bg-brand transition-all" style={{ width: `${(completed / total) * 100}%` }} />
@@ -99,7 +100,7 @@ export function GettingStarted({
       </ul>
 
       <Link href="/start" className="inline-block mt-4 text-xs text-outline hover:text-on-surface-variant transition-colors">
-        New to all this? Start here →
+        Prefer to drive in your own editor? Set up Claude Code →
       </Link>
     </section>
   );

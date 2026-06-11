@@ -47,7 +47,6 @@ export default async function ProjectsPage() {
       {/* Onboarding checklist — only while still working toward the first ship */}
       {!!projects?.length && !hasShipped && (
         <GettingStarted
-          accountsConnected={!!canCreate}
           hasProject={!!projects?.length}
           hasPlan={(planCount ?? 0) > 0}
           hasMemory={(memoryCount ?? 0) > 0}
