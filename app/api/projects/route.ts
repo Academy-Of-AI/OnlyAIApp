@@ -1,6 +1,7 @@
 import { decrypt } from "@/lib/crypto";
 import { registerPushWebhook, getCommitIdentity, getGithubUser } from "@/lib/github";
 import { provisionProject, type ProgressEvent } from "@/lib/provisioning";
+import { friendlyProvisionError } from "@/lib/provisioning/errors";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseConn } from "@/lib/supabase-conn";
 import { getTemplate } from "@/lib/templates";
@@ -260,13 +261,15 @@ export async function POST(request: Request) {
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
+        const friendly = friendlyProvisionError(message);
+        console.error("[provision] failed:", message); // raw stays in logs
 
         await supabase
           .from("projects")
-          .update({ status: "failed", error: message })
+          .update({ status: "failed", error: friendly })
           .eq("id", project.id);
 
-        send({ step: "error", message });
+        send({ step: "error", message: friendly });
       } finally {
         controller.close();
       }

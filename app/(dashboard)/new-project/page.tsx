@@ -375,7 +375,7 @@ export default function NewProjectPage() {
               value={name}
               onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
               placeholder="my-awesome-app"
-              pattern="[a-z0-9-]{3,40}"
+              pattern="[a-z0-9\-]{3,40}"
               required
               disabled={loading}
               className="cap-input font-mono disabled:opacity-50"
