@@ -1,37 +1,72 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { encrypt } from "@/lib/crypto";
 import { getGithubUser } from "@/lib/github";
 import { NextResponse } from "next/server";
 
+/** Outcome of the GitHub bridge: conflict=true means this GitHub already belongs
+ *  to a DIFFERENT account, so the caller should route the user to it rather than
+ *  strand them in a duplicate workspace. */
+type BridgeResult = { conflict: boolean; existingEmail?: string | null };
+
 /**
- * Bridge a GitHub OAuth sign-in into a usable connection. The provider_token
- * (the GitHub access token) is only present on the session right after the code
- * exchange, so we capture it HERE and store it in oauth_connections — exactly
- * like /api/github/connect does — so "Continue with GitHub" both signs the user
- * in AND grants the repo access they need to provision. Without this, a
- * GitHub-signed-in user is still told to "Connect GitHub" (oauth_connections is
- * empty). Best-effort: never blocks sign-in.
+ * Bridge a GitHub OAuth sign-in into a usable connection AND enforce the
+ * one-GitHub-one-account rule at the front door.
+ *
+ * The provider_token (the GitHub access token) is only present on the session
+ * right after the code exchange, so we capture it HERE and store it in
+ * oauth_connections — exactly like /api/github/connect does — so "Continue with
+ * GitHub" both signs the user in AND grants the repo access they need to
+ * provision. Without this, a GitHub-signed-in user is still told to "Connect
+ * GitHub" (oauth_connections is empty).
+ *
+ * Identity guard: we ALSO bind profiles.github_id here (at sign-in) instead of
+ * lazily at first build. Binding early — keyed on GitHub's unique numeric id,
+ * not on email — is what makes "1 GitHub = 1 account" hold even when GitHub's
+ * email is private and Supabase can't auto-link by email. If this GitHub id is
+ * already owned by another account, we DON'T mint a parallel workspace: we
+ * return conflict so the caller sends them to their existing account, turning
+ * the old build-time `github_taken` dead-end into a self-healing redirect.
+ *
+ * Best-effort otherwise: never blocks a clean sign-in.
  */
 async function bridgeGithubToken(
   supabase: Awaited<ReturnType<typeof createClient>>,
   session: { provider_token?: string | null; user?: { id?: string } | null } | null,
-): Promise<void> {
+): Promise<BridgeResult> {
   const providerToken = session?.provider_token ?? null;
   const userId = session?.user?.id ?? null;
-  if (!providerToken || !userId) return;
+  if (!providerToken || !userId) return { conflict: false };
   try {
-    const { login, id } = await getGithubUser(providerToken);
+    const { login, id: ghId } = await getGithubUser(providerToken);
+
+    // Front-door collision check. The user-scoped client can only see its OWN
+    // profile (RLS), so use an admin client to look across accounts. If this
+    // GitHub id is bound to a different user, stop here — don't write anything.
+    if (ghId) {
+      const admin = await createAdminClient();
+      const { data: owner } = await admin
+        .from("profiles").select("id, email").eq("github_id", ghId).maybeSingle();
+      if (owner && owner.id !== userId) {
+        return { conflict: true, existingEmail: (owner.email as string | null) ?? null };
+      }
+    }
+
     const encrypted = await encrypt(providerToken);
     await supabase.from("oauth_connections").upsert({
       user_id: userId,
       provider: "github",
       access_token: encrypted,
-      provider_user_id: String(id),
+      provider_user_id: String(ghId),
       metadata: { login },
     });
-    await supabase.from("profiles").update({ github_username: login }).eq("id", userId);
+    // Bind the identity now (username + the unique numeric id that enforces the
+    // rule). Pre-checked above, so the unique index won't reject under normal flow.
+    await supabase.from("profiles")
+      .update({ github_username: login, github_id: ghId }).eq("id", userId);
+    return { conflict: false };
   } catch (e) {
     console.warn("[auth/callback] GitHub token bridge failed (non-fatal):", e);
+    return { conflict: false };
   }
 }
 
@@ -76,7 +111,18 @@ export async function GET(request: Request) {
 
     if (!error) {
       // One click = signed in + repo access ready (no second "Connect GitHub").
-      await bridgeGithubToken(supabase, data?.session ?? null).catch(() => {});
+      const bridge = await bridgeGithubToken(supabase, data?.session ?? null)
+        .catch(() => ({ conflict: false } as BridgeResult));
+      if (bridge.conflict) {
+        // This GitHub already belongs to an earlier account. Don't leave them in
+        // a fresh duplicate — sign this session out and point them at their real
+        // account, where their projects already live.
+        await supabase.auth.signOut().catch(() => {});
+        const msg = bridge.existingEmail
+          ? `This GitHub is already linked to your earlier account (${bridge.existingEmail}). Sign in with that email — your projects are there.`
+          : "This GitHub is already linked to another OnlyAIApp account. Sign in with the email you first used.";
+        return NextResponse.redirect(`${origin}/sign-in?auth_error=${encodeURIComponent(msg)}`);
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
 
