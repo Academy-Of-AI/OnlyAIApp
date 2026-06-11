@@ -25,6 +25,7 @@ export async function GET() {
     .from("projects")
     .select("*")
     .eq("user_id", user.id)
+    .is("archived_at", null)            // hide soft-archived (superseded) rows
     .order("created_at", { ascending: false });
 
   return NextResponse.json(data ?? []);
@@ -272,6 +273,19 @@ export async function POST(request: Request) {
     }
     project = { id: inserted.id as string };
   }
+
+  // Collapse the pile-up: soft-hide any OTHER same-name failed cards for this
+  // user so the dashboard shows a single active row instead of a stack of dead
+  // duplicates. archived_at hides them from both list views and the reuse query
+  // — reversible (never a hard delete). Best-effort; never block provisioning.
+  await supabase
+    .from("projects")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .eq("name", name)
+    .eq("status", "failed")
+    .is("archived_at", null)
+    .neq("id", project.id);
 
   // Stream SSE progress back to the client
   const encoder = new TextEncoder();

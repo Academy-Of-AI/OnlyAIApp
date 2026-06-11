@@ -26,7 +26,7 @@ export default async function HomePage({
   const { data: { user } } = await supabase.auth.getUser();
 
   const [{ data: projects }, { data: connections }, { data: profile }, { data: wall }] = await Promise.all([
-    supabase.from("projects").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }),
+    supabase.from("projects").select("*").eq("user_id", user!.id).is("archived_at", null).order("created_at", { ascending: false }),
     supabase.from("oauth_connections").select("provider").eq("user_id", user!.id),
     supabase.from("profiles").select("plan, phone, marketing_consent, github_username").eq("id", user!.id).single(),
     supabase.from("wall_submissions").select("title, tagline, builder_name, demo_url").order("created_at", { ascending: false }).limit(1),
