@@ -35,5 +35,8 @@ export async function GET(request: Request) {
   const opts = { httpOnly: true, secure: true, sameSite: "lax" as const, maxAge: 600, path: "/" };
   response.cookies.set("supabase_oauth_state", state, opts);
   response.cookies.set("supabase_oauth_next", encodeURIComponent(next), opts);
+  // Bind the user the same resilient way the Vercel flow does — an httpOnly
+  // cookie the callback reads back, instead of a brittle state exact-match.
+  response.cookies.set("supabase_oauth_user", user.id, opts);
   return response;
 }

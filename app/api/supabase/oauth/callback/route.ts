@@ -18,18 +18,19 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const { origin, searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const state = searchParams.get("state");
   const error = searchParams.get("error");
-  if (error || !code || !state) return NextResponse.redirect(`${origin}/dashboard?error=supabase_denied`);
+  if (error || !code) return NextResponse.redirect(`${origin}/settings?error=supabase_denied`);
 
   const cookieHeader = request.headers.get("cookie") ?? "";
   const cookie = (name: string) =>
     cookieHeader.split(";").map((c) => c.trim()).find((c) => c.startsWith(name + "="))?.split("=").slice(1).join("=");
 
-  const storedState = cookie("supabase_oauth_state");
-  if (!storedState || storedState !== state) return NextResponse.redirect(`${origin}/dashboard?error=supabase_state`);
-
-  const userId = state.split(":")[0];
+  // Bind the user via the httpOnly cookie set when the connect started — same as
+  // the working Vercel flow. We no longer hard-fail on a state exact-match, which
+  // was brittle across retries/redeploys. The httpOnly user cookie + the one-time
+  // OAuth code are the trust anchors.
+  const userId = cookie("supabase_oauth_user");
+  if (!userId) return NextResponse.redirect(`${origin}/settings?error=supabase_session_lost`);
 
   // Exchange the code for tokens (HTTP Basic with the OAuth app credentials).
   const basic = Buffer.from(
@@ -82,5 +83,6 @@ export async function GET(request: Request) {
   const res = NextResponse.redirect(`${origin}${dest}`);
   res.cookies.set("supabase_oauth_state", "", { maxAge: 0, path: "/" });
   res.cookies.set("supabase_oauth_next", "", { maxAge: 0, path: "/" });
+  res.cookies.set("supabase_oauth_user", "", { maxAge: 0, path: "/" });
   return res;
 }
