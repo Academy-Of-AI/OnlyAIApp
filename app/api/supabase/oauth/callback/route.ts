@@ -45,8 +45,12 @@ export async function GET(request: Request) {
     }),
   });
   if (!tokenRes.ok) {
-    console.error("[supabase/callback] token exchange failed", await tokenRes.text());
-    return NextResponse.redirect(`${origin}/dashboard?error=supabase_token`);
+    const errText = await tokenRes.text();
+    console.error("[supabase/callback] token exchange failed:", errText);
+    // Surface a short reason in the URL so we can diagnose without persistent logs.
+    return NextResponse.redirect(
+      `${origin}/settings?error=supabase_token&reason=${encodeURIComponent(errText.slice(0, 200))}`,
+    );
   }
   const tok = await tokenRes.json() as { access_token?: string; refresh_token?: string; expires_in?: number };
   if (!tok.access_token) return NextResponse.redirect(`${origin}/dashboard?error=supabase_token`);
