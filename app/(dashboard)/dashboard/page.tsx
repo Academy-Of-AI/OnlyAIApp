@@ -64,7 +64,11 @@ export default async function HomePage({
         <div className="panel border-l-2 border-l-success text-success text-sm px-4 py-3">✓ {connectedLabel(params.connected)} connected successfully.</div>
       )}
       {params.error && (
-        <div className="panel border-l-2 border-l-danger text-danger text-sm px-4 py-3">Connection failed. Please try again.</div>
+        <div className="panel border-l-2 border-l-danger text-danger text-sm px-4 py-3">
+          {params.error.includes("oauth_unconfigured")
+            ? <>One-click connect for that service isn’t switched on yet. <a href="/settings" className="underline">Open Settings</a> to connect it by pasting a token (about 30 seconds).</>
+            : <>That connection didn’t go through. <a href="/settings" className="underline">Open Settings</a> to try again or paste a token.</>}
+        </div>
       )}
 
       {/* Header */}

@@ -55,7 +55,7 @@ export default async function SettingsPage({
       )}
       {params.error && (
         <div className="bg-danger/10 border border-danger/30 text-danger text-sm px-4 py-3 rounded-lg">
-          Connection failed. Please try again.
+          {connectErrorMessage(params.error)}
         </div>
       )}
 
@@ -157,4 +157,15 @@ function IntegrationCard({
 
 function ConnectedNote({ text }: { text: string }) {
   return <p className="text-xs text-on-surface-variant">{text}</p>;
+}
+
+/** Honest, actionable copy for connect errors — never "try again" on a config
+ *  failure that retrying can't fix. Points the user at the working paste path,
+ *  which is right below on this page. */
+function connectErrorMessage(code: string): string {
+  if (code === "vercel_oauth_unconfigured")
+    return "One-click Vercel connect isn’t switched on yet — but you can still connect Vercel in about 30 seconds: in the Vercel card below, paste an access token (the “How to get your token” link walks you through it).";
+  if (code === "supabase_oauth_unconfigured")
+    return "One-click Supabase connect isn’t switched on yet — connect it in the Supabase card below by pasting a token instead.";
+  return "That connection didn’t go through. Try connecting again in the matching card below, or use its paste-a-token option.";
 }
