@@ -363,15 +363,23 @@ export function PlanPack({
         {tab === "Plan" && result && (
           <div className="space-y-4">
             {result.summary && <p className="text-sm text-on-surface-variant">{result.summary}</p>}
-            <div className="space-y-2">
-              <p className="text-xs text-on-surface-variant uppercase tracking-wider">Your build, sequenced</p>
-              <div className="grid sm:grid-cols-3 gap-3 text-sm">
-                <PlanColumn title="Now" badge="v1" tone="green" items={result.plan?.now} />
-                <PlanColumn title="Next" badge="soon" tone="amber" items={result.plan?.next} />
-                <PlanColumn title="Later" badge="when ready" tone="neutral" items={result.plan?.later} />
+            {(result.plan?.now?.length || result.plan?.next?.length || result.plan?.later?.length) ? (
+              <div className="space-y-2">
+                <p className="text-xs text-on-surface-variant uppercase tracking-wider">Your build, sequenced</p>
+                <div className="grid sm:grid-cols-3 gap-3 text-sm">
+                  <PlanColumn title="Now" badge="v1" tone="green" items={result.plan?.now} />
+                  <PlanColumn title="Next" badge="soon" tone="amber" items={result.plan?.next} />
+                  <PlanColumn title="Later" badge="when ready" tone="neutral" items={result.plan?.later} />
+                </div>
+                <p className="text-xs text-outline">Built to keep working reliably — even with the AI switched off.</p>
               </div>
-              <p className="text-xs text-outline">Built to keep working reliably — even with the AI switched off.</p>
-            </div>
+            ) : (
+              // Skip path: no AI plan was generated, so there's no Now/Next/Later to
+              // show. Say what's true instead of three empty "• —" columns.
+              <div className="rounded-xl p-4 border bg-surface-low border-outline-variant text-sm text-on-surface-variant">
+                📄 You brought your own docs — they’re committed to <span className="font-mono">/docs</span>. Your agent reads them and sequences the build itself (no AI plan generated here).
+              </div>
+            )}
             <div className="space-y-2 border-t border-outline-variant pt-3">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <p className="text-xs text-on-surface-variant uppercase tracking-wider">The pack — committed to <span className="font-mono">/docs</span></p>

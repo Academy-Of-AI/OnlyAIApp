@@ -57,7 +57,7 @@ export default async function LandingPage() {
           <span className="inline-flex items-center gap-2 bg-brand-container text-brand-dim text-xs font-semibold px-3.5 py-1.5 rounded-full border border-brand-border">
             ✨ Not a toy generator — a forge for real, owned apps.
           </span>
-          <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] text-on-surface">
+          <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] text-on-surface text-balance">
             Forge a real app you own.{" "}
             <span className="bg-gradient-to-r from-violet-500 to-fuchsia-400 bg-clip-text text-transparent">Walk away with proof.</span>
           </h1>

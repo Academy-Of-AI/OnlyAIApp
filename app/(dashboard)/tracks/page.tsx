@@ -30,7 +30,7 @@ export default function TracksPage() {
               </div>
             </div>
             <div className="px-5 py-3 border-t border-outline-variant flex items-center justify-between gap-2">
-              <span className="text-xs text-on-surface-variant truncate">why: {t.why}</span>
+              <span className="text-xs text-on-surface-variant line-clamp-2 min-w-0">why: {t.why}</span>
               <Link href={`/scope?track=${t.key}`} className="btn-brand text-sm px-4 py-1.5 shrink-0">Start →</Link>
             </div>
           </div>
