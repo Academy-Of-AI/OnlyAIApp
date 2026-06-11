@@ -138,9 +138,14 @@ export async function renameRepo({
  * Create or update a single file in a repo (handles the required SHA for updates).
  */
 export async function upsertFile({
-  token, owner, repo, path, content, message,
+  token, owner, repo, path, content, message, author, committer,
 }: {
   token: string; owner: string; repo: string; path: string; content: string; message: string;
+  // Optional commit identity. Set this to the account's GitHub noreply email so
+  // Vercel can match the commit author to the repo owner (otherwise it blocks the
+  // deploy — see provisionProject's deploy-identity bind).
+  author?: { name: string; email: string };
+  committer?: { name: string; email: string };
 }): Promise<void> {
   const octokit = githubClient(token);
   let sha: string | undefined;
@@ -152,6 +157,8 @@ export async function upsertFile({
     owner, repo, path, message,
     content: Buffer.from(content).toString("base64"),
     ...(sha ? { sha } : {}),
+    ...(author ? { author } : {}),
+    ...(committer ? { committer } : {}),
   });
 }
 

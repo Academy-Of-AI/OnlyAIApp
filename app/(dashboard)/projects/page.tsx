@@ -81,7 +81,8 @@ export default async function ProjectsPage() {
                   <p className="text-xs text-outline">{p.template_id}</p>
                   <div className="flex gap-3 text-xs">
                     {p.github_repo_url && <span className="text-on-surface-variant">GitHub →</span>}
-                    {p.vercel_preview_url && <span className="text-on-surface-variant">Live URL →</span>}
+                    {/* Only once truly deployed — the URL 404s while still building. */}
+                    {p.status === "deployed" && p.vercel_preview_url && <span className="text-on-surface-variant">Live URL →</span>}
                     {done > 0 && <span className="text-on-surface-variant">✓ {done} milestone{done === 1 ? "" : "s"}</span>}
                   </div>
                   {p.error && <p className="text-xs text-danger truncate">{p.error}</p>}

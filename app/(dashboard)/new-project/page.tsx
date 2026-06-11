@@ -54,9 +54,9 @@ export default function NewProjectPage() {
         }
       } catch { /* transient — keep polling */ }
       tries += 1;
-      // ~5 min ceiling. Past that, stop spinning forever and tell the truth:
+      // ~4 min ceiling. Past that, stop spinning forever and tell the truth:
       // it's taking longer than usual — it'll appear on the project page when live.
-      if (!cancelled && tries < 60) setTimeout(poll, 5000);
+      if (!cancelled && tries < 48) setTimeout(poll, 5000);
       else if (!cancelled) setDeployState("slow");
     };
     void poll();

@@ -1,4 +1,4 @@
-import { createRepoFromTemplate, deleteRepo, getGithubUser, githubClient } from "@/lib/github";
+import { createRepoFromTemplate, deleteRepo, getCommitIdentity, getGithubUser, githubClient, upsertFile } from "@/lib/github";
 import {
   configureAuthSmtp,
   createSupabaseProject,
@@ -147,6 +147,32 @@ export async function provisionProject(
       }
     }
     await persistStep({ provision_step: "github", github_repo_url: repoUrl });
+
+    // Bind the deploy identity. Vercel BLOCKS a production deploy whose commit
+    // author email can't be matched to a GitHub account with repo access
+    // ("commit author … could not be matched") — and a template-generated commit
+    // can carry an email that doesn't match, leaving the first deploy stuck. Push
+    // one commit authored by the account's GitHub noreply email
+    // (<id>+<login>@users.noreply.github.com — ALWAYS matches), so the production
+    // deploy's HEAD passes the check. Same workaround we already hand to the user
+    // for local commits, now applied to the very first push. Best-effort — never
+    // fail provisioning over it.
+    try {
+      const ident = await getCommitIdentity(githubToken);
+      const [rOwner, ...rRest] = repoFullName.split("/");
+      await upsertFile({
+        token: githubToken,
+        owner: rOwner,
+        repo: rRest.join("/"),
+        path: ".onlyaiapp",
+        content: "Initialized by OnlyAIApp — deploy identity bound so Vercel can build.\n",
+        message: "chore: initialize project (bind deploy identity)",
+        author: ident,
+        committer: ident,
+      });
+    } catch {
+      // Non-fatal: the deploy may still build, or the user can re-push.
+    }
 
     // Step 2: Supabase (if token provided)
     let resolvedSupabaseUrl = manualSupabaseUrl ?? "";
