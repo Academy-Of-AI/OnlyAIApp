@@ -33,7 +33,7 @@ export default function NewProjectPage() {
   const [limitWall, setLimitWall] = useState<string | null>(null);
   // The deploy is only TRIGGERED at provision time, not live yet — poll the real
   // Vercel state so we never hand out a *.vercel.app link that 404s.
-  const [deployState, setDeployState] = useState<"building" | "ready" | "error" | null>(null);
+  const [deployState, setDeployState] = useState<"building" | "ready" | "error" | "slow" | null>(null);
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,7 +54,10 @@ export default function NewProjectPage() {
         }
       } catch { /* transient — keep polling */ }
       tries += 1;
-      if (!cancelled && tries < 40) setTimeout(poll, 5000); // ~3.3 min ceiling
+      // ~5 min ceiling. Past that, stop spinning forever and tell the truth:
+      // it's taking longer than usual — it'll appear on the project page when live.
+      if (!cancelled && tries < 60) setTimeout(poll, 5000);
+      else if (!cancelled) setDeployState("slow");
     };
     void poll();
     return () => { cancelled = true; };
@@ -308,7 +311,7 @@ export default function NewProjectPage() {
         <div className="panel p-6 space-y-4">
           <div className="flex items-center gap-3">
             <span className="text-2xl">
-              {!result.vercelPreviewUrl ? "📦" : deployState === "ready" ? "🎉" : deployState === "error" ? "⚠️" : "🚀"}
+              {!result.vercelPreviewUrl ? "📦" : deployState === "ready" ? "🎉" : deployState === "error" ? "⚠️" : deployState === "slow" ? "🕐" : "🚀"}
             </span>
             <div>
               <div className="flex items-center gap-2">
@@ -321,6 +324,7 @@ export default function NewProjectPage() {
                   {!result.vercelPreviewUrl ? "Repo created"
                     : deployState === "ready" ? "Your project is live!"
                     : deployState === "error" ? "Deploy hit a snag"
+                    : deployState === "slow" ? "Still deploying…"
                     : "Deploying your app…"}
                 </p>
               </div>
@@ -331,7 +335,9 @@ export default function NewProjectPage() {
                     ? "Set up automatically and now live on Vercel. Open it and start building."
                     : deployState === "error"
                       ? "The first build didn’t finish. Open your project to see what happened and redeploy."
-                      : "Repo + database are ready and the first deploy is building on Vercel (~1–2 min). The live link appears here the moment it’s up."}
+                      : deployState === "slow"
+                        ? "This is taking longer than usual. You don’t need to wait here — the live link will appear on your project page as soon as it’s up."
+                        : "Repo + database are ready and the first deploy is building on Vercel (~1–2 min). The live link appears here the moment it’s up."}
               </p>
             </div>
           </div>
@@ -374,6 +380,11 @@ export default function NewProjectPage() {
             <div className="bg-surface-low border-l-2 border-l-danger border border-outline-variant rounded-lg px-4 py-3">
               <p className="text-sm font-medium text-on-surface">⚠️ The first deploy didn’t finish</p>
               <p className="text-xs text-on-surface-variant">Open your project to see the build error and redeploy.</p>
+            </div>
+          ) : deployState === "slow" ? (
+            <div className="bg-surface-low border-l-2 border-l-[#f59e0b] border border-outline-variant rounded-lg px-4 py-3">
+              <p className="text-sm font-medium text-on-surface">🕐 Still building on Vercel</p>
+              <p className="text-xs text-on-surface-variant">It’s taking longer than usual. Your project page shows the live link as soon as it’s up — no need to wait here.</p>
             </div>
           ) : (
             <div className="flex items-center gap-3 bg-surface-low border border-outline-variant rounded-lg px-4 py-3">

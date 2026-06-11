@@ -53,8 +53,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const latest = await getLatestDeploymentStatus({ token, projectId, teamId });
 
   if (latest.state === "READY") {
-    // Verified live — resolve the real production alias and settle the row.
-    const url = await getVercelProjectDomain({ token, projectId, projectName: project.name as string, teamId });
+    // Verified live — resolve the real production alias. getVercelProjectDomain
+    // falls back to a guessed "<name>.vercel.app", which is WRONG for team
+    // accounts (the real alias has a "-<scope>" suffix) and 404s. If we only got
+    // that guess, use the deployment's own URL (always resolves for a READY
+    // deploy) instead of handing the user a dead link.
+    const alias = await getVercelProjectDomain({ token, projectId, projectName: project.name as string, teamId });
+    const guessed = `https://${project.name}.vercel.app`;
+    const url = alias && alias !== guessed ? alias : (latest.url ?? alias);
     await supabase
       .from("projects")
       .update({ status: "deployed", deployed_at: new Date().toISOString(), vercel_preview_url: url })

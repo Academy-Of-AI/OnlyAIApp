@@ -244,6 +244,12 @@ export async function triggerVercelDeployment({
     body: JSON.stringify({
       name: projectName,
       project: projectId,
+      // target:"production" is REQUIRED — without it Vercel builds a *preview*
+      // deployment, which never gets aliased to the production domain. The clean
+      // <name>(-<scope>).vercel.app URL then 404s forever even after a green
+      // build (the "DEPLOYED but link is dead" bug). A production deploy aliases
+      // the domain so the URL actually resolves once READY.
+      target: "production",
       gitSource: { type: "github", ref: branch },
     }),
   });
