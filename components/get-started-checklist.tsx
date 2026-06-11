@@ -140,9 +140,9 @@ export function GetStartedChecklist({
           {appStatus?.requireReauth ? (
             <>Vercel’s GitHub access needs re-authorizing — open the Vercel app, reconnect GitHub, then{" "}<RecheckButton onClick={checkVercelApp} checking={checking} />.</>
           ) : openedInstall && appStatus && !appStatus.installed ? (
-            <>Did you pick <b className="text-on-surface">“All repositories”</b>? Vercel can’t see your repos yet — finish on GitHub, then{" "}<RecheckButton onClick={checkVercelApp} checking={checking} />.</>
+            <>Installed it with <b className="text-on-surface">“All repositories”</b>?{" "}<RecheckButton onClick={checkVercelApp} checking={checking} /> — or just start your first build and we’ll confirm Vercel is connected then.</>
           ) : (
-            <>On the GitHub page, pick <b className="text-on-surface">“All repositories”</b> (every project is a fresh repo Vercel needs to reach), then come back — this checks off on its own.</>
+            <>On the GitHub page, pick <b className="text-on-surface">“All repositories”</b> (every project is a fresh repo Vercel needs to reach). It checks off once we confirm the connection — on re-check or your first deploy.</>
           )}
         </p>
       )}

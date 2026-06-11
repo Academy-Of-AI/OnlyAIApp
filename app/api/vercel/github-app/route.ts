@@ -31,8 +31,29 @@ export async function GET() {
     return NextResponse.json({ connected: false, installed: false, requireReauth: false });
   }
 
+  // Authoritative proof — if the user has EVER successfully created a Vercel
+  // project (vercel_project_id set on any of their builds, archived or not), the
+  // Vercel GitHub app MUST be installed: createVercelProject can't succeed
+  // otherwise. This is reliable even when the Marketplace integration token lacks
+  // the scope to read git-namespaces (which returns empty and would falsely read
+  // "not installed" — the bug that left the step unchecked for a correctly
+  // installed user).
+  const { data: proof } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("user_id", user.id)
+    .not("vercel_project_id", "is", null)
+    .limit(1)
+    .maybeSingle();
+  if (proof) {
+    return NextResponse.json({ connected: true, installed: true, requireReauth: false, via: "project" });
+  }
+
+  // No prior Vercel project yet — ask Vercel directly (best-effort). If the token
+  // can't read git-namespaces this comes back not-installed, and the checklist
+  // shows honest "we'll confirm on your first build" copy rather than a false green.
   const token = await decrypt(conn.access_token as string);
   const teamId = (conn.metadata as { team_id?: string | null } | null)?.team_id ?? undefined;
   const status = await getVercelGithubAppStatus({ token, teamId });
-  return NextResponse.json({ connected: true, ...status });
+  return NextResponse.json({ connected: true, ...status, via: "namespaces" });
 }
