@@ -21,9 +21,11 @@ export const PRO_REQUIRED = {
 } as const;
 
 /* ── Tiers ───────────────────────────────────────────────────────────────
-   free  — 1 project, can't delete (anti-recycle). The first 50 builders get a
-           +1 early-adopter bonus (=> 2). +1 per successful referral on top.
-   core  — $8/mo · 8 projects · delete/recreate · unlimited* Plan Packs.
+   free  — 1 active project, CAN delete/recreate (owner-AI is metered by
+           build_credits, so recycling can't farm anything — no need to trap the
+           slot). The first 50 builders get a +1 early-adopter bonus (=> 2). +1
+           per successful referral on top.
+   core  — $8/mo · 8 projects · unlimited* Plan Packs.
    pro   — $17/mo (yearly −30%) · 8 projects · Portfolio + career artifacts + Pilot.
    *Core/Pro Plan Packs are "unlimited" behind a generous monthly soft fair-use
     cap (PLAN_PACK_FAIR_USE) that only catches runaway owner-AI cost. */
@@ -90,9 +92,12 @@ export function projectLimit(
   );
 }
 
-/** Free users can't delete their project (so they can't recycle the slot). */
-export function canDeleteProjects(plan: string | null | undefined): boolean {
-  return normalizePlan(plan) !== "free";
+/** Anyone can delete their own project. We don't paywall delete — trapping a free
+ *  user with a stuck/finished project (can't delete → at their limit → can never
+ *  build again) is a dead-end. The real owner cost (AI builds) is metered by
+ *  build_credits, which delete doesn't refund, so delete-recreate can't farm. */
+export function canDeleteProjects(_plan: string | null | undefined): boolean {
+  return true;
 }
 
 /** Custom domains are available on Core + Pro (not Free). Unadvertised perk. */

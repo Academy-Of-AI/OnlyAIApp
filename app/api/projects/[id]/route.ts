@@ -1,6 +1,5 @@
 import { decrypt } from "@/lib/crypto";
 import { renameRepo } from "@/lib/github";
-import { projectLimit } from "@/lib/plan";
 import { fixMojibake, MAX_BUILD_PROMPT } from "@/lib/text";
 import { createClient } from "@/lib/supabase/server";
 import { renameVercelProject, deleteVercelProject } from "@/lib/vercel";
@@ -22,33 +21,19 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: planRow } = await supabase
-    .from("profiles").select("plan, phone, marketing_consent, bonus_projects").eq("id", user.id).single();
-
   const { data: project } = await supabase
     .from("projects")
     .select("vercel_project_id, supabase_project_ref, status")
     .eq("id", id).eq("user_id", user.id).single();
   if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
-  // A user who is OVER their current limit (e.g. a lapsed Core/Pro now on free,
-  // still holding more projects than free allows) must be able to shed the
-  // excess — otherwise they're trapped (can't delete, can't create). Count live
-  // projects and compare to their limit.
-  const { count: ownedCount } = await supabase
-    .from("projects").select("*", { count: "exact", head: true })
-    .eq("user_id", user.id).not("status", "in", "(failed,provisioning)");
-  const overLimit = (ownedCount ?? 0) > projectLimit(planRow?.plan, planRow?.bonus_projects ?? 0, planRow);
-
-  // Free users can't delete (anti-recycle); Core/Pro can. Exceptions: a 'failed'
-  // project never consumed a real slot, and an over-limit user must be able to
-  // free a slot to get unstuck.
-  if (planRow?.plan !== "pro" && planRow?.plan !== "core" && project.status !== "failed" && !overLimit) {
-    return NextResponse.json(
-      { error: "Free projects can't be deleted — upgrade to Core to delete and recreate projects.", code: "delete_locked" },
-      { status: 403 },
-    );
-  }
+  // Anyone can delete their OWN project — we deliberately DON'T paywall delete.
+  // Trapping a free user with a stuck/failed/finished project (can't delete → at
+  // their 1-project limit → can never build again) is a dead-end, not abuse
+  // prevention. The only real owner cost is AI builds, metered by build_credits
+  // (which delete doesn't refund) — so delete-then-recreate can't farm anything,
+  // and the slot model (1 active) still caps concurrency. Frees the Vercel +
+  // Supabase resources; the GitHub repo is kept (the user's code).
 
   const { data: conns } = await supabase
     .from("oauth_connections").select("provider, access_token")
