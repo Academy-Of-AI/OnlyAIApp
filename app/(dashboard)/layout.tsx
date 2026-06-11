@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { DashboardSidebar, MobileNav } from "@/components/dashboard-sidebar";
+import { FeedbackButton } from "@/components/feedback-button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -58,6 +59,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
         <div className="flex-1">{children}</div>
       </div>
+
+      {/* In-app bug / feedback submitter — real reports grow Pilot's checks. */}
+      <FeedbackButton />
     </div>
   );
 }

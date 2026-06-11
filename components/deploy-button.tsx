@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { VercelConnectForm } from "@/components/vercel-connect-form";
+import { PreflightCards } from "@/components/preflight-cards";
+import type { CheckResult } from "@/lib/pilot/types";
 
 function href(url: string) {
   return url.startsWith("http") ? url : `https://${url}`;
@@ -10,17 +12,45 @@ function href(url: string) {
 
 /**
  * The in-app "Go live" for a `ready` project — closes the READY→LIVE gap.
- * Click → POST /api/projects/:id/deploy. If Vercel isn't connected, it expands
- * the connect form inline and, on return (?deploy=1), auto-fires the deploy so
- * a non-technical user reaches a live URL without ever opening a terminal.
+ *
+ * Click → Pilot pre-deploy checks (GET /preflight). If something's caught, we
+ * show the intervention cards and let the user fix or go live anyway; if all
+ * clear, we deploy straight through (happy path unchanged). The checks engine
+ * is fail-open, so a check problem can only ever ADD a card — never block the
+ * deploy. If Vercel isn't connected, the deploy step expands the connect form
+ * and auto-resumes on return (?deploy=1).
  */
 export function DeployButton({ projectId, projectPath }: { projectId: string; projectPath: string }) {
   const router = useRouter();
-  const [state, setState] = useState<"idle" | "deploying" | "connect" | "done">("idle");
+  const [state, setState] = useState<"idle" | "checking" | "review" | "deploying" | "connect" | "done">("idle");
   const [err, setErr] = useState<string | null>(null);
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
+  const [checks, setChecks] = useState<CheckResult[]>([]);
+  const [pro, setPro] = useState(false);
   const fired = useRef(false);
 
+  // Step 1: run Pilot's pre-deploy checks. Blocking findings → show cards;
+  // otherwise go straight to deploy. Engine is fail-open, so any error here
+  // just proceeds to deploy.
+  async function goLive() {
+    setErr(null);
+    setState("checking");
+    try {
+      const res = await fetch(`/api/projects/${projectId}/preflight`);
+      const data = await res.json().catch(() => ({} as { blocking?: boolean; pro?: boolean; checks?: CheckResult[] }));
+      if (res.ok && data.blocking && Array.isArray(data.checks)) {
+        setChecks(data.checks);
+        setPro(!!data.pro);
+        setState("review");
+        return;
+      }
+    } catch {
+      /* preflight failed — never block; fall through to deploy */
+    }
+    deploy();
+  }
+
+  // Step 2: the actual deploy.
   async function deploy() {
     setState("deploying"); setErr(null);
     try {
@@ -39,13 +69,14 @@ export function DeployButton({ projectId, projectPath }: { projectId: string; pr
     }
   }
 
-  // Auto-fire after returning from a fresh Vercel connect (?deploy=1).
+  // Auto-resume after returning from a fresh Vercel connect (?deploy=1) — run
+  // the checks too, so a connect-then-deploy still gets a pre-flight.
   useEffect(() => {
     if (fired.current) return;
     try {
       if (typeof window !== "undefined" && window.location.search.includes("deploy=1")) {
         fired.current = true;
-        deploy();
+        goLive();
       }
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -61,6 +92,10 @@ export function DeployButton({ projectId, projectPath }: { projectId: string; pr
         )}
       </div>
     );
+  }
+
+  if (state === "review") {
+    return <PreflightCards checks={checks} pro={pro} onProceed={deploy} />;
   }
 
   if (state === "connect") {
@@ -89,8 +124,8 @@ export function DeployButton({ projectId, projectPath }: { projectId: string; pr
         <p className="text-xs text-on-surface-variant mt-0.5">Deploy it to a real URL you can open and share — right here, no terminal needed.</p>
         {err && <p className="text-xs text-danger mt-1">{err}</p>}
       </div>
-      <button onClick={deploy} disabled={state === "deploying"} className="btn-brand text-sm font-semibold px-5 py-2.5 shrink-0 disabled:opacity-60">
-        {state === "deploying" ? "Going live…" : "Go live →"}
+      <button onClick={goLive} disabled={state === "checking" || state === "deploying"} className="btn-brand text-sm font-semibold px-5 py-2.5 shrink-0 disabled:opacity-60">
+        {state === "checking" ? "Checking…" : state === "deploying" ? "Going live…" : "Go live →"}
       </button>
     </div>
   );
