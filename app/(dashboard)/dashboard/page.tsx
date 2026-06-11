@@ -84,7 +84,7 @@ export default async function HomePage({
       </div>
 
       {/* Guided onboarding rail (also handles the GitHub connect step) */}
-      <GetStartedChecklist hasGitHub={!!hasGitHub} hasVercel={!!hasVercel} hasSupabase={!!hasSupabase} hasProject={list.length > 0} hasShipped={shipped > 0} />
+      <GetStartedChecklist hasGitHub={!!hasGitHub} hasVercel={!!hasVercel} hasSupabase={!!hasSupabase} hasProject={list.some((p) => p.status !== "failed")} hasShipped={shipped > 0} />
 
       {/* Free-tier opt-in nudge → +1 project */}
       {hasGitHub && showOptInNudge && <OptInNudge />}

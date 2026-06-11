@@ -4,6 +4,7 @@ import type { Result as PlanPackResult } from "@/components/plan-pack";
 import { decrypt } from "@/lib/crypto";
 import { getLatestDeploymentStatus, getVercelProjectDomain, listVercelEnvVars } from "@/lib/vercel";
 import { canUseDomains, hardeningOf } from "@/lib/plan";
+import { STALE_PROVISION_MS } from "@/lib/provisioning/steps";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -76,6 +77,16 @@ export default async function ProjectPage({
   const canDomain = canUseDomains(planRow?.plan);
   const hardened = hardeningOf(envKeys);
 
+  // Stale-attempt detection (computed server-side to avoid a hydration mismatch):
+  // a row stuck in 'provisioning' past STALE_PROVISION_MS means the run timed out
+  // or the page closed mid-provision, so the failure path never recorded it.
+  // Treat it like a failed provision — show the Retry surface, not a dead spinner.
+  const startedAtMs = Date.parse((project.provision_started_at as string | null) ?? (project.created_at as string));
+  const stalled =
+    project.status === "provisioning" &&
+    Number.isFinite(startedAtMs) &&
+    Date.now() - startedAtMs > STALE_PROVISION_MS;
+
   // Persisted plan pack (if the projects.plan_pack column exists) — lets the
   // Plan Pack survive refresh / tab changes without regenerating.
   const initialPack = (project.plan_pack as PlanPackResult | null) ?? null;
@@ -91,7 +102,7 @@ export default async function ProjectPage({
 
       <ProjectTabs
         project={project} memory={memory} liveUrl={liveUrl} initialPack={initialPack}
-        autoCapture={!!project.auto_capture} isPro={isPro} hardened={hardened}
+        autoCapture={!!project.auto_capture} isPro={isPro} hardened={hardened} stalled={stalled}
         addons={<ProjectAddOns projectId={id} isPro={isPro} canDomain={canDomain} envKeys={envKeys} />}
       />
     </main>

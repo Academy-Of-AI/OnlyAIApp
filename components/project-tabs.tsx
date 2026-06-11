@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 import { PlanPack, type Result as PlanPackResult } from "@/components/plan-pack";
 import { PlanProgress } from "@/components/plan-progress";
 import { AutoCaptureToggle } from "@/components/auto-capture-toggle";
@@ -10,6 +11,7 @@ import { ExplainError } from "@/components/explain-error";
 import { LaunchCheck } from "@/components/launch-check";
 import { DriftPanel } from "@/components/drift-panel";
 import { DeployButton } from "@/components/deploy-button";
+import { STEP_LABELS } from "@/lib/provisioning/steps";
 
 type Project = {
   id: string;
@@ -21,6 +23,8 @@ type Project = {
   vercel_project_id: string | null;
   supabase_project_ref: string | null;
   error: string | null;
+  provision_step: string | null;
+  provision_started_at: string | null;
   created_at: string;
   deployed_at: string | null;
   build_prompt: string | null;
@@ -36,6 +40,10 @@ const STATUS_STYLES: Record<string, string> = {
   failed:       "chip chip-danger",
 };
 
+// Mirrors the SSE progress event emitted by POST /api/projects (same shape the
+// new-project page consumes). Used by the failed-project Retry surface.
+type StepEvent = { step: string; message: string; detail?: string };
+
 type View = "plan" | "pilot" | "settings";
 
 type Hardened = { payments: boolean; monitoring: boolean; hardened: boolean };
@@ -49,6 +57,7 @@ export function ProjectTabs({
   isPro = false,
   hardened,
   addons = null,
+  stalled = false,
 }: {
   project: Project;
   memory?: Array<{ kind: string; content: string }>;
@@ -58,12 +67,23 @@ export function ProjectTabs({
   isPro?: boolean;
   hardened?: Hardened;
   addons?: React.ReactNode;
+  stalled?: boolean;
 }) {
   const [view, setView] = useState<View>("plan");
   const pnav = (active: boolean) =>
     `rounded-lg border px-3 py-2.5 flex items-center gap-2 transition-colors text-left ${
       active ? "border-brand-border bg-brand-container text-brand-dim" : "border-outline-variant text-on-surface-variant hover:border-outline"
     }`;
+
+  // A failed provision — OR one stuck in 'provisioning' past the stale window
+  // (the function timed out / the page closed mid-run, so the failure path never
+  // recorded it) — never finished setting the app up. The 3 Ps (Plan/Pilot) and
+  // the "Skip — use my docs" planning path are dead ends for it. Show a focused
+  // recovery surface instead: where setup stopped, the error, and a Retry button.
+  // `stalled` is computed server-side (page.tsx) to avoid a hydration mismatch.
+  if (project.status === "failed" || stalled) {
+    return <FailedProjectView project={project} stalled={stalled} />;
+  }
 
   return (
     <div>
@@ -109,6 +129,174 @@ export function ProjectTabs({
       {view === "plan" && <PlanView project={project} initialPack={initialPack} />}
       {view === "pilot" && <PilotView project={project} memory={memory} liveUrl={liveUrl} autoCapture={autoCapture} isPro={isPro} hardened={hardened} onHarden={() => setView("settings")} plan={initialPack?.plan ?? null} sprints={initialPack?.sprints ?? []} />}
       {view === "settings" && <SettingsTab project={project} addons={addons} />}
+    </div>
+  );
+}
+
+/* ── Failed-project recovery surface ──────────────────────────────────────
+   When a provision fails, the normal Plan/Pilot tabs (and the "Skip — use my
+   docs" planning path) are dead ends — the app was never finished. Show where
+   setup stopped, the stored (plain-English) error, and a Retry that re-runs
+   provisioning by POSTing /api/projects with { projectId }, consuming the SSE
+   stream the same way new-project/page.tsx does.
+   STEP_LABELS is shared from lib/provisioning/steps (single source of truth —
+   same vocabulary the server uses to record provision_step). */
+function FailedProjectView({ project, stalled = false }: { project: Project; stalled?: boolean }) {
+  const router = useRouter();
+  const [retrying, setRetrying] = useState(false);
+  const [steps, setSteps] = useState<StepEvent[]>([]);
+  const [retryError, setRetryError] = useState<string | null>(null);
+
+  const stoppedAt = project.provision_step
+    ? (STEP_LABELS[project.provision_step as keyof typeof STEP_LABELS] ?? project.provision_step)
+    : "the start";
+
+  async function retry() {
+    setRetrying(true);
+    setRetryError(null);
+    setSteps([]);
+
+    const response = await fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: project.id }),
+    });
+
+    if (!response.body) {
+      setRetryError("No response stream");
+      setRetrying(false);
+      return;
+    }
+
+    // Non-streaming error (auth/validation/plan limits) — surfaced as JSON.
+    if (!response.ok && response.headers.get("Content-Type")?.includes("application/json")) {
+      const j = (await response.json()) as { error?: string };
+      setRetryError(j.error ?? "Retry failed");
+      setRetrying(false);
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    // Track a terminal event so a dropped/ended stream still clears the spinner.
+    let sawTerminal = false;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split("\n").filter((l) => l.startsWith("data: "));
+        for (const line of lines) {
+          try {
+            const event = JSON.parse(line.slice(6)) as
+              | { step: "done"; result: unknown }
+              | { step: "error"; message: string }
+              | StepEvent;
+
+            if (event.step === "done") {
+              sawTerminal = true;
+              // Provision succeeded — reload so the page shows the live project.
+              router.refresh();
+            } else if (event.step === "error") {
+              sawTerminal = true;
+              setRetryError((event as { step: "error"; message: string }).message);
+            } else {
+              setSteps((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.step === event.step) return [...prev.slice(0, -1), event as StepEvent];
+                return [...prev, event as StepEvent];
+              });
+            }
+          } catch {
+            // parse error, skip
+          }
+        }
+      }
+    } catch {
+      if (!sawTerminal) {
+        setRetryError("The connection dropped while retrying setup. Check back in a minute — it may have finished — or try again.");
+      }
+    } finally {
+      setRetrying(false);
+    }
+  }
+
+  return (
+    <div>
+      {/* Header — name + failed chip */}
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="font-display tracking-tight text-2xl font-bold text-on-surface truncate">{project.name}</h1>
+            <span className={stalled ? STATUS_STYLES.provisioning : STATUS_STYLES.failed}>{stalled ? "stuck" : project.status}</span>
+          </div>
+          <p className="text-sm text-on-surface-variant mt-1">Created {new Date(project.created_at).toLocaleDateString()}</p>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-[rgba(220,38,38,0.3)] bg-[rgba(220,38,38,0.06)] p-5 sm:p-6 space-y-4">
+        <div>
+          <p className="text-sm font-semibold text-danger flex items-center gap-2">
+            {stalled ? "🟠 Setup seems stuck" : "🔴 Setup didn’t finish"}
+          </p>
+          <p className="text-sm text-on-surface mt-1.5">
+            Setup stopped at: <span className="font-semibold text-on-surface">{stoppedAt}</span>
+          </p>
+        </div>
+
+        {project.error ? (
+          <div>
+            <p className="text-xs uppercase tracking-wide text-on-surface-variant mb-1 font-medium">What went wrong</p>
+            <p className="text-sm text-on-surface leading-relaxed">{project.error}</p>
+          </div>
+        ) : stalled ? (
+          <p className="text-sm text-on-surface-variant leading-relaxed">
+            This usually means setup ran out of time partway through. Retrying picks up right where it stopped — nothing is lost.
+          </p>
+        ) : null}
+
+        {/* Live retry progress */}
+        {retrying && (
+          <div className="space-y-2 py-1">
+            {steps.map((s, i) => (
+              <div key={i} className="flex items-center gap-3 text-sm">
+                <span className="text-success">✓</span>
+                <span className={i === steps.length - 1 ? "text-on-surface" : "text-on-surface-variant"}>{s.message}</span>
+              </div>
+            ))}
+            <div className="flex items-center gap-3 text-sm text-on-surface-variant">
+              <span className="w-4 h-4 border-2 border-outline-variant border-t-brand rounded-full animate-spin inline-block flex-shrink-0" />
+              <span>Picking up where it stopped…</span>
+            </div>
+          </div>
+        )}
+
+        {retryError && !retrying && (
+          <div className="panel border-l-2 border-l-danger text-danger text-sm px-4 py-3">{retryError}</div>
+        )}
+
+        {/* Primary: Retry setup — re-runs provisioning, resuming from where it stopped. */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={retry}
+            disabled={retrying}
+            className="btn-brand text-sm font-semibold px-5 py-2.5"
+          >
+            {retrying ? "Retrying setup…" : "🔄 Retry setup"}
+          </button>
+          <Link href="/dashboard" className="text-xs text-on-surface-variant hover:text-on-surface transition-colors">
+            ← Back to dashboard
+          </Link>
+        </div>
+      </div>
+
+      {/* Self-serve recovery hint — repo access is the #1 cause of a stuck provision. */}
+      <p className="text-xs text-on-surface-variant mt-4">
+        Keeps failing? Make sure GitHub and Vercel are connected in{" "}
+        <Link href="/settings" className="text-brand hover:text-brand-dim">Settings ⚙</Link>, then retry.
+      </p>
     </div>
   );
 }
