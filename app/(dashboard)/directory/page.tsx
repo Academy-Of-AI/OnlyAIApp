@@ -67,7 +67,7 @@ export default async function ShowcasePage({ searchParams }: { searchParams: Pro
         <div className="text-center py-24 text-on-surface-variant space-y-3 panel">
           <p className="text-4xl">✦</p>
           <p>{trackFilter ? "No published builds in this track yet." : "No published builds yet."}</p>
-          <p className="text-sm">Ship an app, then publish it from its <b>Ops</b> page to appear here.</p>
+          <p className="text-sm">Ship an app, then publish it from your <b>Portfolio</b> to appear here.</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -112,7 +112,7 @@ export default async function ShowcasePage({ searchParams }: { searchParams: Pro
       )}
 
       <p className="text-center text-xs text-outline">
-        Want your app here? Ship one, then publish it from the project’s Ops page.
+        Want your app here? Ship one, then publish it from your Portfolio.
       </p>
     </main>
   );

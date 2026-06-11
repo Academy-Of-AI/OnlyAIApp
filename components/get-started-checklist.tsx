@@ -82,7 +82,6 @@ export function GetStartedChecklist({
   // per-project build loop. `pid` (the active/first project) powers the build-loop
   // links; before a project exists they point at /tracks and read as "future".
   const pid = projectId;
-  const objectiveGated = isPro === false; // free users can't generate an AI plan
   const steps: Step[] = [
     { label: "Connect GitHub", href: "/api/github/connect", cta: "Connect", done: hasGitHub, external: true },
     // Connect your cloud once (one-click OAuth) — then every project auto-provisions.
@@ -92,11 +91,11 @@ export function GetStartedChecklist({
     { label: "Give Vercel access to your repos — install its GitHub app", href: VERCEL_APP_URL, cta: "Install Vercel app", done: vercelAppDone, external: true, newTab: true, isVercelApp: true },
     { label: "Connect Supabase — your app's own database", href: "/api/supabase/oauth", cta: "Connect Supabase", done: hasSupabase, external: true },
     { label: "Start your first build — pick a track", href: "/tracks", cta: "Pick a track", done: hasProject },
-    objectiveGated
-      ? { label: "Set your objective (AI plan — a Pro feature)", href: "/upgrade", cta: "Upgrade", done: hasPlan }
-      : { label: "Set your objective — the plan your agent follows", href: pid ? `/projects/${pid}/plan` : "/tracks", cta: "Set objective", done: hasPlan },
-    { label: "Build it with your AI agent", href: pid ? `/projects/${pid}` : "/tracks", cta: "Open build", done: hasMemory },
-    { label: "Ship it live — a real app you own", href: pid ? `/projects/${pid}` : "/tracks", cta: "Open build", done: hasShipped },
+    // The AI plan is METERED (free = 3), not Pro-only — do NOT gate it behind Upgrade.
+    { label: "Set your objective — the plan your agent follows", href: pid ? `/projects/${pid}/plan` : "/tracks", cta: "Set objective", done: hasPlan },
+    // ONE step, not "Build" then "Ship": the old split let "Ship it live ✓" check
+    // while "Build" was still un-done (deploying the scaffold flipped hasShipped).
+    { label: "Build it & ship it live", href: pid ? `/projects/${pid}` : "/tracks", cta: "Open build", done: hasShipped },
   ];
   // The Vercel GitHub-app install can't be confirmed BEFORE the first build (our
   // integration token can't read Vercel's git connection — see /api/vercel/github-app).

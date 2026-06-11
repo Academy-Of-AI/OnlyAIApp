@@ -12,13 +12,15 @@ export default async function PortfolioPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   const [{ data: projects }, { data: profile }] = await Promise.all([
-    supabase.from("projects").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }),
+    supabase.from("projects").select("*").eq("user_id", user!.id).is("archived_at", null).order("created_at", { ascending: false }),
     supabase.from("profiles").select("plan, github_username, artifacts_used, artifacts_period, avatar_url, display_name, headline, linkedin_url, website_url").eq("id", user!.id).single(),
   ]);
 
   const list = projects ?? [];
   const shipped = list.filter((p) => p.status === "deployed");
-  const building = list.filter((p) => p.status !== "deployed");
+  // "Building" = genuinely underway. NOT "everything not deployed" — that counted
+  // failed (and, before the archived filter, deleted) projects as a phantom number.
+  const building = list.filter((p) => ["provisioning", "building", "pending"].includes(p.status));
   const milestones = list.reduce((n, p) => n + (Array.isArray(p.plan_progress) ? p.plan_progress.length : 0), 0);
   const period = new Date().toISOString().slice(0, 7);
   const aiUsed = profile?.artifacts_period === period ? (profile?.artifacts_used ?? 0) : 0;
@@ -51,11 +53,12 @@ export default async function PortfolioPage() {
       />
 
       {/* Proof stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Defined, defensible numbers only. Dropped "Proof points" (shipped+milestones)
+          — it was an invented metric with no real-world meaning. */}
+      <div className="grid grid-cols-3 gap-3">
         <Stat label="Apps shipped" value={shipped.length} />
         <Stat label="Building" value={building.length} />
         <Stat label="Milestones" value={milestones} />
-        <Stat label="Proof points" value={shipped.length + milestones} />
       </div>
 
       {/* Shipped pieces */}
@@ -73,7 +76,7 @@ export default async function PortfolioPage() {
               <div key={p.id} className="panel p-4 flex flex-col gap-2">
                 <div className="flex items-center gap-2"><span className="chip chip-success">Live</span><span className="font-display font-semibold text-on-surface truncate">{p.name}</span></div>
                 <div className="text-xs text-on-surface-variant bg-surface-dim border border-outline-variant rounded-lg px-2.5 py-2">
-                  Proves: <b className="text-on-surface">you can ship a real, working app end-to-end.</b>
+                  Deployed end-to-end on <b className="text-on-surface">your own GitHub + Supabase + Vercel</b> — a real full-stack app you own. Publish it below once it’s ready to show.
                 </div>
                 {/* Showcase — publish + thumbnail, where your proof lives */}
                 <div className="border-t border-outline-variant pt-2.5 mt-0.5">
