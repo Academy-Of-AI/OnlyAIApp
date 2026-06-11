@@ -1,4 +1,4 @@
-import { createRepoFromTemplate, deleteRepo, getGithubUser } from "@/lib/github";
+import { createRepoFromTemplate, deleteRepo, getGithubUser, githubClient } from "@/lib/github";
 import {
   configureAuthSmtp,
   createSupabaseProject,
@@ -75,18 +75,39 @@ export async function provisionProject(
     // Step 1: GitHub
     onProgress({ step: "github_start", message: "Creating GitHub repository…" });
     const { login } = await getGithubUser(githubToken);
-    const { repoUrl, repoFullName } = await createRepoFromTemplate({
-      token: githubToken,
-      templateOwner,
-      templateRepo,
-      newOwner: login,
-      newName: projectName,
-      description: "Built with Vibe Launchpad",
-      isPrivate: true,
-    });
-    githubRepoOwner = login;
-    githubRepoName = projectName;
-    onProgress({ step: "github_done", message: "GitHub repo created ✓", detail: repoUrl });
+    let repoUrl = "";
+    let repoFullName = "";
+    try {
+      ({ repoUrl, repoFullName } = await createRepoFromTemplate({
+        token: githubToken,
+        templateOwner,
+        templateRepo,
+        newOwner: login,
+        newName: projectName,
+        description: "Built with Vibe Launchpad",
+        isPrivate: true,
+      }));
+      // Only repos WE created this run are eligible for rollback deletion.
+      githubRepoOwner = login;
+      githubRepoName = projectName;
+      onProgress({ step: "github_done", message: "GitHub repo created ✓", detail: repoUrl });
+    } catch (e) {
+      // A prior failed attempt may have left this repo behind — the OAuth token
+      // can't delete repos (no delete_repo scope), so rollback couldn't clean it
+      // up. Reuse it instead of colliding on "name already exists": makes
+      // provisioning idempotent so retries (same name) just pick up the repo.
+      const err = e as { status?: number; message?: string };
+      const msg = (err?.message ?? "").toLowerCase();
+      if (err?.status === 422 || /already exists|name already exists|must be unique/.test(msg)) {
+        const existing = await githubClient(githubToken).repos.get({ owner: login, repo: projectName });
+        repoUrl = existing.data.html_url;
+        repoFullName = existing.data.full_name;
+        // Intentionally NOT registered for rollback — we didn't create it this run.
+        onProgress({ step: "github_done", message: "Reusing your existing repo ✓", detail: repoUrl });
+      } else {
+        throw e;
+      }
+    }
 
     // Step 2: Supabase (if token provided)
     let resolvedSupabaseUrl = manualSupabaseUrl ?? "";
