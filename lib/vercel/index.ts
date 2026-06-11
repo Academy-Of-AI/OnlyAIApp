@@ -44,6 +44,41 @@ export async function createVercelProject({
 }
 
 /**
+ * Whether the user's Vercel account can actually reach their GitHub repos — i.e.
+ * the Vercel GitHub app is installed and connected. Connecting Vercel via OAuth
+ * is NOT enough: Vercel also needs its GitHub app installed on the user's GitHub
+ * before it can create a project from a repo, and that's the #1 silent provision
+ * blocker. This is the one reliable SERVER-SIDE signal for it — our classic
+ * GitHub OAuth token can't see the Vercel app's installation (that's a GitHub
+ * App API, not an OAuth one), so we ask Vercel's side via the git-namespaces
+ * endpoint: an empty list means the app isn't installed; `requireReauth` means
+ * it's installed but the GitHub link needs re-authorizing.
+ */
+export async function getVercelGithubAppStatus({
+  token, teamId,
+}: { token: string; teamId?: string }): Promise<{ installed: boolean; requireReauth: boolean }> {
+  try {
+    const qs = `?provider=github${teamId ? `&teamId=${encodeURIComponent(teamId)}` : ""}`;
+    const res = await fetch(`${VERCEL_API}/v1/integrations/git-namespaces${qs}`, {
+      headers: vercelHeaders(token),
+    });
+    if (!res.ok) return { installed: false, requireReauth: false };
+    const data = await res.json() as unknown;
+    // The endpoint returns a bare array; tolerate an object-wrapped shape too.
+    const list: Array<{ requireReauth?: boolean }> = Array.isArray(data)
+      ? (data as Array<{ requireReauth?: boolean }>)
+      : Array.isArray((data as { namespaces?: unknown[] })?.namespaces)
+        ? ((data as { namespaces: Array<{ requireReauth?: boolean }> }).namespaces)
+        : [];
+    if (list.length === 0) return { installed: false, requireReauth: false };
+    // Installed; needs re-auth only if EVERY reachable namespace is flagged.
+    return { installed: true, requireReauth: list.every((n) => n?.requireReauth === true) };
+  } catch {
+    return { installed: false, requireReauth: false };
+  }
+}
+
+/**
  * Add environment variables to a Vercel project.
  */
 export async function addVercelEnvVars({

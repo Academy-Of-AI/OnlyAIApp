@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type Step = {
   label: string;
@@ -9,31 +9,67 @@ type Step = {
   cta: string;
   done: boolean;
   external?: boolean;
-  newTab?: boolean;      // open in a new tab (GitHub-app install) instead of navigating away
-  markFlag?: string;     // localStorage key to set when actioned (client-only "done")
+  newTab?: boolean;        // open in a new tab (GitHub-app install) instead of navigating away
+  isVercelApp?: boolean;   // the Vercel GitHub-app step — VERIFIED server-side, not click-tracked
 };
 
-const VERCEL_APP_KEY = "oaa_vercel_ghapp_installed_v1";
+// Remembers the user opened the install page — used ONLY to tailor the hint copy
+// ("we can't see it yet"), never to claim the step is done. The truth comes from
+// the server (Vercel git-namespaces); a click just opens a page.
+const VERCEL_APP_KEY = "oaa_vercel_ghapp_opened_v1";
 const VERCEL_APP_URL = "https://github.com/apps/vercel/installations/new";
+
+type VercelAppStatus = { connected: boolean; installed: boolean; requireReauth: boolean };
 
 /**
  * First-run guided rail on Home. One linear sequence to a shipped app; the first
- * incomplete step gets the primary CTA. Client component so the Vercel
- * GitHub-app step (which can't be detected server-side) can track that the user
- * actioned it via localStorage.
+ * incomplete step gets the primary CTA.
+ *
+ * The Vercel GitHub-app step used to check itself off the instant the user
+ * CLICKED "Install" — a click that only opens a page, so it lied (the step went
+ * green even when the app wasn't actually installed, and the next provision
+ * failed with "install the GitHub integration first"). It now reflects the REAL
+ * state from GET /api/vercel/github-app (Vercel git-namespaces), re-checking when
+ * the user returns from the install tab.
  */
 export function GetStartedChecklist({
   hasGitHub, hasVercel = false, hasSupabase = false, hasProject, hasShipped,
 }: {
   hasGitHub: boolean; hasVercel?: boolean; hasSupabase?: boolean; hasProject: boolean; hasShipped: boolean;
 }) {
-  // The Vercel GitHub-app install isn't detectable server-side — track the click
-  // client-side; treat as done once they've shipped (they clearly got past it).
-  const [vercelAppClicked, setVercelAppClicked] = useState(false);
+  const [appStatus, setAppStatus] = useState<VercelAppStatus | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [openedInstall, setOpenedInstall] = useState(false);
+
+  const checkVercelApp = useCallback(async () => {
+    // Only meaningful once Vercel is connected; a shipped user has obviously
+    // already cleared this, so skip the call.
+    if (!hasVercel || hasShipped) return;
+    setChecking(true);
+    try {
+      const r = await fetch("/api/vercel/github-app", { cache: "no-store" });
+      if (r.ok) setAppStatus((await r.json()) as VercelAppStatus);
+    } catch {
+      /* keep prior status — failing the check must never hard-block the flow */
+    } finally {
+      setChecking(false);
+    }
+  }, [hasVercel, hasShipped]);
+
   useEffect(() => {
-    try { setVercelAppClicked(localStorage.getItem(VERCEL_APP_KEY) === "1"); } catch { /* ignore */ }
+    try { setOpenedInstall(localStorage.getItem(VERCEL_APP_KEY) === "1"); } catch { /* ignore */ }
   }, []);
-  const vercelAppDone = vercelAppClicked || hasShipped;
+  useEffect(() => { void checkVercelApp(); }, [checkVercelApp]);
+  // Re-check when the user tabs back from the GitHub install page (so the step
+  // flips to ✓ on its own moments after they finish installing).
+  useEffect(() => {
+    const onFocus = () => { if (!appStatus?.installed) void checkVercelApp(); };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [appStatus, checkVercelApp]);
+
+  const vercelAppVerified = !!appStatus?.installed && !appStatus.requireReauth;
+  const vercelAppDone = hasShipped || vercelAppVerified;
 
   const allDone = hasGitHub && hasVercel && hasProject && hasShipped;
 
@@ -42,21 +78,24 @@ export function GetStartedChecklist({
     // Connect your cloud once (one-click OAuth) — then every project auto-provisions.
     { label: "Connect Vercel — so your app auto-deploys live", href: "/api/vercel/oauth", cta: "Connect Vercel", done: hasVercel, external: true },
     // Hidden-but-required: Vercel OAuth grants API access, but Vercel also needs
-    // its GitHub app installed (with repo access) to deploy. Without this the
-    // first provision fails — so it's a first-class step right after Connect Vercel.
-    { label: "Give Vercel access to your repos — install its GitHub app", href: VERCEL_APP_URL, cta: "Install Vercel app", done: vercelAppDone, external: true, newTab: true, markFlag: VERCEL_APP_KEY },
+    // its GitHub app installed (with repo access) to deploy. Verified, not guessed.
+    { label: "Give Vercel access to your repos — install its GitHub app", href: VERCEL_APP_URL, cta: "Install Vercel app", done: vercelAppDone, external: true, newTab: true, isVercelApp: true },
     { label: "Connect Supabase — your app's own database", href: "/api/supabase/oauth", cta: "Connect Supabase", done: hasSupabase, external: true },
     { label: "Pick a track & start building", href: "/tracks", cta: "Pick a track", done: hasProject },
     { label: "Show off your proof", href: "/portfolio", cta: "Open Portfolio", done: hasShipped },
   ];
   const firstTodo = steps.findIndex((s) => !s.done);
+  const currentStep = steps[firstTodo];
 
-  function actioned(step: Step) {
-    if (step.markFlag) {
-      try { localStorage.setItem(step.markFlag, "1"); } catch { /* ignore */ }
-      setVercelAppClicked(true);
-    }
+  function openedVercelInstall() {
+    try { localStorage.setItem(VERCEL_APP_KEY, "1"); } catch { /* ignore */ }
+    setOpenedInstall(true);
   }
+
+  // Vercel-app step is current but its real status hasn't resolved yet — show a
+  // neutral "Checking…" instead of flashing an Install CTA at someone who may
+  // already have it installed.
+  const vercelAppChecking = !!currentStep?.isVercelApp && hasVercel && !hasShipped && appStatus === null && checking;
 
   return (
     <div className={`panel p-5 ${!hasGitHub ? "border-l-[3px] border-l-brand" : ""}`}>
@@ -77,26 +116,37 @@ export function GetStartedChecklist({
               </span>
               <span className={`text-sm flex-1 ${s.done ? "text-on-surface-variant line-through" : isCurrent ? "text-on-surface font-medium" : "text-on-surface"}`}>{s.label}</span>
               {isCurrent && (
-                s.external
-                  ? <a
-                      href={s.href}
-                      target={s.newTab ? "_blank" : undefined}
-                      rel={s.newTab ? "noopener noreferrer" : undefined}
-                      onClick={() => actioned(s)}
-                      className="btn-brand text-sm px-4 py-2 shrink-0"
-                    >{s.cta} →</a>
-                  : <Link href={s.href} className="btn-brand text-sm px-4 py-2 shrink-0">{s.cta} →</Link>
+                vercelAppChecking
+                  ? <span className="text-sm text-on-surface-variant px-4 py-2 shrink-0">Checking…</span>
+                  : s.external
+                    ? <a
+                        href={s.href}
+                        target={s.newTab ? "_blank" : undefined}
+                        rel={s.newTab ? "noopener noreferrer" : undefined}
+                        onClick={s.isVercelApp ? openedVercelInstall : undefined}
+                        className="btn-brand text-sm px-4 py-2 shrink-0"
+                      >{s.cta} →</a>
+                    : <Link href={s.href} className="btn-brand text-sm px-4 py-2 shrink-0">{s.cta} →</Link>
               )}
             </li>
           );
         })}
       </ol>
-      {/* When the Vercel GitHub-app step is current, add the repo-scope hint. */}
-      {steps[firstTodo]?.markFlag === VERCEL_APP_KEY && (
+
+      {/* Vercel GitHub-app step — honest, real-status hint. The step can't be
+          trusted to a click, so we say exactly where the user stands. */}
+      {currentStep?.isVercelApp && !vercelAppChecking && (
         <p className="text-xs text-on-surface-variant mt-3">
-          On the GitHub page, pick <b className="text-on-surface">“All repositories”</b> (every project is a fresh repo Vercel needs to reach), then come back — this step checks off on its own.
+          {appStatus?.requireReauth ? (
+            <>Vercel’s GitHub access needs re-authorizing — open the Vercel app, reconnect GitHub, then{" "}<RecheckButton onClick={checkVercelApp} checking={checking} />.</>
+          ) : openedInstall && appStatus && !appStatus.installed ? (
+            <>Did you pick <b className="text-on-surface">“All repositories”</b>? Vercel can’t see your repos yet — finish on GitHub, then{" "}<RecheckButton onClick={checkVercelApp} checking={checking} />.</>
+          ) : (
+            <>On the GitHub page, pick <b className="text-on-surface">“All repositories”</b> (every project is a fresh repo Vercel needs to reach), then come back — this checks off on its own.</>
+          )}
         </p>
       )}
+
       {!hasGitHub && (
         <p className="text-xs text-on-surface-variant mt-3">
           No GitHub account?{" "}
@@ -105,5 +155,13 @@ export function GetStartedChecklist({
         </p>
       )}
     </div>
+  );
+}
+
+function RecheckButton({ onClick, checking }: { onClick: () => void; checking: boolean }) {
+  return (
+    <button onClick={onClick} disabled={checking} className="text-brand-dim hover:underline disabled:opacity-60">
+      {checking ? "checking…" : "re-check"}
+    </button>
   );
 }
