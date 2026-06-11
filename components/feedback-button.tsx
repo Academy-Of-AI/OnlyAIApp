@@ -47,9 +47,13 @@ export function FeedbackButton({ label = "Report a problem" }: { label?: string 
     <>
       <button
         onClick={() => { setOpen(true); setDone(false); }}
-        className="fixed bottom-4 right-4 z-40 text-xs px-3 py-2 rounded-full bg-surface border border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-outline shadow-sm"
+        className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 px-5 py-3 rounded-full bg-brand text-white text-sm font-semibold shadow-lg hover:opacity-95 active:scale-[0.98] transition-all"
         aria-label={label}
-      >💬 {label}</button>
+      >
+        <span aria-hidden="true" className="text-base">💬</span>
+        <span>{label}</span>
+        <span className="text-[10px] font-bold uppercase tracking-wide bg-white/20 rounded px-1.5 py-0.5">Beta</span>
+      </button>
 
       {open && (
         <div
