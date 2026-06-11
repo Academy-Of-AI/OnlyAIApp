@@ -38,8 +38,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="antialiased bg-[var(--color-surface)] text-[var(--color-on-surface)]">
+    // suppressHydrationWarning: browser extensions (password managers, dark-mode,
+    // Grammarly, the QA's automation extension, etc.) inject attributes/nodes into
+    // <html>/<body> BEFORE React hydrates, which trips a #418 hydration mismatch
+    // and forces a full client re-render (the flicker). This scopes the tolerance
+    // to the document shell only — real mismatches in the app tree still surface.
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning className="antialiased bg-[var(--color-surface)] text-[var(--color-on-surface)]">
           <PHProvider>{children}</PHProvider>
         </body>
     </html>
