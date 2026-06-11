@@ -5,11 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 /**
- * GET /api/supabase/callback
+ * GET /api/supabase/oauth/callback
  * Supabase OAuth callback — exchanges the code for an access (+ refresh) token,
  * resolves the authorized org, stores it encrypted. Provisioning then creates
  * the user's app database in their OWN org. Refresh token + expiry are stored
  * (in metadata) so getSupabaseConn() can refresh the short-lived token later.
+ *
+ * NOTE: lives at /api/supabase/oauth/callback to match the Redirect URI that was
+ * registered on the Supabase OAuth app from day one. Both this route and the
+ * /api/supabase/oauth authorize step send this exact redirect_uri.
  */
 export async function GET(request: Request) {
   const { origin, searchParams } = new URL(request.url);
@@ -37,7 +41,7 @@ export async function GET(request: Request) {
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/supabase/callback`,
+      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/supabase/oauth/callback`,
     }),
   });
   if (!tokenRes.ok) {
@@ -61,7 +65,7 @@ export async function GET(request: Request) {
     provider: "supabase",
     access_token: accessEnc,
     metadata: { org_id: org?.id, org_name: org?.name, refresh_token: refreshEnc, expires_at: expiresAt, via: "oauth" },
-  });
+  }, { onConflict: "user_id,provider" });
 
   await track("supabase_connected", userId, { org: org?.name, via: "oauth" });
 

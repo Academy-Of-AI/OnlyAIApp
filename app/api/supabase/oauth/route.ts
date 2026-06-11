@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   const state = `${user.id}:${randomBytes(16).toString("hex")}`;
   const params = new URLSearchParams({
     client_id: clientId,
-    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/supabase/callback`,
+    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/supabase/oauth/callback`,
     response_type: "code",
     state,
   });
