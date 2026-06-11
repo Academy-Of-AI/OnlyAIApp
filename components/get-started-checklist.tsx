@@ -84,7 +84,15 @@ export function GetStartedChecklist({
     { label: "Pick a track & start building", href: "/tracks", cta: "Pick a track", done: hasProject },
     { label: "Show off your proof", href: "/portfolio", cta: "Open Portfolio", done: hasShipped },
   ];
-  const firstTodo = steps.findIndex((s) => !s.done);
+  // The Vercel GitHub-app install can't be confirmed BEFORE the first build (our
+  // integration token can't read Vercel's git connection — see /api/vercel/github-app).
+  // So once the user has ACTIONED the install, the step stops blocking the flow:
+  // it shows an honest amber "set up · confirms on your first build" — NOT a green
+  // ✓ (no false claim) and NOT a stuck ○ (no dead-end) — and the next step becomes
+  // current. It only turns true-green when actually confirmed (a re-check that
+  // succeeds, or the first build's DB proof).
+  const vercelAppPending = openedInstall && !vercelAppDone;
+  const firstTodo = steps.findIndex((s) => !s.done && !(s.isVercelApp && vercelAppPending));
   const currentStep = steps[firstTodo];
 
   function openedVercelInstall() {
@@ -107,14 +115,29 @@ export function GetStartedChecklist({
       <ol className="mt-3 space-y-2.5">
         {steps.map((s, i) => {
           const isCurrent = i === firstTodo;
+          const isPending = !!s.isVercelApp && vercelAppPending;
           return (
             <li key={s.label} className={`flex items-center gap-3 rounded-lg ${isCurrent ? "bg-brand-container -mx-2 px-2 py-1.5" : ""}`}>
-              <span className={`w-6 h-6 rounded-full grid place-items-center text-xs font-bold shrink-0 ${
-                s.done ? "bg-success text-white" : isCurrent ? "bg-brand text-white" : "bg-surface-high text-on-surface-variant"
-              }`}>
-                {s.done ? "✓" : i + 1}
+              <span
+                className={`w-6 h-6 rounded-full grid place-items-center text-xs font-bold shrink-0 ${
+                  s.done ? "bg-success text-white"
+                  : isPending ? "border-2"
+                  : isCurrent ? "bg-brand text-white"
+                  : "bg-surface-high text-on-surface-variant"
+                }`}
+                style={isPending ? { borderColor: "#f59e0b", color: "#f59e0b" } : undefined}
+              >
+                {s.done ? "✓" : isPending ? "✓" : i + 1}
               </span>
-              <span className={`text-sm flex-1 ${s.done ? "text-on-surface-variant line-through" : isCurrent ? "text-on-surface font-medium" : "text-on-surface"}`}>{s.label}</span>
+              <span className={`text-sm flex-1 ${
+                s.done ? "text-on-surface-variant line-through"
+                : isPending ? "text-on-surface-variant"
+                : isCurrent ? "text-on-surface font-medium"
+                : "text-on-surface"
+              }`}>
+                {s.label}
+                {isPending && <span className="text-[#b45309]"> · confirms on your first build</span>}
+              </span>
               {isCurrent && (
                 vercelAppChecking
                   ? <span className="text-sm text-on-surface-variant px-4 py-2 shrink-0">Checking…</span>
@@ -135,12 +158,12 @@ export function GetStartedChecklist({
 
       {/* Vercel GitHub-app step — honest, real-status hint. The step can't be
           trusted to a click, so we say exactly where the user stands. */}
-      {currentStep?.isVercelApp && !vercelAppChecking && (
+      {(vercelAppPending || (currentStep?.isVercelApp && !vercelAppChecking)) && (
         <p className="text-xs text-on-surface-variant mt-3">
           {appStatus?.requireReauth ? (
             <>Vercel’s GitHub access needs re-authorizing — open the Vercel app, reconnect GitHub, then{" "}<RecheckButton onClick={checkVercelApp} checking={checking} />.</>
-          ) : openedInstall && appStatus && !appStatus.installed ? (
-            <>Installed it with <b className="text-on-surface">“All repositories”</b>?{" "}<RecheckButton onClick={checkVercelApp} checking={checking} /> — or just start your first build and we’ll confirm Vercel is connected then.</>
+          ) : vercelAppPending ? (
+            <>Vercel’s GitHub app is set up — we’ll confirm it’s connected automatically on your first build, so you can keep going. Did you choose <b className="text-on-surface">“All repositories”</b>?{" "}<RecheckButton onClick={checkVercelApp} checking={checking} /> to confirm now.</>
           ) : (
             <>On the GitHub page, pick <b className="text-on-surface">“All repositories”</b> (every project is a fresh repo Vercel needs to reach). It checks off once we confirm the connection — on re-check or your first deploy.</>
           )}
