@@ -1,6 +1,7 @@
 import { GettingStarted } from "@/components/getting-started";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { createClient } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/date";
 import Link from "next/link";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -81,7 +82,7 @@ export default async function ProjectsPage() {
                   {p.error && <p className="text-xs text-danger truncate">{p.error}</p>}
                 </Link>
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs text-outline">{new Date(p.created_at).toLocaleDateString()}</p>
+                  <p className="text-xs text-outline">{formatDate(p.created_at)}</p>
                   <DeleteProjectButton projectId={p.id} projectName={p.name} />
                 </div>
               </div>

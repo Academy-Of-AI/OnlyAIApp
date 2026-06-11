@@ -350,16 +350,20 @@ export async function POST(request: Request) {
           },
         );
 
-        // Update project to deployed
+        // Settle the row HONESTLY. A Vercel deploy was only just *triggered* — it
+        // isn't live yet (the bare *.vercel.app alias 404s until the first
+        // production build reaches READY). So we mark it "building", NOT
+        // "deployed", and leave deployed_at unset. The deploy-status route
+        // (polled by the UI) flips it to "deployed" once Vercel reports READY,
+        // or "failed" on a build error. No vercel project ⇒ "ready" (repo only).
         await supabase
           .from("projects")
           .update({
-            status: result.vercelProjectId ? "deployed" : "ready",
+            status: result.vercelProjectId ? "building" : "ready",
             github_repo_url: result.githubRepoUrl,
             vercel_project_id: result.vercelProjectId ?? null,
             vercel_preview_url: result.vercelPreviewUrl ?? null,
             supabase_project_ref: result.supabaseProjectRef ?? null,
-            deployed_at: new Date().toISOString(),
           })
           .eq("id", project.id);
 

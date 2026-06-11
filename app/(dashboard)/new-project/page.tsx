@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // Client-safe template list (owner/repo resolved server-side from the registry)
 const TEMPLATES = [
@@ -31,6 +31,34 @@ export default function NewProjectPage() {
   const [result, setResult] = useState<ProvisionResult | null>(null);
   const [error, setError] = useState("");
   const [limitWall, setLimitWall] = useState<string | null>(null);
+  // The deploy is only TRIGGERED at provision time, not live yet — poll the real
+  // Vercel state so we never hand out a *.vercel.app link that 404s.
+  const [deployState, setDeployState] = useState<"building" | "ready" | "error" | null>(null);
+  const [liveUrl, setLiveUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Only poll when a Vercel deploy is actually in flight (the GitHub-only path
+    // has no vercelPreviewUrl, so there's nothing to wait on).
+    if (!result?.id || !result.vercelPreviewUrl) return;
+    let cancelled = false;
+    let tries = 0;
+    setDeployState("building");
+    const poll = async () => {
+      try {
+        const r = await fetch(`/api/projects/${result.id}/deploy-status`, { cache: "no-store" });
+        if (r.ok) {
+          const j = (await r.json()) as { state: string; url?: string };
+          if (cancelled) return;
+          if (j.state === "ready") { setLiveUrl(j.url ?? result.vercelPreviewUrl ?? null); setDeployState("ready"); return; }
+          if (j.state === "error") { setDeployState("error"); return; }
+        }
+      } catch { /* transient — keep polling */ }
+      tries += 1;
+      if (!cancelled && tries < 40) setTimeout(poll, 5000); // ~3.3 min ceiling
+    };
+    void poll();
+    return () => { cancelled = true; };
+  }, [result]);
 
   // The clone command bakes in the git identity (when known) so Claude Code's
   // first local commit is authored by an email on the user's GitHub account —
@@ -279,18 +307,31 @@ export default function NewProjectPage() {
       {result && (
         <div className="panel p-6 space-y-4">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🎉</span>
+            <span className="text-2xl">
+              {!result.vercelPreviewUrl ? "📦" : deployState === "ready" ? "🎉" : deployState === "error" ? "⚠️" : "🚀"}
+            </span>
             <div>
               <div className="flex items-center gap-2">
-                <span className="dot" style={{ background: result.vercelPreviewUrl ? "var(--color-success)" : "var(--color-outline)" }} />
+                <span className="dot" style={{ background:
+                  !result.vercelPreviewUrl ? "var(--color-outline)"
+                  : deployState === "ready" ? "var(--color-success)"
+                  : deployState === "error" ? "#dc2626"
+                  : "#f59e0b" }} />
                 <p className="font-bold text-lg text-on-surface font-display tracking-tight">
-                  {result.vercelPreviewUrl ? "Your project is live!" : "Repo created"}
+                  {!result.vercelPreviewUrl ? "Repo created"
+                    : deployState === "ready" ? "Your project is live!"
+                    : deployState === "error" ? "Deploy hit a snag"
+                    : "Deploying your app…"}
                 </p>
               </div>
               <p className="text-sm text-on-surface-variant">
-                {result.vercelPreviewUrl
-                  ? "Set up automatically and deploying to Vercel now. Open it in your editor and start building."
-                  : "Your GitHub repo is ready. Connect Vercel to deploy it to a live URL."}
+                {!result.vercelPreviewUrl
+                  ? "Your GitHub repo is ready. Connect Vercel to deploy it to a live URL."
+                  : deployState === "ready"
+                    ? "Set up automatically and now live on Vercel. Open it and start building."
+                    : deployState === "error"
+                      ? "The first build didn’t finish. Open your project to see what happened and redeploy."
+                      : "Repo + database are ready and the first deploy is building on Vercel (~1–2 min). The live link appears here the moment it’s up."}
               </p>
             </div>
           </div>
@@ -307,25 +348,39 @@ export default function NewProjectPage() {
             <span className="text-white text-lg">→</span>
           </Link>
 
-          {/* Secondary: see the live site — only when there's an actual deploy URL */}
-          {result.vercelPreviewUrl ? (
+          {/* Secondary: the live site — shown ONLY once the deploy is verified
+              READY (the link 404s while the build is still running). */}
+          {!result.vercelPreviewUrl ? (
+            <div className="flex items-center justify-between bg-surface-low border border-outline-variant rounded-lg px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-on-surface">▲ Connect Vercel to deploy</p>
+                <p className="text-xs text-on-surface-variant">No live URL yet — link Vercel and every push deploys automatically.</p>
+              </div>
+            </div>
+          ) : deployState === "ready" ? (
             <a
-              href={result.vercelPreviewUrl}
+              href={liveUrl ?? result.vercelPreviewUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between bg-surface-low border border-outline-variant rounded-lg px-4 py-3 hover:border-outline transition-colors group"
             >
               <div>
                 <p className="text-sm font-medium text-on-surface">🌐 Open live site</p>
-                <p className="text-xs text-on-surface-variant">{result.vercelPreviewUrl}</p>
+                <p className="text-xs text-on-surface-variant">{liveUrl ?? result.vercelPreviewUrl}</p>
               </div>
               <span className="text-outline group-hover:text-on-surface">→</span>
             </a>
+          ) : deployState === "error" ? (
+            <div className="bg-surface-low border-l-2 border-l-danger border border-outline-variant rounded-lg px-4 py-3">
+              <p className="text-sm font-medium text-on-surface">⚠️ The first deploy didn’t finish</p>
+              <p className="text-xs text-on-surface-variant">Open your project to see the build error and redeploy.</p>
+            </div>
           ) : (
-            <div className="flex items-center justify-between bg-surface-low border border-outline-variant rounded-lg px-4 py-3">
+            <div className="flex items-center gap-3 bg-surface-low border border-outline-variant rounded-lg px-4 py-3">
+              <span className="w-4 h-4 border-2 border-outline-variant border-t-brand rounded-full animate-spin inline-block shrink-0" />
               <div>
-                <p className="text-sm font-medium text-on-surface">▲ Connect Vercel to deploy</p>
-                <p className="text-xs text-on-surface-variant">No live URL yet — link Vercel and every push deploys automatically.</p>
+                <p className="text-sm font-medium text-on-surface">Deploying to Vercel…</p>
+                <p className="text-xs text-on-surface-variant">Usually ~1–2 minutes. The live link appears here automatically — no need to refresh.</p>
               </div>
             </div>
           )}

@@ -54,13 +54,34 @@ export default async function ProjectPage({
         const latest = await getLatestDeploymentStatus({
           token,
           projectId: project.vercel_project_id as string,
+          teamId,
         });
         if (latest.state === "READY") {
           liveUrl = await getVercelProjectDomain({
             token,
             projectId: project.vercel_project_id as string,
             projectName: project.name as string,
+            teamId,
           });
+        }
+        // Self-heal a "building" row to the truth whenever it's viewed, so the
+        // dashboard/list catch up even if the new-project poller never ran (tab
+        // closed). "deployed" only ever means we confirmed a READY deployment.
+        if (project.status === "building") {
+          if (latest.state === "READY") {
+            await supabase.from("projects").update({
+              status: "deployed", deployed_at: new Date().toISOString(),
+              vercel_preview_url: liveUrl ?? project.vercel_preview_url,
+            }).eq("id", project.id);
+            project.status = "deployed";
+          } else if (latest.state === "ERROR" || latest.state === "CANCELED") {
+            await supabase.from("projects").update({
+              status: "failed",
+              error: "The deployment didn’t build successfully. Open the build error on Vercel and redeploy.",
+              provision_step: "deploy",
+            }).eq("id", project.id);
+            project.status = "failed";
+          }
         }
         // Env-var keys (names only) — powers the per-app add-ons "Added" state + Pilot hardening.
         try {

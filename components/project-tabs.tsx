@@ -12,6 +12,7 @@ import { LaunchCheck } from "@/components/launch-check";
 import { DriftPanel } from "@/components/drift-panel";
 import { DeployButton } from "@/components/deploy-button";
 import { STEP_LABELS } from "@/lib/provisioning/steps";
+import { formatDate } from "@/lib/date";
 
 type Project = {
   id: string;
@@ -96,7 +97,7 @@ export function ProjectTabs({
             <button onClick={() => setView("settings")} title="Settings"
               className={`text-lg leading-none transition-colors ${view === "settings" ? "text-brand" : "text-on-surface-variant hover:text-on-surface"}`}>⚙</button>
           </div>
-          <p className="text-sm text-on-surface-variant mt-1">Created {new Date(project.created_at).toLocaleDateString()}</p>
+          <p className="text-sm text-on-surface-variant mt-1">Created {formatDate(project.created_at)}</p>
           {project.error && <p className="text-xs text-danger mt-1 truncate max-w-lg">{project.error}</p>}
         </div>
         <div className="flex gap-2 shrink-0">
@@ -113,7 +114,7 @@ export function ProjectTabs({
 
       {/* Go live — the in-app deploy. Shown until the app actually has a live URL,
           so a non-technical user can reach a real URL without a terminal. */}
-      {!liveUrl && project.github_repo_url && project.status !== "provisioning" && (
+      {!liveUrl && project.github_repo_url && project.status !== "provisioning" && project.status !== "building" && (
         <div className="mb-6">
           <DeployButton projectId={project.id} projectPath={`/projects/${project.id}`} />
         </div>
@@ -232,7 +233,7 @@ function FailedProjectView({ project, stalled = false }: { project: Project; sta
             <h1 className="font-display tracking-tight text-2xl font-bold text-on-surface truncate">{project.name}</h1>
             <span className={stalled ? STATUS_STYLES.provisioning : STATUS_STYLES.failed}>{stalled ? "stuck" : project.status}</span>
           </div>
-          <p className="text-sm text-on-surface-variant mt-1">Created {new Date(project.created_at).toLocaleDateString()}</p>
+          <p className="text-sm text-on-surface-variant mt-1">Created {formatDate(project.created_at)}</p>
         </div>
       </div>
 

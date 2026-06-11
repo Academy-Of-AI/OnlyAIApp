@@ -41,9 +41,18 @@ export default async function HomePage({
   const shipped = list.filter((p) => p.status === "deployed").length;
   // Grant the referral reward once this user has shipped their first app (idempotent).
   if (user) await reconcileReferralReward(user.id, shipped > 0);
-  const inProgress = list.filter((p) => p.status !== "deployed").length;
+  // "In progress" = genuinely underway. A FAILED build is NOT in progress — counting
+  // it inflates the number into something you can't defend (it read "3" when all 3 had failed).
+  const inProgress = list.filter((p) => ["provisioning", "building", "pending"].includes(p.status)).length;
   const milestones = list.reduce((n, p) => n + (Array.isArray(p.plan_progress) ? p.plan_progress.length : 0), 0);
-  const activeBuild = list.find((p) => p.status !== "deployed") ?? list[0] ?? null;
+  // "Your one next move" must not cheerlead a dead build: prefer a healthy
+  // in-progress/ready/live build, fall back to a failed one only if it's all there is
+  // (and the copy below then steers to "open it to retry", not "keep building").
+  const activeBuild =
+    list.find((p) => ["provisioning", "building", "pending", "ready"].includes(p.status)) ??
+    list.find((p) => p.status === "deployed") ??
+    list.find((p) => p.status === "failed") ??
+    list[0] ?? null;
   const firstName = (profile?.github_username || user?.email || "there").split(/[@ ]/)[0];
   const highlight = wall?.[0] ?? null;
 
@@ -108,10 +117,18 @@ export default async function HomePage({
                 <div className="min-w-0">
                   <p className="eyebrow">🎯 Your one next move</p>
                   <p className="text-sm text-on-surface mt-0.5">
-                    {activeBuild.status === "deployed" ? "It’s live — add the next feature or polish it." : "Open it and keep building toward your v1."}
+                    {activeBuild.status === "failed"
+                      ? "Setup didn’t finish — open it to see what happened and retry."
+                      : activeBuild.status === "building"
+                        ? "It’s deploying now — open it to watch it go live."
+                        : activeBuild.status === "deployed"
+                          ? "It’s live — add the next feature or polish it."
+                          : "Open it and keep building toward your v1."}
                   </p>
                 </div>
-                <Link href={`/projects/${activeBuild.id}`} className="btn-brand text-sm px-4 py-2 shrink-0">Open build →</Link>
+                <Link href={`/projects/${activeBuild.id}`} className="btn-brand text-sm px-4 py-2 shrink-0">
+                  {activeBuild.status === "failed" ? "Fix setup →" : "Open build →"}
+                </Link>
               </div>
             </div>
           </div>
