@@ -210,7 +210,7 @@ export default async function LandingPage() {
           <p className="text-on-surface-variant text-center mt-2 max-w-lg mx-auto">Bring your own AI agent — Claude Code, Codex, or any. We never mark up what you pay for AI.</p>
           <div className="grid sm:grid-cols-3 gap-4 mt-10 items-stretch">
             <Tier name="Free" price="$0" cta="Start free" feats={["Ship a real app you own", "Full Portfolio + career artifacts", "Public profile + Showcase", "Progress + next-step"]} note="🚀 First 50 builders get 2 projects" />
-            <Tier name="Core" price="$8" per="/mo" cta="Choose Core" feats={["Up to 8 projects", "Delete & recreate freely", "Everything in Free"]} note="or save 25% billed yearly" />
+            <Tier name="Core" price="$8" per="/mo" cta="Choose Core" feats={["Up to 8 projects (run several at once)", "Unlimited AI plans", "Everything in Free"]} note="or save 25% billed yearly" />
             <Tier name="Pro" price="$17" per="/mo" pop cta="Go Pro" feats={["Everything in Core", "Accept payments (Stripe)", "Production hardening (monitoring & analytics)", "Advanced build tracking"]} note="or save 30% billed yearly" badge="Power up" />
           </div>
         </div>

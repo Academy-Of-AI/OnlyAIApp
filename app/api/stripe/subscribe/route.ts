@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 /** Prices in cents. Core $8/mo, yearly −25% (×12×0.75). Pro $17/mo, yearly −30% (×12×0.7). */
 const PRICES = {
   core: { month: 800,  year: 7200,  name: "Core",
-          desc: "8 projects · delete & recreate · provision + Plan Pack + hand off" },
+          desc: "8 projects (run several at once) · unlimited Plan Packs · provision + hand off" },
   pro:  { month: 1700, year: 14280, name: "Pro",
           desc: "Everything in Core + advanced Pilot (auto-capture, drift, launch readiness)" },
 } as const;

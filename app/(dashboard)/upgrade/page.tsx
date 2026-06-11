@@ -68,8 +68,8 @@ export default async function UpgradePage({
           sub="or $6/mo billed yearly — save 25%"
           features={[
             "Everything in Free",
-            "Up to 8 live projects",
-            "Delete & recreate anytime",
+            "Up to 8 live projects (run several at once)",
+            "Custom domains for your apps",
             "✍️ 15 AI artifact writes / month",
             "Unlimited re-plans — regenerate a fresh build plan for any project, anytime (separate from the 8-project limit)",
           ]}

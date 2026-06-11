@@ -49,15 +49,15 @@ const sections: FaqSection[] = [
     items: [
       {
         q: "What's the difference between Free, Core, and Pro?",
-        a: "Free gives you 1 project (which you can't delete) — the first 50 builders get a bonus second one. Core is $8/mo — up to 8 projects, delete & recreate, and unlimited Plan Packs. Pro is $17/mo — everything in Core plus your full Portfolio (public profile + AI career artifacts) and advanced build tracking (Pilot). Pay yearly and Core saves 25%, Pro saves 30%.",
+        a: "Free gives you 1 project — the first 50 builders get a bonus second one. Core is $8/mo — up to 8 projects (run several at once) and unlimited Plan Packs. Pro is $17/mo — everything in Core plus your full Portfolio (public profile + AI career artifacts) and advanced build tracking (Pilot). Pay yearly and Core saves 25%, Pro saves 30%.",
       },
       {
         q: "How do I get more projects?",
         a: "Free includes one project (early builders get a bonus second one). Refer a friend — when they ship their first app, you both get a bonus project. Or upgrade to Core ($8/mo) for up to 8 projects right away.",
       },
       {
-        q: "Why can't I delete my project on Free?",
-        a: 'This keeps the free tier meaningful — otherwise it would be unlimited projects, one at a time. Upgrade to Core whenever you want to delete and recreate projects freely, or to run several at once.',
+        q: "Can I delete a project on Free?",
+        a: "Yes — you can delete any project to free up your slot and start fresh, anytime. Free runs one project at a time; upgrade to Core ($8/mo) to run up to 8 at once.",
       },
       {
         q: "How do I manage or cancel my subscription?",
@@ -69,7 +69,7 @@ const sections: FaqSection[] = [
       },
       {
         q: "What happens to my projects if I downgrade?",
-        a: "Your projects, repos, and data stay where they are — they live in your own GitHub, Supabase, and Vercel accounts, so nothing is deleted when your plan changes. On Free you'll just be limited to the Free features again, like not being able to delete and recreate projects. Upgrade any time to unlock them.",
+        a: "Your projects, repos, and data stay where they are — they live in your own GitHub, Supabase, and Vercel accounts, so nothing is deleted when your plan changes. On Free you'll just be limited to the Free features again, like running one project at a time instead of up to 8. Upgrade any time to unlock more.",
       },
     ],
   },

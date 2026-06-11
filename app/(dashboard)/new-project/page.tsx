@@ -203,7 +203,7 @@ export default function NewProjectPage() {
             <p className="text-sm text-on-surface mt-1">{limitWall}</p>
           </div>
           <p className="text-xs text-on-surface-variant">
-            🎁 Refer a friend — when they ship their first app, you both get a bonus project. Or upgrade for up to 8 projects + delete/recreate.
+            🎁 Refer a friend — when they ship their first app, you both get a bonus project. Or upgrade to Core for up to 8 projects you can run at once.
           </p>
           <div className="flex gap-2 flex-wrap">
             <Link href="/invite" className="btn-ghost text-sm px-4 py-2">🎁 Get your invite link</Link>
