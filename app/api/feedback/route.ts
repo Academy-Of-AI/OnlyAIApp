@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { notifyOwnerOfFeedback } from "@/lib/notify";
 import { NextResponse } from "next/server";
 
 const CATEGORIES = new Set(["bug", "confusing", "idea", "other"]);
@@ -36,5 +37,21 @@ export async function POST(req: Request) {
     console.error("[feedback] insert failed:", error.message);
     return NextResponse.json({ error: "Couldn't save that — please try again." }, { status: 500 });
   }
+
+  // Best-effort: tell the owner a report came in, so it doesn't sit unseen.
+  // Never blocks or fails the submission. No-op until FEEDBACK_NOTIFY_* is set.
+  try {
+    const { data: prof } = await supabase
+      .from("profiles").select("github_username").eq("id", user.id).maybeSingle();
+    const page = typeof context.url === "string" ? context.url : null;
+    const admin = await createAdminClient();
+    await notifyOwnerOfFeedback(admin, {
+      category,
+      who: prof?.github_username ?? user.email ?? user.id.slice(0, 8),
+      page,
+      message,
+    });
+  } catch { /* non-fatal — the report is already saved */ }
+
   return NextResponse.json({ ok: true });
 }
