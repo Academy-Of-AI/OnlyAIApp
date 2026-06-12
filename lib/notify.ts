@@ -23,8 +23,10 @@ export async function notifyOptimus(e: {
   severity?: "high" | "medium" | "low" | "info";
   app?: string;
 }): Promise<void> {
-  const url = process.env.OPTIMUS_WEBHOOK_URL;
-  const secret = process.env.OPTIMUS_WEBHOOK_SECRET;
+  // .trim() defensively: a trailing newline/space pasted into the Vercel env
+  // value silently changes the HMAC key (or breaks the URL) → invalid signature.
+  const url = process.env.OPTIMUS_WEBHOOK_URL?.trim();
+  const secret = process.env.OPTIMUS_WEBHOOK_SECRET?.trim();
   if (!url || !secret) return; // dark until configured
 
   const raw = JSON.stringify({
