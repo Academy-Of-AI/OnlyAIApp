@@ -78,13 +78,16 @@ export function ProjectTabs({
       active ? "border-brand-border bg-brand-container text-brand-dim" : "border-outline-variant text-on-surface-variant hover:border-outline"
     }`;
 
-  // A failed provision — OR one stuck in 'provisioning' past the stale window
-  // (the function timed out / the page closed mid-run, so the failure path never
-  // recorded it) — never finished setting the app up. The 3 Ps (Plan/Pilot) and
-  // the "Skip — use my docs" planning path are dead ends for it. Show a focused
-  // recovery surface instead: where setup stopped, the error, and a Retry button.
+  // Setup failed (or stalled past the stale window). Two cases:
+  //  • No repo yet → nothing to work with; show the full recovery surface.
+  //  • Repo EXISTS (failed at a LATER step, e.g. Vercel/deploy) → the Plan and
+  //    the agent build still work, so we must NOT block the workspace. Show a
+  //    recovery banner up top and keep Plan reachable. Planning never needed
+  //    hosting — a deploy failure must not hold the paid deliverable hostage.
   // `stalled` is computed server-side (page.tsx) to avoid a hydration mismatch.
-  if (project.status === "failed" || stalled) {
+  const setupFailed = project.status === "failed" || stalled;
+  const repoExists = !!project.github_repo_url;
+  if (setupFailed && !repoExists) {
     return <FailedProjectView project={project} stalled={stalled} />;
   }
 
@@ -114,9 +117,18 @@ export function ProjectTabs({
         </div>
       </div>
 
+      {/* Setup failed at a later step but the repo exists — recover hosting here
+          while Plan stays usable below (deploy is decoupled from planning). */}
+      {setupFailed && (
+        <div className="mb-6">
+          <RecoveryPanel project={project} stalled={stalled} compact />
+        </div>
+      )}
+
       {/* Go live — the in-app deploy. Shown until the app actually has a live URL,
-          so a non-technical user can reach a real URL without a terminal. */}
-      {!liveUrl && project.github_repo_url && project.status !== "provisioning" && project.status !== "building" && (
+          so a non-technical user can reach a real URL without a terminal. Hidden
+          while setup is in a failed state — the recovery banner owns that path. */}
+      {!setupFailed && !liveUrl && project.github_repo_url && project.status !== "provisioning" && project.status !== "building" && (
         <div className="mb-6">
           <DeployButton projectId={project.id} projectPath={`/projects/${project.id}`} />
         </div>
@@ -124,7 +136,7 @@ export function ProjectTabs({
 
       {/* The 3 Ps — the only nav (no tab bar) */}
       <div className="grid grid-cols-3 gap-2 text-sm mb-8">
-        <div className="rounded-lg border border-outline-variant bg-surface-low px-3 py-2.5 flex items-center gap-2"><span className="text-on-surface-variant">①</span><span className="font-semibold">Provision</span><span className="ml-auto text-xs text-success">✓</span></div>
+        <div className="rounded-lg border border-outline-variant bg-surface-low px-3 py-2.5 flex items-center gap-2"><span className="text-on-surface-variant">①</span><span className="font-semibold">Provision</span><span className={`ml-auto text-xs ${setupFailed ? "text-warn" : "text-success"}`}>{setupFailed ? "⚠" : "✓"}</span></div>
         <button onClick={() => setView("plan")} className={pnav(view === "plan")}><span className="text-brand">②</span><span className="font-semibold">Plan</span></button>
         <button onClick={() => setView("pilot")} className={pnav(view === "pilot")}><span className="text-brand">③</span><span className="font-semibold">Pilot</span></button>
       </div>
@@ -136,15 +148,16 @@ export function ProjectTabs({
   );
 }
 
-/* ── Failed-project recovery surface ──────────────────────────────────────
-   When a provision fails, the normal Plan/Pilot tabs (and the "Skip — use my
-   docs" planning path) are dead ends — the app was never finished. Show where
-   setup stopped, the stored (plain-English) error, and a Retry that re-runs
-   provisioning by POSTing /api/projects with { projectId }, consuming the SSE
-   stream the same way new-project/page.tsx does.
-   STEP_LABELS is shared from lib/provisioning/steps (single source of truth —
-   same vocabulary the server uses to record provision_step). */
-function FailedProjectView({ project, stalled = false }: { project: Project; stalled?: boolean }) {
+/* ── Setup-recovery panel ─────────────────────────────────────────────────
+   Shared recovery UI for a failed/stalled provision: where setup stopped, the
+   plain-English error, one-click Reconnect button(s) for the integration that
+   actually failed, and a Retry that re-runs provisioning (resuming where it
+   stopped) by POSTing /api/projects with { projectId } and consuming the SSE
+   stream the same way new-project/page.tsx does. Rendered full-page by
+   FailedProjectView (no repo yet) or as a `compact` banner above a workspace
+   whose repo already exists — so Plan stays usable (deploy is decoupled).
+   STEP_LABELS is shared from lib/provisioning/steps (single source of truth). */
+function RecoveryPanel({ project, stalled = false, compact = false }: { project: Project; stalled?: boolean; compact?: boolean }) {
   const router = useRouter();
   const [retrying, setRetrying] = useState(false);
   const [steps, setSteps] = useState<StepEvent[]>([]);
@@ -153,6 +166,16 @@ function FailedProjectView({ project, stalled = false }: { project: Project; sta
   const stoppedAt = project.provision_step
     ? (STEP_LABELS[project.provision_step as keyof typeof STEP_LABELS] ?? project.provision_step)
     : "the start";
+
+  // One-click reconnect for the integration that actually failed. Vercel
+  // permission/expiry is the dominant cause; match Supabase/GitHub too. These
+  // open the same OAuth/connect routes used elsewhere.
+  const errLow = (project.error ?? "").toLowerCase();
+  const step = project.provision_step ?? "";
+  const reconnects: { label: string; href: string }[] = [];
+  if (step === "vercel" || /vercel/.test(errLow)) reconnects.push({ label: "Reconnect Vercel", href: "/api/vercel/oauth" });
+  if (step === "supabase" || /supabase/.test(errLow)) reconnects.push({ label: "Reconnect Supabase", href: "/api/supabase/oauth" });
+  if (step === "github" || (step === "" && /github/.test(errLow))) reconnects.push({ label: "Reconnect GitHub", href: "/api/github/connect" });
 
   async function retry() {
     setRetrying(true);
@@ -227,6 +250,79 @@ function FailedProjectView({ project, stalled = false }: { project: Project; sta
   }
 
   return (
+    <div className={`rounded-xl border border-[rgba(220,38,38,0.3)] bg-[rgba(220,38,38,0.06)] ${compact ? "p-4 sm:p-5" : "p-5 sm:p-6"} space-y-4`}>
+      <div>
+        <p className="text-sm font-semibold text-danger flex items-center gap-2">
+          {stalled ? "🟠 Setup seems stuck" : "🔴 Setup didn’t finish"}
+        </p>
+        <p className="text-sm text-on-surface mt-1.5">
+          Setup stopped at: <span className="font-semibold text-on-surface">{stoppedAt}</span>
+          {compact ? <span className="text-on-surface-variant"> — fix it here; your plan below still works.</span> : null}
+        </p>
+      </div>
+
+      {project.error ? (
+        <div>
+          <p className="text-xs uppercase tracking-wide text-on-surface-variant mb-1 font-medium">What went wrong</p>
+          <p className="text-sm text-on-surface leading-relaxed">{project.error}</p>
+        </div>
+      ) : stalled ? (
+        <p className="text-sm text-on-surface-variant leading-relaxed">
+          This usually means setup ran out of time partway through. Retrying picks up right where it stopped — nothing is lost.
+        </p>
+      ) : null}
+
+      {/* Live retry progress */}
+      {retrying && (
+        <div className="space-y-2 py-1">
+          {steps.map((s, i) => (
+            <div key={i} className="flex items-center gap-3 text-sm">
+              <span className="text-success">✓</span>
+              <span className={i === steps.length - 1 ? "text-on-surface" : "text-on-surface-variant"}>{s.message}</span>
+            </div>
+          ))}
+          <div className="flex items-center gap-3 text-sm text-on-surface-variant">
+            <span className="w-4 h-4 border-2 border-outline-variant border-t-brand rounded-full animate-spin inline-block flex-shrink-0" />
+            <span>Picking up where it stopped…</span>
+          </div>
+        </div>
+      )}
+
+      {retryError && !retrying && (
+        <div className="panel border-l-2 border-l-danger text-danger text-sm px-4 py-3">{retryError}</div>
+      )}
+
+      {/* Reconnect the failed integration (one click), then Retry to re-run setup. */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {reconnects.map((r) => (
+          <a key={r.href} href={r.href} className="btn-brand text-sm font-semibold px-4 py-2.5">↻ {r.label}</a>
+        ))}
+        <button
+          onClick={retry}
+          disabled={retrying}
+          className={`${reconnects.length ? "btn-ghost" : "btn-brand"} text-sm font-semibold px-5 py-2.5`}
+        >
+          {retrying ? "Retrying setup…" : "🔄 Retry setup"}
+        </button>
+        {!compact && (
+          <Link href="/dashboard" className="text-xs text-on-surface-variant hover:text-on-surface transition-colors">
+            ← Back to dashboard
+          </Link>
+        )}
+      </div>
+
+      {reconnects.length > 0 && (
+        <p className="text-xs text-on-surface-variant">
+          Reconnect opens {reconnects.length > 1 ? "the integrations" : "the integration"} in a new tab — grant access to your repositories, then come back and hit Retry.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ── Failed-project recovery surface (full page — no repo yet to work with) ── */
+function FailedProjectView({ project, stalled = false }: { project: Project; stalled?: boolean }) {
+  return (
     <div>
       {/* Header — name + failed chip */}
       <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
@@ -239,61 +335,7 @@ function FailedProjectView({ project, stalled = false }: { project: Project; sta
         </div>
       </div>
 
-      <div className="rounded-xl border border-[rgba(220,38,38,0.3)] bg-[rgba(220,38,38,0.06)] p-5 sm:p-6 space-y-4">
-        <div>
-          <p className="text-sm font-semibold text-danger flex items-center gap-2">
-            {stalled ? "🟠 Setup seems stuck" : "🔴 Setup didn’t finish"}
-          </p>
-          <p className="text-sm text-on-surface mt-1.5">
-            Setup stopped at: <span className="font-semibold text-on-surface">{stoppedAt}</span>
-          </p>
-        </div>
-
-        {project.error ? (
-          <div>
-            <p className="text-xs uppercase tracking-wide text-on-surface-variant mb-1 font-medium">What went wrong</p>
-            <p className="text-sm text-on-surface leading-relaxed">{project.error}</p>
-          </div>
-        ) : stalled ? (
-          <p className="text-sm text-on-surface-variant leading-relaxed">
-            This usually means setup ran out of time partway through. Retrying picks up right where it stopped — nothing is lost.
-          </p>
-        ) : null}
-
-        {/* Live retry progress */}
-        {retrying && (
-          <div className="space-y-2 py-1">
-            {steps.map((s, i) => (
-              <div key={i} className="flex items-center gap-3 text-sm">
-                <span className="text-success">✓</span>
-                <span className={i === steps.length - 1 ? "text-on-surface" : "text-on-surface-variant"}>{s.message}</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-3 text-sm text-on-surface-variant">
-              <span className="w-4 h-4 border-2 border-outline-variant border-t-brand rounded-full animate-spin inline-block flex-shrink-0" />
-              <span>Picking up where it stopped…</span>
-            </div>
-          </div>
-        )}
-
-        {retryError && !retrying && (
-          <div className="panel border-l-2 border-l-danger text-danger text-sm px-4 py-3">{retryError}</div>
-        )}
-
-        {/* Primary: Retry setup — re-runs provisioning, resuming from where it stopped. */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={retry}
-            disabled={retrying}
-            className="btn-brand text-sm font-semibold px-5 py-2.5"
-          >
-            {retrying ? "Retrying setup…" : "🔄 Retry setup"}
-          </button>
-          <Link href="/dashboard" className="text-xs text-on-surface-variant hover:text-on-surface transition-colors">
-            ← Back to dashboard
-          </Link>
-        </div>
-      </div>
+      <RecoveryPanel project={project} stalled={stalled} />
 
       {/* Self-serve recovery hint — repo access is the #1 cause of a stuck provision. */}
       <p className="text-xs text-on-surface-variant mt-4">

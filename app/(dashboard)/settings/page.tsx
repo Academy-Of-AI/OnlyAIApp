@@ -97,11 +97,29 @@ export default async function SettingsPage({
             )}
         </IntegrationCard>
 
-        {/* Vercel */}
+        {/* Vercel — "Connected" is the token; deploys ALSO need the Vercel GitHub
+            app to have repo access. Surface that second step here so Settings
+            tells the same story as the Home checklist (and matches the #1
+            provisioning failure: "Vercel permissions"). */}
         <IntegrationCard icon="▲" name="Vercel" connected={hasVercel}
           desc="Deploy live with a public URL + CI/CD.">
           {hasVercel
-            ? <ConnectedNote text="Connected — new projects deploy automatically." />
+            ? (
+              <div className="space-y-2.5">
+                <ConnectedNote text="Connected — new projects deploy automatically." />
+                <div className="rounded-lg border border-outline-variant bg-surface-low px-3 py-2.5 text-xs text-on-surface-variant">
+                  <p className="text-on-surface font-medium mb-0.5">One more thing for deploys</p>
+                  Vercel also needs its GitHub app to have access to your repos. If setup ever fails with a
+                  {" "}<span className="text-on-surface">“Vercel permissions”</span> error, grant access here — choose
+                  {" "}<b className="text-on-surface">All repositories</b>, then retry.
+                  <div className="mt-1.5 flex items-center gap-3 flex-wrap">
+                    <a href="https://github.com/apps/vercel/installations/new" target="_blank" rel="noopener noreferrer"
+                      className="text-brand hover:text-brand-dim font-medium">Manage Vercel repo access →</a>
+                    <a href="/api/vercel/oauth" className="text-on-surface-variant hover:text-on-surface">Reconnect Vercel</a>
+                  </div>
+                </div>
+              </div>
+            )
             : <VercelConnectForm redirectTo="/settings" />}
         </IntegrationCard>
 
