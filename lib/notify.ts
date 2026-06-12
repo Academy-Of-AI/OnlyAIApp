@@ -1,4 +1,55 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createHmac } from "node:crypto";
+
+/**
+ * Send a Pilot event to XP's Optimus agent over a SIGNED webhook (Optimus runs
+ * deliver-only → Telegram, no LLM). Best-effort, NEVER throws. Ships DARK — a
+ * no-op until both OPTIMUS_WEBHOOK_URL and OPTIMUS_WEBHOOK_SECRET are set in the
+ * env, so it's safe to deploy before the endpoint exists.
+ *
+ * Auth contract (matches the Optimus side): HMAC-SHA256 of the RAW JSON body
+ * with the shared secret, sent as `X-Webhook-Signature: <hex>` (GitHub-style
+ * `X-Hub-Signature-256: sha256=<hex>` also sent for compatibility). Unsigned or
+ * wrong-signature requests are rejected 401/403 — so Vercel's dynamic egress
+ * IPs don't matter; the secret is the gate.
+ *
+ * SECURITY NOTE: the endpoint is plain HTTP, so HMAC guarantees AUTHENTICITY
+ * (no forged alerts) but not CONFIDENTIALITY (the body is cleartext on the
+ * wire). Keep `detail` free of secrets/PII; it's only low-sensitivity ops text.
+ */
+export async function notifyOptimus(e: {
+  event: string;                                  // short code, e.g. "feedback", "payment_stalled", "build_failed"
+  detail: string;                                 // human-readable line
+  severity?: "high" | "medium" | "low" | "info";
+  app?: string;
+}): Promise<void> {
+  const url = process.env.OPTIMUS_WEBHOOK_URL;
+  const secret = process.env.OPTIMUS_WEBHOOK_SECRET;
+  if (!url || !secret) return; // dark until configured
+
+  const raw = JSON.stringify({
+    event: e.event,
+    app: e.app ?? "onlyaiapp",
+    detail: e.detail,
+    severity: e.severity ?? "info",
+  });
+  let sig: string;
+  try { sig = createHmac("sha256", secret).update(raw).digest("hex"); }
+  catch { return; }
+
+  try {
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Webhook-Signature": sig,
+        "X-Hub-Signature-256": `sha256=${sig}`,
+      },
+      body: raw,
+      signal: AbortSignal.timeout(5000), // never hang the request on a slow VPS
+    });
+  } catch { /* non-fatal */ }
+}
 
 /**
  * Create an in-app notification. Best-effort email is sent if a platform
@@ -64,6 +115,16 @@ export async function notifyOwnerOfFeedback(
       });
     } catch { /* non-fatal */ }
   }
+
+  // Optimus → Telegram (signed webhook). Best-effort, dark until configured.
+  // PII-free heads-up only: category + page, NO username and NO message body —
+  // the actual report content stays inside OnlyAIApp (read it in the dashboard).
+  // This keeps user data off the external endpoint entirely.
+  await notifyOptimus({
+    event: "feedback",
+    detail: `new ${f.category} report${f.page ? ` on ${f.page}` : ""} — open the dashboard to read it`,
+    severity: f.category === "bug" ? "medium" : "low",
+  });
 
   const key = process.env.RESEND_API_KEY;
   const to = process.env.FEEDBACK_NOTIFY_EMAIL ?? process.env.NOTIFY_EMAIL;
