@@ -110,7 +110,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   let report: DriftReport | null = null;
   try {
     const res = await anthropic.messages.create({
-      model: MODELS.reason,
+      model: MODELS.light,
       max_tokens: 2000,
       tools: [{
         name: "report_drift",

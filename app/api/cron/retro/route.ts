@@ -54,7 +54,7 @@ export async function GET(req: Request) {
     let retro = "";
     try {
       const res = await anthropic.messages.create({
-        model: MODELS.reason,
+        model: MODELS.light,
         max_tokens: 500,
         messages: [{
           role: "user",

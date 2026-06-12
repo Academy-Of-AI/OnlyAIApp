@@ -51,6 +51,8 @@ export default async function UpgradePage({
           tagline="See it work, end to end."
           features={[
             "1 live project (first 50 builders get a 2nd)",
+            "📦 3 AI build plans (PRD, architecture & sprint plan)",
+            "🩺 1 Repo Health scan — audit a repo you already own",
             "Repo, database & hosting set up for you",
             "🎖️ Full Portfolio + career artifacts (3 AI writes/mo)",
             "Hand off to your AI agent (Claude Code, Codex…)",
@@ -69,9 +71,10 @@ export default async function UpgradePage({
           features={[
             "Everything in Free",
             "Up to 8 live projects (run several at once)",
+            "📦 Unlimited AI build plans — regenerate anytime",
+            "🩺 5 Repo Health scans",
             "Custom domains for your apps",
             "✍️ 15 AI artifact writes / month",
-            "Unlimited re-plans — regenerate a fresh build plan for any project, anytime (separate from the 8-project limit)",
           ]}
           current={plan === "core"}
           cta={
@@ -97,10 +100,11 @@ export default async function UpgradePage({
           sub="or $11.90/mo billed yearly — save 30%"
           features={[
             "Everything in Core",
+            "🩺 Unlimited Repo Health audits",
             "✍️ Unlimited AI artifact writes",
             "💳 Accept payments — your app can charge (Stripe)",
             "🛡️ Production hardening — error monitoring, analytics & caching",
-            "🛫 Advanced build tracking (drift & auto-capture)",
+            "🛫 Full Pilot — drift, auto-capture & weekly retro",
           ]}
           current={plan === "pro"}
           cta={

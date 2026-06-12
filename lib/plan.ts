@@ -36,10 +36,13 @@ export const PROJECT_LIMITS: Record<PlanTier, number> = { free: 1, core: 8, pro:
 /**
  * Soft fair-use cap on Plan Pack generations per calendar month. Free is NOT
  * capped here (it is metered separately by build_credits). Core/Pro advertise
- * "unlimited" — these numbers sit far above any honest use and exist only to
- * stop a runaway loop from burning owner Anthropic cost. Reset monthly.
+ * "unlimited" — these numbers sit well above any honest month (most users do
+ * <5) yet keep the tier margin-positive: the Plan Pack (Sonnet) is ~80% of
+ * owner-AI cost (~$0.15-0.25 each), so the cap is what stops a single
+ * power-user or a runaway loop from running a tier negative. At these caps the
+ * worst-case owner cost is ~$3 Core (vs $8) and ~$8 Pro (vs $17). Reset monthly.
  */
-export const PLAN_PACK_FAIR_USE: Record<PlanTier, number> = { free: Infinity, core: 40, pro: 120 };
+export const PLAN_PACK_FAIR_USE: Record<PlanTier, number> = { free: Infinity, core: 15, pro: 40 };
 export function planPackFairUseCap(plan: string | null | undefined): number {
   return PLAN_PACK_FAIR_USE[normalizePlan(plan)];
 }
@@ -60,9 +63,11 @@ export function artifactLimit(plan: string | null | undefined): number {
  * Free gets ONE — it's the lead magnet: point Pilot at any repo you own and get
  * a draft plan + an objective-standards health report, no build required. Then
  * the upgrade wall (shown BEFORE the click — no surprise, drift #8). The owner
- * AI cost is a single bounded call per read, so a low free number is enough to
- * prove value without farming. */
-export const HEALTH_READ_LIMITS: Record<PlanTier, number> = { free: 1, core: 10, pro: Infinity };
+ * AI cost is a single bounded call per read (~$0.05), so a low free number is
+ * enough to prove value without farming. "Unlimited" lives in Pro — Repo Health
+ * is the Pilot run on someone else's repo, so it's a Pro/Pilot upsell hook;
+ * Core gets a taste (5), not a Pro substitute. (Lifetime, not monthly.) */
+export const HEALTH_READ_LIMITS: Record<PlanTier, number> = { free: 1, core: 5, pro: Infinity };
 export function healthReadLimit(plan: string | null | undefined): number {
   return HEALTH_READ_LIMITS[normalizePlan(plan)];
 }

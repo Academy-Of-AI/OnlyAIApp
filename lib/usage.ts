@@ -1,8 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Approximate pricing (USD per 1M tokens), per model. Unknown model -> Sonnet.
+// Keep in sync with lib/ai-models.ts MODELS. Old IDs kept for historical rows.
 const PRICING: Record<string, { in: number; out: number }> = {
   "claude-opus-4-5": { in: 15, out: 75 },
+  "claude-sonnet-4-6": { in: 3, out: 15 },
+  "claude-haiku-4-5": { in: 1, out: 5 },
+  // legacy (pre-2026-06 migration) — kept so older usage_events still cost right:
   "claude-sonnet-4-5": { in: 3, out: 15 },
   "claude-3-5-haiku-latest": { in: 0.8, out: 4 },
 };
