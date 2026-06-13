@@ -13,15 +13,17 @@ import { createHmac } from "node:crypto";
  * wrong-signature requests are rejected 401/403 — so Vercel's dynamic egress
  * IPs don't matter; the secret is the gate.
  *
- * SECURITY NOTE: the endpoint is plain HTTP, so HMAC guarantees AUTHENTICITY
- * (no forged alerts) but not CONFIDENTIALITY (the body is cleartext on the
- * wire). Keep `detail` free of secrets/PII; it's only low-sensitivity ops text.
+ * SECURITY: HMAC guarantees AUTHENTICITY (no forged alerts), not CONFIDENTIALITY.
+ * So `sensitive` detail (user content/PII) is ONLY put on the wire when the
+ * endpoint is https (encrypted); over plain http it auto-downgrades to a non-PII
+ * pointer. Cleartext PII can't leak even if OPTIMUS_WEBHOOK_URL is misconfigured.
  */
 export async function notifyOptimus(e: {
   event: string;                                  // short code, e.g. "feedback", "payment_stalled", "build_failed"
   detail: string;                                 // human-readable line
   severity?: "high" | "medium" | "low" | "info";
   app?: string;
+  sensitive?: boolean;                            // detail carries user content → https-only
 }): Promise<void> {
   // .trim() defensively: a trailing newline/space pasted into the Vercel env
   // value silently changes the HMAC key (or breaks the URL) → invalid signature.
@@ -29,10 +31,15 @@ export async function notifyOptimus(e: {
   const secret = process.env.OPTIMUS_WEBHOOK_SECRET?.trim();
   if (!url || !secret) return; // dark until configured
 
+  // Confidentiality guard: only send user content over an ENCRYPTED endpoint.
+  const detail = e.sensitive && !url.toLowerCase().startsWith("https://")
+    ? "a new report came in — open the dashboard to read it"
+    : e.detail;
+
   const raw = JSON.stringify({
     event: e.event,
     app: e.app ?? "onlyaiapp",
-    detail: e.detail,
+    detail,
     severity: e.severity ?? "info",
   });
   let sig: string;
@@ -119,13 +126,14 @@ export async function notifyOwnerOfFeedback(
   }
 
   // Optimus → Telegram (signed webhook). Best-effort, dark until configured.
-  // PII-free heads-up only: category + page, NO username and NO message body —
-  // the actual report content stays inside OnlyAIApp (read it in the dashboard).
-  // This keeps user data off the external endpoint entirely.
+  // Sends the actual report text + page (capped 300) — but `sensitive` means it
+  // only rides an https endpoint; over plain http it downgrades to a pointer.
+  // Reporter/username intentionally omitted (read it in the dashboard if needed).
   await notifyOptimus({
     event: "feedback",
-    detail: `new ${f.category} report${f.page ? ` on ${f.page}` : ""} — open the dashboard to read it`,
+    detail: `${f.page ? `${f.page}: ` : ""}${f.message}`.slice(0, 300),
     severity: f.category === "bug" ? "medium" : "low",
+    sensitive: true,
   });
 
   const key = process.env.RESEND_API_KEY;
