@@ -111,10 +111,25 @@ export async function notify(
  */
 export async function notifyOwnerOfFeedback(
   admin: SupabaseClient,
-  f: { category: string; who: string; page?: string | null; message: string },
+  f: { category: string; who: string; page?: string | null; message: string; screenshotPath?: string | null },
 ): Promise<void> {
   const title = `🐞 ${f.category} report from ${f.who}`;
-  const body = `${f.page ? `Page: ${f.page}\n` : ""}${f.message}`;
+
+  // The screenshot lives in the PRIVATE `feedback` bucket — unreachable by URL.
+  // Mint a short-lived signed link (service-role bypasses RLS) so the owner can
+  // view it from the alert. The link expiring is fine: the durable artifact is
+  // the path on the feedback row, which the Pilot re-signs/downloads on demand.
+  let shotUrl: string | null = null;
+  if (f.screenshotPath) {
+    try {
+      const { data } = await admin.storage
+        .from("feedback")
+        .createSignedUrl(f.screenshotPath, 60 * 60 * 24 * 7); // 7 days
+      shotUrl = data?.signedUrl ?? null;
+    } catch { /* non-fatal — the alert still goes out, just without the link */ }
+  }
+
+  const body = `${f.page ? `Page: ${f.page}\n` : ""}${f.message}${shotUrl ? `\n📎 ${shotUrl}` : ""}`;
 
   const ownerId = process.env.FEEDBACK_NOTIFY_USER_ID;
   if (ownerId) {
@@ -126,12 +141,14 @@ export async function notifyOwnerOfFeedback(
   }
 
   // Optimus → Telegram (signed webhook). Best-effort, dark until configured.
-  // Sends the actual report text + page (capped 300) — but `sensitive` means it
-  // only rides an https endpoint; over plain http it downgrades to a pointer.
+  // Sends the actual report text + page (capped 300), then the screenshot URL
+  // appended AFTER the cap so a long message can't truncate the link — but
+  // `sensitive` means the whole detail only rides an https endpoint; over plain
+  // http it downgrades to a pointer (so the URL never leaks in cleartext either).
   // Reporter/username intentionally omitted (read it in the dashboard if needed).
   await notifyOptimus({
     event: "feedback",
-    detail: `${f.page ? `${f.page}: ` : ""}${f.message}`.slice(0, 300),
+    detail: `${`${f.page ? `${f.page}: ` : ""}${f.message}`.slice(0, 300)}${shotUrl ? `\n📎 ${shotUrl}` : ""}`,
     severity: f.category === "bug" ? "medium" : "low",
     sensitive: true,
   });

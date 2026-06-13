@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { uploadFeedbackScreenshot } from "@/lib/upload-image";
 
 const CATS = [
   { key: "bug", label: "Something broke" },
@@ -20,24 +21,61 @@ export function FeedbackButton({ label = "Report a problem" }: { label?: string 
   const [msg, setMsg] = useState("");
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
+  const [shot, setShot] = useState<{ blob: Blob; preview: string } | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  function attach(file: File | null | undefined) {
+    if (!file || !file.type.startsWith("image/")) return;
+    setErr(null);
+    setShot({ blob: file, preview: URL.createObjectURL(file) });
+  }
+  function onPaste(e: React.ClipboardEvent) {
+    const img = Array.from(e.clipboardData.items).find((i) => i.type.startsWith("image/"));
+    if (img) { const f = img.getAsFile(); if (f) { e.preventDefault(); attach(f); } }
+  }
 
   async function submit() {
     if (!msg.trim() || sending) return;
-    setSending(true);
+    setSending(true); setErr(null);
+
+    // Best-effort screenshot → PRIVATE feedback bucket (returns a storage path,
+    // not a public URL). On failure we stop and let the user retry/remove it —
+    // the text isn't lost.
+    let screenshotPath: string | undefined;
+    if (shot) {
+      try { screenshotPath = await uploadFeedbackScreenshot(shot.blob); }
+      catch (e) {
+        setErr(e instanceof Error ? e.message : "Couldn't attach the screenshot — remove it or try again.");
+        setSending(false);
+        return;
+      }
+    }
+
     try {
-      await fetch("/api/feedback", {
+      const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           category: cat,
           message: msg.trim(),
-          context: { url: typeof window !== "undefined" ? window.location.pathname : "" },
+          context: {
+            url: typeof window !== "undefined" ? window.location.pathname : "",
+            ...(screenshotPath ? { screenshot_path: screenshotPath } : {}),
+          },
         }),
       });
+      // Only claim success on a confirmed 200 — never show "Thank you" for a
+      // failed save (optimistic-state #1). On failure keep the text + screenshot
+      // so the user can retry instead of hitting a silent dead-end (#7).
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setErr(data.error ?? "Couldn't send that — please try again.");
+        return;
+      }
       setDone(true);
-      setMsg("");
+      setMsg(""); setShot(null);
     } catch {
-      /* swallow — non-critical */
+      setErr("Couldn't send that — please try again.");
     } finally {
       setSending(false);
     }
@@ -88,14 +126,33 @@ export function FeedbackButton({ label = "Report a problem" }: { label?: string 
                 <textarea
                   value={msg}
                   onChange={(e) => setMsg(e.target.value)}
+                  onPaste={onPaste}
                   rows={4}
                   placeholder="What were you doing, and what went wrong?"
                   className="w-full rounded-lg border border-outline-variant bg-surface-dim p-2.5 text-sm text-on-surface resize-none focus:outline-none focus:border-outline"
                 />
+
+                {/* Screenshot — pick a file or paste (Cmd/Ctrl+V) into the box above */}
+                {shot ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-outline-variant p-2">
+                    <img src={shot.preview} alt="screenshot preview" className="h-12 w-12 rounded object-cover" />
+                    <span className="text-xs text-on-surface-variant flex-1 truncate">Screenshot attached</span>
+                    <button onClick={() => setShot(null)} className="text-xs text-on-surface-variant hover:text-on-surface" aria-label="Remove screenshot">Remove</button>
+                  </div>
+                ) : (
+                  <label className="inline-flex w-fit items-center gap-1.5 text-xs text-on-surface-variant hover:text-on-surface cursor-pointer">
+                    <span aria-hidden>📎</span> Attach a screenshot <span className="text-outline">(or paste it above)</span>
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden"
+                      onChange={(e) => attach(e.target.files?.[0])} />
+                  </label>
+                )}
+
+                {err && <p className="text-xs text-danger">{err}</p>}
+
                 <div className="flex items-center justify-end gap-2">
                   <button onClick={() => setOpen(false)} className="btn-ghost text-sm px-3 py-1.5">Cancel</button>
                   <button onClick={submit} disabled={sending || !msg.trim()} className="btn-brand text-sm px-4 py-1.5 disabled:opacity-60">
-                    {sending ? "Sending…" : "Send"}
+                    {sending ? (shot ? "Uploading…" : "Sending…") : "Send"}
                   </button>
                 </div>
               </>

@@ -44,12 +44,20 @@ export async function POST(req: Request) {
     const { data: prof } = await supabase
       .from("profiles").select("github_username").eq("id", user.id).maybeSingle();
     const page = typeof context.url === "string" ? context.url : null;
+    // Storage path in the PRIVATE `feedback` bucket — accept only a path inside
+    // THIS user's own folder, so a crafted request can't get us to sign someone
+    // else's object. notify mints the signed view link (service-role).
+    const sp = context.screenshot_path;
+    const screenshotPath =
+      typeof sp === "string" && sp.startsWith(`${user.id}/`) && sp.length < 256
+        ? sp : null;
     const admin = await createAdminClient();
     await notifyOwnerOfFeedback(admin, {
       category,
       who: prof?.github_username ?? user.email ?? user.id.slice(0, 8),
       page,
       message,
+      screenshotPath,
     });
   } catch { /* non-fatal — the report is already saved */ }
 

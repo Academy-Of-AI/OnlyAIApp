@@ -11,19 +11,24 @@ const MIME_EXT: Record<string, string> = {
 };
 
 /**
- * POST /api/upload-image — upload an image to the public `showcase` bucket
- * SERVER-side (avatars, showcase thumbnails). The browser storage SDK could
- * stall on auth attach; doing the write here is reliable and bounded.
+ * POST /api/upload-image — upload an image SERVER-side (the browser storage SDK
+ * could stall on auth attach; doing the write here is reliable and bounded).
  *
- * Body: { dataUrl: "data:image/...;base64,...", prefix?: string }
- * Returns: { ok: true, url } — the public URL.
+ * Two targets share the same validation (single source of truth — don't fork it):
+ *   • "showcase" (default) → PUBLIC bucket (avatars, thumbnails). Returns { url }.
+ *   • "feedback"           → PRIVATE bucket (bug screenshots). Returns { path };
+ *                            no public URL exists — the owner/Pilot read it via a
+ *                            service-role signed URL. Owner-folder-scoped by RLS.
+ *
+ * Body: { dataUrl: "data:image/...;base64,...", prefix?: string, target?: "feedback" }
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = (await request.json().catch(() => ({}))) as { dataUrl?: unknown; prefix?: unknown };
+  const body = (await request.json().catch(() => ({}))) as { dataUrl?: unknown; prefix?: unknown; target?: unknown };
+  const target = body.target === "feedback" ? "feedback" : "showcase";
   const dataUrl = typeof body.dataUrl === "string" ? body.dataUrl : "";
 
   const match = dataUrl.match(/^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/);
@@ -49,12 +54,18 @@ export async function POST(request: Request) {
   const safePrefix = (typeof body.prefix === "string" ? body.prefix : "img").replace(/[^a-z0-9-]/gi, "").slice(0, 48) || "img";
   const path = `${user.id}/${safePrefix}-${Date.now()}.${ext}`;
 
-  const { error: upErr } = await supabase.storage.from("showcase").upload(path, bytes, {
+  // Feedback paths are unique (timestamped) → no upsert, so no UPDATE policy is
+  // needed on the private bucket. Showcase keeps upsert (avatars overwrite).
+  const { error: upErr } = await supabase.storage.from(target).upload(path, bytes, {
     contentType: mime,
-    upsert: true,
+    upsert: target === "showcase",
   });
   if (upErr) return NextResponse.json({ error: "Upload failed: " + upErr.message }, { status: 400 });
 
-  const url = supabase.storage.from("showcase").getPublicUrl(path).data.publicUrl;
+  // Private bucket: return the storage PATH (no public URL exists). The owner
+  // and Pilot read it later with the service-role key.
+  if (target === "feedback") return NextResponse.json({ ok: true, path });
+
+  const url = supabase.storage.from(target).getPublicUrl(path).data.publicUrl;
   return NextResponse.json({ ok: true, url });
 }
