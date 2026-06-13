@@ -91,8 +91,9 @@ export function GetStartedChecklist({
     { label: "Give Vercel access to your repos — install its GitHub app", href: VERCEL_APP_URL, cta: "Install Vercel app", done: vercelAppDone, external: true, newTab: true, isVercelApp: true },
     { label: "Connect Supabase — your app's own database", href: "/api/supabase/oauth", cta: "Connect Supabase", done: hasSupabase, external: true },
     { label: "Start your first build — pick a track", href: "/tracks", cta: "Pick a track", done: hasProject },
-    // The AI plan is METERED (free = 3), not Pro-only — do NOT gate it behind Upgrade.
-    { label: "Set your objective — the plan your agent follows", href: pid ? `/projects/${pid}/plan` : "/tracks", cta: "Set objective", done: hasPlan },
+    // The build plan (Plan Pack) is METERED (free = 3), not Pro-only — route to the
+    // project's Plan tab (free), NOT the Pro "Pilot milestones" page (/plan).
+    { label: "Generate your build plan — PRD, architecture & sprints", href: pid ? `/projects/${pid}` : "/tracks", cta: "Make the plan", done: hasPlan },
     // ONE step, not "Build" then "Ship": the old split let "Ship it live ✓" check
     // while "Build" was still un-done (deploying the scaffold flipped hasShipped).
     { label: "Build it & ship it live", href: pid ? `/projects/${pid}` : "/tracks", cta: "Open build", done: hasShipped },

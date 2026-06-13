@@ -30,9 +30,9 @@ export default async function HomePage({
     supabase.from("oauth_connections").select("provider").eq("user_id", user!.id),
     supabase.from("profiles").select("plan, phone, marketing_consent, github_username").eq("id", user!.id).single(),
     supabase.from("wall_submissions").select("title, tagline, builder_name, demo_url").order("created_at", { ascending: false }).limit(1),
-    // Per-project journey signals (Set objective / Build) — mirror /projects so the
-    // single shared checklist reads identically on both pages.
-    supabase.from("project_plans").select("*", { count: "exact", head: true }).eq("user_id", user!.id),
+    // "Generate your build plan" is done when the user has a Plan Pack (free, metered) —
+    // NOT the Pro "Pilot milestones" (project_plans). Mirror /projects exactly.
+    supabase.from("projects").select("*", { count: "exact", head: true }).eq("user_id", user!.id).not("plan_pack", "is", null),
     supabase.from("project_memory").select("*", { count: "exact", head: true }).eq("user_id", user!.id),
   ]);
 

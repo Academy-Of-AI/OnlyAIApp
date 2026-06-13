@@ -35,12 +35,12 @@ export default async function PlanPage({ params }: { params: Promise<{ id: strin
         <span>/</span>
         <Link href={`/projects/${id}`} className="hover:text-on-surface transition-colors">{project.name}</Link>
         <span>/</span>
-        <span className="text-on-surface">Plan</span>
+        <span className="text-on-surface">Pilot milestones</span>
       </div>
 
-      <h1 className="text-2xl font-bold tracking-tight font-display text-on-surface mb-1">Plan of record · {project.name}</h1>
+      <h1 className="text-2xl font-bold tracking-tight font-display text-on-surface mb-1">Pilot milestones · {project.name}</h1>
       <p className="text-sm text-on-surface-variant mb-8">
-        Your objective broken into milestones. This is the North Star the drift detector measures against.
+        Your objective broken into milestones for <span className="text-on-surface">Pilot</span> to track — it flags scope creep when commits drift from these. (Your build plan — PRD, architecture &amp; sprints — lives in the project&apos;s <span className="text-on-surface">Plan</span> tab, free.)
       </p>
 
       <PlanPanel

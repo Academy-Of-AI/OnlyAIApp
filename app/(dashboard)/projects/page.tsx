@@ -19,7 +19,7 @@ export default async function ProjectsPage() {
   const [{ data: projects }, { data: connections }, { count: planCount }, { count: memoryCount }, { data: profile }] = await Promise.all([
     supabase.from("projects").select("*").eq("user_id", user!.id).is("archived_at", null).order("created_at", { ascending: false }),
     supabase.from("oauth_connections").select("provider").eq("user_id", user!.id),
-    supabase.from("project_plans").select("*", { count: "exact", head: true }).eq("user_id", user!.id),
+    supabase.from("projects").select("*", { count: "exact", head: true }).eq("user_id", user!.id).not("plan_pack", "is", null),
     supabase.from("project_memory").select("*", { count: "exact", head: true }).eq("user_id", user!.id),
     supabase.from("profiles").select("plan").eq("id", user!.id).single(),
   ]);

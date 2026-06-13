@@ -87,19 +87,19 @@ export function PlanPanel({
           type="submit" disabled={generating || !objective.trim()}
           className="btn-brand text-sm px-4 py-2 disabled:opacity-40 transition-colors"
         >
-          {generating ? "Generating plan…" : "Generate plan of record"}
+          {generating ? "Setting milestones…" : "Set Pilot milestones"}
         </button>
         {proGated && (
           <div className="rounded-lg border border-brand-border bg-brand-container px-4 py-3 space-y-2">
             <p className="text-sm text-on-surface">
-              AI plan generation is a <span className="font-semibold">Pro</span> feature — it runs on our AI to turn your objective into a milestone plan of record.
+              This is <span className="font-semibold">Pilot</span> (Pro) — it turns your objective into milestones and watches your commits for drift &amp; scope creep. Your <span className="font-semibold">build plan</span> (PRD, architecture &amp; sprints) is separate and <span className="font-semibold">free</span> — generate it from the project&apos;s Plan tab.
             </p>
             <Link href="/upgrade" className="btn-brand text-sm px-4 py-2 inline-block">Upgrade to Pro →</Link>
           </div>
         )}
         {err && !proGated && <p className="text-xs text-danger">{err}</p>}
         <p className="text-xs text-on-surface-variant">
-          The plan is written into CLAUDE.md so the agent stays anchored to it and flags scope creep.
+          These milestones are written into CLAUDE.md so the agent stays anchored, and Pilot flags scope creep against them.
         </p>
       </form>
     );
