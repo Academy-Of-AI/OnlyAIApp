@@ -95,7 +95,7 @@ export function PilotTerminalSection({
 
       <div className="space-y-3">
         <Step n={1} label="Install once">
-          <Cmd k="install" text="npm i -g @onlyai/pilot" />
+          <Cmd k="install" text="npm i -g onlyai-pilot" />
         </Step>
 
         <Step n={2} label="Connect your account">

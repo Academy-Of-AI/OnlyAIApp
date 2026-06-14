@@ -157,4 +157,6 @@ Get a token at onlyaiapp.com/settings. Config: ~/.onlyai/pilot.json`);
 }
 
 const run = { login, check, help, "--help": help, "-h": help };
-(run[cmd] || help)().catch((e) => { console.error(col("red", String(e?.message ?? e))); process.exit(1); });
+// Promise.resolve wraps BOTH sync commands (help) and async ones (login/check) —
+// calling .catch directly on help's undefined return crashed the help path.
+Promise.resolve((run[cmd] || help)()).catch((e) => { console.error(col("red", String(e?.message ?? e))); process.exit(1); });
