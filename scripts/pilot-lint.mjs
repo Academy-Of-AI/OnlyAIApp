@@ -29,43 +29,81 @@ const SKIP_DIRS = new Set(["node_modules", ".next", ".git", "dist", "build", ".v
 const OK = "pilot-lint-ok"; // inline escape marker
 
 /**
- * Rules. Each maps to a drift class in PILOT_DRIFT_CATALOG.md.
- *  - `scan(rel)`  : which files this rule looks at (relative POSIX path).
- *  - `test(line)` : true when the line violates the rule.
- *  - `message`    : plain-English fix shown on failure.
+ * Rules — the TWIN of lib/pilot/rules.ts (the product's repo-health engine), so
+ * CI catches exactly what the Pilot CLI catches on someone else's repo. Both are
+ * derived from PILOT_DRIFT_CATALOG.md, the SSOT — KEEP THE TWO IN SYNC (same ids,
+ * predicates, regexes). (A shared module would make drift impossible; that's the
+ * proper follow-up — it touches the TS/MJS boundary, so done deliberately.)
  *
- * NOTE: lib/pilot/rules.ts holds the TypeScript twin of these regexes for the
- * existing-repo health read (the same rules, applied to someone else's code).
- * Keep the two in sync — both are derived from the catalog, which is the SSOT.
+ * Each rule: `appliesTo(rel)` (which files) + `find(text, rel)` → [{line, evidence}].
+ * A line carrying `// pilot-lint-ok` is always skipped (justified exception).
  */
+const isRenderFile = (p) =>
+  /(^|\/)(app|components|src|pages)\//.test(p) && /\.(tsx|jsx)$/.test(p);
+const isRouteFile = (p) =>
+  /(^app\/api\/.*route\.(ts|js)$)|(^pages\/api\/.*\.(ts|js)$)|(actions\.(ts|js)$)/.test(p);
+
+/** Scan a file line-by-line with a regex, honouring the inline pilot-lint-ok escape. */
+function lineScan(text, re) {
+  const hits = [];
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes(OK)) continue;
+    if (re.test(lines[i])) hits.push({ line: i + 1, evidence: lines[i].trim().slice(0, 200) });
+  }
+  return hits;
+}
+
 const RULES = [
   {
-    id: "no-raw-toLocale-in-render",
+    id: "hydration-toLocale",
     drift: "#9 hydration/perf",
-    // app/ + components/ render server-side then hydrate; a runtime-locale date
-    // string differs between server (UTC) and client → React hydration mismatch
-    // (#418) → the dashboard "freeze". lib/date.ts#formatDate pins locale+TZ.
-    scan: (rel) => /^(app|components)\//.test(rel) && /\.(ts|tsx)$/.test(rel),
-    test: (line) => /\.toLocale(Date|Time)?String\s*\(/.test(line),
+    appliesTo: isRenderFile,
+    find: (text) => lineScan(text, /\.toLocale(Date|Time)?String\s*\(/),
     message:
-      "Raw toLocale*String in a rendered file causes a server/client hydration mismatch. " +
+      "Raw toLocale*String in a rendered component causes a server/client hydration mismatch. " +
       "Use formatDate() from lib/date.ts (pins locale + UTC).",
   },
   {
-    id: "no-optimistic-deploy-status",
-    drift: "#1 optimistic state",
-    // The dominant blind-spot: code flips a project to a success status before
-    // anything CONFIRMS it's live, so the UI shows "deployed" + a link that
-    // 404s. A success status may be written ONLY by a verifier that has seen a
-    // READY deploy (deploy-status route, the page self-heal) — and those carry
-    // the pilot-lint-ok marker. Scoped to the project deploy surfaces.
-    scan: (rel) =>
-      /(^app\/api\/projects\/)|(^app\/\(dashboard\)\/projects\/)/.test(rel) && /\.(ts|tsx)$/.test(rel),
-    test: (line) => /status:\s*["'](deployed|shipped)["']/.test(line),
+    id: "hydration-random-in-render",
+    drift: "#9 hydration/perf",
+    appliesTo: isRenderFile,
+    find: (text) => lineScan(text, /Math\.random\s*\(/),
     message:
-      "A project may be marked deployed/shipped ONLY by a verifier that has confirmed a READY deploy " +
-      "(deploy-status route / page self-heal). Set status:'building' here and let the verifier settle it, " +
-      "or add `// pilot-lint-ok: <why this is verified>` if this IS the verifier.",
+      "Math.random() in a rendered component differs between server and client → hydration mismatch. " +
+      "Compute it in an effect (client-only) or pass a stable seed from the server.",
+  },
+  {
+    id: "long-job-no-maxduration",
+    drift: "#3 unsafe long-job shape",
+    appliesTo: isRouteFile,
+    find: (text, path) => {
+      const aiOrEmail =
+        /@anthropic-ai\/sdk|messages\.create|generateText|streamText|from\s+['"]openai['"]|\.emails\.send|sendMail/;
+      const hasGuard =
+        /export\s+const\s+maxDuration|ReadableStream|StreamingTextResponse|toDataStreamResponse|toTextStreamResponse/;
+      if (!aiOrEmail.test(text) || hasGuard.test(text)) return [];
+      const lines = text.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes(OK)) continue;
+        if (aiOrEmail.test(lines[i])) return [{ line: i + 1, evidence: `${path}: ${lines[i].trim().slice(0, 160)}` }];
+      }
+      return [];
+    },
+    message:
+      "Long/external work (an AI call or send-in-a-loop) in a request with no timeout guard can hit the " +
+      "host function limit (Vercel kills >300s). Add `export const maxDuration`, stream the response, or " +
+      "move it to a background job.",
+  },
+  {
+    id: "optimistic-success-status",
+    drift: "#1 optimistic state",
+    appliesTo: (p) => /\.(ts|tsx|js|jsx)$/.test(p),
+    find: (text) => lineScan(text, /status:\s*["'](deployed|published|live|completed|success)["']/),
+    message:
+      "A success status (deployed/published/live/completed) written right after triggering an async action " +
+      "claims success before it's real. Write it ONLY after a check confirms the outcome (READY signal / 200 " +
+      "on the live URL), or add `// pilot-lint-ok: <why this is verified>` if a check above already confirms it.",
   },
 ];
 
@@ -89,18 +127,14 @@ const files = walk(ROOT, []);
 const violations = [];
 
 for (const rel of files) {
-  const applicable = RULES.filter((r) => r.scan(rel));
+  const applicable = RULES.filter((r) => r.appliesTo(rel));
   if (!applicable.length) continue;
   let text;
   try { text = readFileSync(join(ROOT, rel), "utf8"); } catch { continue; }
-  const lines = text.split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.includes(OK)) continue; // explicitly justified exception
-    for (const r of applicable) {
-      if (r.test(line)) {
-        violations.push({ rel, lineNo: i + 1, rule: r, src: line.trim() });
-      }
+  for (const r of applicable) {
+    // find() honours the pilot-lint-ok escape internally (per line).
+    for (const hit of r.find(text, rel)) {
+      violations.push({ rel, lineNo: hit.line, rule: r, src: hit.evidence });
     }
   }
 }

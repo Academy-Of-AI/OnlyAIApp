@@ -95,7 +95,7 @@ export const REPO_RULES: RepoRule[] = [
     drift: "#1 optimistic state",
     severity: "high",
     title: "A success status is written without confirming the thing actually happened",
-    fix: "Writing status: 'deployed'/'published'/'live'/'completed' right after triggering an async action (a deploy, a job) means the UI claims success before it's real — the dominant cause of 'it says done but the link 404s'. Write the success status ONLY after a check confirms the outcome (a READY signal, a 200 on the live URL).",
+    fix: "Writing status: 'deployed'/'published'/'live'/'completed' right after triggering an async action (a deploy, a job) means the UI claims success before it's real — the dominant cause of 'it says done but the link 404s'. Write the success status ONLY after a check confirms the outcome (a READY signal, a 200 on the live URL).", // pilot-lint-ok: this is the rule's own fix-text doc string, not a real status write
     appliesTo: (p) => /\.(ts|tsx|js|jsx)$/.test(p),
     find: (text) =>
       lineScan(text, /status:\s*["'](deployed|published|live|completed|success)["']/),
