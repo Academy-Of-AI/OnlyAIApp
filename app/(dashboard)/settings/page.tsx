@@ -1,7 +1,9 @@
 import { VercelConnectForm } from "@/components/vercel-connect-form";
 import { SupabaseConnectForm } from "@/components/supabase-connect-form";
 import { ResendConnectForm } from "@/components/resend-connect-form";
+import { PilotTerminalSection } from "@/components/pilot-terminal-section";
 import { createClient } from "@/lib/supabase/server";
+import { apiLimit, currentApiPeriod } from "@/lib/plan";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -34,6 +36,25 @@ export default async function SettingsPage({
   const hasSupabase = has("supabase");
   const hasResend = has("resend");
   const plan = profile?.plan ?? "free";
+  const isPro = plan === "pro";
+
+  // Pilot-API tokens + this month's usage — only Pro needs them (free/core see
+  // the upgrade CTA). Resilient if the table isn't there yet (null → empty).
+  let pilotTokens: { id: string; name: string; last_four: string; created_at: string; last_used_at: string | null }[] = [];
+  let pilotUsed = 0;
+  if (isPro) {
+    const [{ data: tk }, { count }] = await Promise.all([
+      supabase.from("api_tokens")
+        .select("id,name,last_four,created_at,last_used_at")
+        .eq("user_id", user.id).is("revoked_at", null)
+        .order("created_at", { ascending: false }),
+      supabase.from("api_usage")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id).eq("period", currentApiPeriod()),
+    ]);
+    pilotTokens = tk ?? [];
+    pilotUsed = count ?? 0;
+  }
 
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
@@ -74,6 +95,10 @@ export default async function SettingsPage({
           </span>
         </div>
       </section>
+
+      {/* Pilot in your terminal — the user's OWN developer access (distinct from
+          the project-provisioning integrations below). Pro = setup; non-Pro = upsell. */}
+      <PilotTerminalSection isPro={isPro} tokens={pilotTokens} used={pilotUsed} limit={apiLimit(plan)} />
 
       {/* Integrations */}
       <section className="space-y-4">

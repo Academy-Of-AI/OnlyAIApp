@@ -72,6 +72,21 @@ export function healthReadLimit(plan: string | null | undefined): number {
   return HEALTH_READ_LIMITS[normalizePlan(plan)];
 }
 
+/**
+ * Pilot-API (CLI / MCP) monthly call allowance. The API surface is a Pro-only
+ * feature — free/core get 0 here so the gate sends them to /upgrade. The cap is a
+ * generous monthly fair-use ceiling that only catches a runaway loop, surfaced as
+ * "N of M left" in every response (no surprise wall — drift #8). Reset monthly.
+ * Lives in this ONE registry so a Pro user has a single budget across faces. */
+export const API_LIMITS: Record<PlanTier, number> = { free: 0, core: 0, pro: 200 };
+export function apiLimit(plan: string | null | undefined): number {
+  return API_LIMITS[normalizePlan(plan)];
+}
+/** Current Pilot-API accounting period as 'YYYY-MM' (UTC) — same shape as Plan Packs. */
+export function currentApiPeriod(): string {
+  return new Date().toISOString().slice(0, 7);
+}
+
 export function normalizePlan(plan: string | null | undefined): PlanTier {
   return plan === "pro" ? "pro" : plan === "core" ? "core" : "free";
 }
