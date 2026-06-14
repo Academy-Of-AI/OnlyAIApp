@@ -136,12 +136,16 @@ export async function POST(request: Request) {
   try {
     const result = await provisionProject({ projectName, githubToken, vercelToken }, () => {});
 
+    // Settle HONESTLY — provisionProject only *triggers* the Vercel build, which
+    // isn't live yet (the *.vercel.app alias 404s until READY). Mark "building",
+    // NOT "deployed" (matches app/api/projects/route.ts); the deploy-status route
+    // the UI polls is the only verified writer of "deployed" (after READY + a
+    // 200 on the live URL). Writing "deployed" here was optimistic-state drift.
     await supabase.from("projects").update({
-      status: "deployed",
+      status: result.vercelProjectId ? "building" : "ready",
       github_repo_url: result.githubRepoUrl,
       vercel_project_id: result.vercelProjectId,
       vercel_preview_url: result.vercelPreviewUrl,
-      deployed_at: new Date().toISOString(),
     }).eq("id", project.id);
 
     await supabase.from("events").insert({

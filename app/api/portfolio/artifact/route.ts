@@ -4,6 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { artifactLimit } from "@/lib/plan";
 import { NextResponse } from "next/server";
 
+// This route makes an Anthropic call in-request — give it explicit headroom so a
+// slow generation can't hit the host's default function timeout (drift #3).
+export const maxDuration = 60;
+
 type ArtifactType = "case_study" | "linkedin" | "resume";
 const SITE = "onlyaiapp.com";
 

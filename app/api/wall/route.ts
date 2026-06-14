@@ -88,7 +88,7 @@ export async function POST(request: Request) {
     ...base,
     live_url: liveUrl,
     screenshot_url: body.screenshotUrl?.trim() || null,
-    status: "live",
+    status: "live", // pilot-lint-ok: not optimistic — the liveness fetch above (lines 60-72) confirms the URL responds before we claim "live"
     last_checked: new Date().toISOString(),
   };
 
