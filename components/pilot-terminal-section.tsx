@@ -94,7 +94,7 @@ export function PilotTerminalSection({
       </p>
 
       <div className="space-y-3">
-        <Step n={1} label="Install once">
+        <Step n={1} label="Install once — optional (or use npx, no install)">
           <Cmd k="install" text="npm i -g onlyai-pilot" />
         </Step>
 
@@ -114,6 +114,7 @@ export function PilotTerminalSection({
 
         <Step n={3} label="Run it in any repo">
           <Cmd k="run" text="pilot check" />
+          <p className="text-[11px] text-on-surface-variant">No install? Use <code className="text-on-surface">npx onlyai-pilot check</code> instead.</p>
         </Step>
       </div>
 
@@ -122,7 +123,7 @@ export function PilotTerminalSection({
       <div className="rounded-lg border border-outline-variant bg-surface-low px-3 py-2.5 text-xs text-on-surface-variant">
         <span className="text-on-surface font-medium">Tip — </span>
         add a line to your project’s <code className="text-on-surface">CLAUDE.md</code> / <code className="text-on-surface">AGENTS.md</code>:
-        “before deploying, run <code className="text-on-surface">pilot check</code>”. Your AI then runs it for you.
+        “before deploying, run <code className="text-on-surface">npx onlyai-pilot check</code>”. Your AI then runs it for you — nothing to install.
       </div>
 
       <div className="flex items-center justify-between text-xs text-on-surface-variant">
