@@ -4,7 +4,7 @@
   "description": "OnlyAI Pilot — run Pilot's guardrail checks inside Claude Code, Codex, or any terminal.",
   "type": "module",
   "bin": {
-    "pilot": "./pilot.mjs"
+    "pilot": "pilot.mjs"
   },
   "files": [
     "pilot.mjs",
@@ -17,7 +17,7 @@
   "homepage": "https://onlyaiapp.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Academy-Of-AI/OnlyAIApp.git",
+    "url": "git+https://github.com/Academy-Of-AI/OnlyAIApp.git",
     "directory": "cli"
   },
   "keywords": ["onlyai", "pilot", "claude-code", "codex", "lint", "drift", "cli"]
