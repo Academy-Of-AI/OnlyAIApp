@@ -10,3 +10,6 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# Generated CLI engine (built from lib/pilot/drift-rules.mjs by scripts/build-cli.mjs)
+cli/engine.mjs

@@ -1,4 +1,5 @@
-import { REPO_RULES, type DriftSeverity } from "./rules";
+import { type DriftSeverity } from "./rules";
+import { auditFiles, healthScore as _healthScore, grade as _grade } from "./drift-rules.mjs";
 import type { RepoDigest, RepoFile } from "./repo-read";
 
 /**
@@ -45,40 +46,17 @@ export interface HealthReport {
   notes: string[];          // honest caveats — what we couldn't see / didn't run
 }
 
-const PENALTY: Record<DriftSeverity, number> = { high: 15, medium: 7, low: 3 };
-
-/** Run every rule over every applicable file. Pure, deterministic, falsifiable. */
+/** Audit engine — re-exported from the shared SSOT (lib/pilot/drift-rules.mjs) so
+ *  the server (here), the CLI (code never leaves the user's machine), and CI all
+ *  run byte-identical logic. Typed wrappers preserve this module's public API. */
 export function auditRepoFiles(files: RepoFile[]): Finding[] {
-  const out: Finding[] = [];
-  for (const f of files) {
-    for (const rule of REPO_RULES) {
-      if (!rule.appliesTo(f.path)) continue;
-      for (const hit of rule.find(f.content, f.path)) {
-        out.push({
-          ruleId: rule.id,
-          drift: rule.drift,
-          severity: rule.severity,
-          title: rule.title,
-          fix: rule.fix,
-          file: f.path,
-          line: hit.line,
-          evidence: hit.evidence,
-        });
-      }
-    }
-  }
-  // Worst first, then by file for stable grouping.
-  const rank: Record<DriftSeverity, number> = { high: 0, medium: 1, low: 2 };
-  return out.sort((a, b) => rank[a.severity] - rank[b.severity] || a.file.localeCompare(b.file) || a.line - b.line);
+  return auditFiles(files) as Finding[];
 }
-
 export function healthScore(findings: Finding[]): number {
-  const raw = findings.reduce((s, f) => s + PENALTY[f.severity], 0);
-  return Math.max(0, 100 - raw);
+  return _healthScore(findings);
 }
-
 export function grade(score: number): HealthReport["grade"] {
-  return score >= 90 ? "A" : score >= 75 ? "B" : score >= 55 ? "C" : "D";
+  return _grade(score) as HealthReport["grade"];
 }
 
 /** Sniff the stack from package.json deps + tree presence. Best-effort. */

@@ -1,26 +1,24 @@
 import { NextResponse } from "next/server";
 import { requireProApiCaller, recordApiUsage } from "@/lib/pilot/api/gate";
-import { auditRepoFiles, healthScore, grade } from "@/lib/pilot/repo-audit";
-import type { RepoFile } from "@/lib/pilot/repo-read";
+import { currentApiPeriod } from "@/lib/plan";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
 
 /**
- * Pilot API v1 — the hosted spine. The CLI (and a later MCP shim) are clients of
- * THIS. Every request passes the one gate (requireProApiCaller): bearer → Pro →
- * fair-use. The valuable logic (the drift rules) runs only here, server-side, so
- * the moat never ships to the client and billing stays continuous.
+ * Pilot API v1 — the hosted spine. The CLI runs the drift checks LOCALLY (code
+ * never leaves the user's machine) and calls THIS to (1) verify entitlement
+ * (gate: bearer → Pro → fair-use, = continuous billing) and (2) report an
+ * anonymous failure fingerprint for fleet learning. There is deliberately NO
+ * endpoint that accepts source code — privacy by construction.
  *
- * GET  → verify a token: { ok, plan:"pro", usage }. Used by `pilot login`.
- * POST → run a tool: { tool, input } → { ok, tool, result, usage }.
+ * GET  → verify a token: { ok, plan, usage }. Used by `pilot login`.
+ * POST → { tool:"report", input:<pattern> } → records the (enum-only) signal.
  */
 
-// Privacy-minimal input contract: the CLI sends only the rule-applicable files,
-// never the whole repo. These caps keep a single call bounded.
-const MAX_FILES = 80;
-const MAX_FILE_CHARS = 64_000;
-const MAX_TOTAL_CHARS = 2_000_000;
+const SEVERITY = new Set(["high", "medium", "low"]);
+const FILE_KIND = new Set(["route", "component", "lib", "action", "other"]);
+const OUTCOME = new Set(["new", "persisted", "fixed", "suppressed"]);
+const MAX_FINDINGS = 200;
 
 export async function GET(req: Request) {
   const gate = await requireProApiCaller(req);
@@ -40,52 +38,64 @@ export async function POST(req: Request) {
   const tool = String(body.tool ?? "");
   const input = (body.input && typeof body.input === "object" ? body.input : {}) as Record<string, unknown>;
 
-  if (tool === "drift_check") {
-    const files = sanitizeFiles(input.files);
-    if (!files.ok) return NextResponse.json({ ok: false, code: "bad_input", error: files.error }, { status: 400 });
+  if (tool === "report") {
+    // Every call counts toward fair-use (continuous billing), findings or not.
+    await recordApiUsage(gate.admin, gate.userId, "report");
 
-    // The SAME deterministic engine the website's Repo Health uses (single source).
-    const findings = auditRepoFiles(files.files);
-    const score = healthScore(findings);
-    const counts = {
-      high: findings.filter((f) => f.severity === "high").length,
-      medium: findings.filter((f) => f.severity === "medium").length,
-      low: findings.filter((f) => f.severity === "low").length,
-      total: findings.length,
-    };
+    // Persist the fleet signal ONLY from the enum-only fields — anything that
+    // could carry code (paths, source lines, content) is structurally absent
+    // from this shape and never read, so it can't be stored even if sent.
+    const rows = sanitizeReport(input).map((f) => ({
+      user_id: gate.userId,
+      anon_repo_id: typeof input.anonRepoId === "string" ? input.anonRepoId.slice(0, 128) : null,
+      rule_id: f.ruleId,
+      drift_class: f.drift,
+      severity: f.severity,
+      file_kind: f.fileKind,
+      outcome: f.outcome,
+      stack_tags: sanitizeTags(input.stackTags),
+      period: currentApiPeriod(),
+    }));
+    if (rows.length) {
+      try { await gate.admin.from("pilot_signals").insert(rows); } catch { /* non-fatal — never fail the user's check */ }
+    }
 
-    await recordApiUsage(gate.admin, gate.userId, tool);
     const used = gate.used + 1;
     return NextResponse.json({
       ok: true,
-      tool,
-      result: { score, grade: grade(score), filesScanned: files.files.length, counts, findings },
+      tool: "report",
+      recorded: rows.length,
       usage: { used, limit: gate.limit, remaining: Math.max(0, gate.limit - used) },
     });
   }
 
-  return NextResponse.json({ ok: false, code: "unknown_tool", error: `Unknown tool "${tool}". Try "drift_check".` }, { status: 400 });
+  return NextResponse.json({ ok: false, code: "unknown_tool", error: `Unknown tool "${tool}". This API records check reports; run \`pilot check\` (the CLI runs the checks locally).` }, { status: 400 });
 }
 
-/** Validate the privacy-minimal file payload: [{ path, content }]. */
-function sanitizeFiles(
-  raw: unknown,
-): { ok: true; files: RepoFile[] } | { ok: false; error: string } {
-  if (!Array.isArray(raw)) return { ok: false, error: "Expected input.files to be an array of { path, content }." };
-  if (raw.length === 0) return { ok: false, error: "No files to scan." };
-  if (raw.length > MAX_FILES) return { ok: false, error: `Too many files (${raw.length}); cap is ${MAX_FILES}. Send only the files the rules apply to.` };
-  const files: RepoFile[] = [];
-  let total = 0;
+/** Keep ONLY the enum/short-string fields from each reported finding. Drops
+ *  anything unexpected (incl. any accidental code/path field). */
+function sanitizeReport(input: Record<string, unknown>) {
+  const raw = Array.isArray(input.findings) ? input.findings.slice(0, MAX_FINDINGS) : [];
+  const out: { ruleId: string; drift: string; severity: string; fileKind: string; outcome: string }[] = [];
   for (const f of raw) {
     if (!f || typeof f !== "object") continue;
-    const path = String((f as Record<string, unknown>).path ?? "");
-    const content = String((f as Record<string, unknown>).content ?? "");
-    if (!path || !content) continue;
-    if (content.length > MAX_FILE_CHARS) continue; // skip oversized (vendored/minified)
-    total += content.length;
-    if (total > MAX_TOTAL_CHARS) return { ok: false, error: "Payload too large — send fewer/smaller files." };
-    files.push({ path, content });
+    const r = f as Record<string, unknown>;
+    const ruleId = String(r.ruleId ?? "").slice(0, 64);
+    const drift = String(r.drift ?? "").slice(0, 48);
+    const severity = String(r.severity ?? "");
+    const fileKind = String(r.fileKind ?? "other");
+    const outcome = String(r.outcome ?? "new");
+    if (!ruleId || !SEVERITY.has(severity)) continue;
+    out.push({
+      ruleId, drift, severity,
+      fileKind: FILE_KIND.has(fileKind) ? fileKind : "other",
+      outcome: OUTCOME.has(outcome) ? outcome : "new",
+    });
   }
-  if (files.length === 0) return { ok: false, error: "No valid files to scan." };
-  return { ok: true, files };
+  return out;
+}
+
+function sanitizeTags(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((t) => typeof t === "string").slice(0, 20).map((t) => String(t).slice(0, 24));
 }

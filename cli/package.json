@@ -1,13 +1,18 @@
 {
   "name": "onlyai-pilot",
-  "version": "0.1.0",
-  "description": "OnlyAI Pilot — run Pilot's guardrail checks inside Claude Code, Codex, or any terminal.",
+  "version": "0.2.0",
+  "description": "OnlyAI Pilot — run Pilot's guardrail checks inside Claude Code, Codex, or any terminal. Checks run locally; your code never leaves your machine.",
   "type": "module",
+  "scripts": {
+    "build": "node ../scripts/build-cli.mjs",
+    "prepublishOnly": "node ../scripts/build-cli.mjs"
+  },
   "bin": {
     "pilot": "pilot.mjs"
   },
   "files": [
     "pilot.mjs",
+    "engine.mjs",
     "README.md"
   ],
   "engines": {
