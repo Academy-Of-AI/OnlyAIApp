@@ -63,7 +63,7 @@ last run of the same repo:
 | Raw code never leaves the machine | CLI computes the pattern locally; the wire payload has no code/free-text field |
 | Server can't store code | `pilot_signals` has **no code column** (DB constraint) + API validates an enum-only zod schema at the boundary (rejects extras) |
 | Repos can't be re-identified | only a server-salted one-way hash is sent — no path / URL / name fields exist |
-| No capture without consent | CLI sends signals only if `~/.onlyai` `telemetry=on`; **default off**, one-time prompt |
+| Consent is informed | default **on (opt-out)**, disclosed once on first run; `pilot config telemetry off` stops it; with it off the API still gates (billing) but no signal is sent |
 | A bad rule can't hit everyone | human-approval gate; rules enter ONLY via `drift-rules.mjs` (the SSOT) — never auto-shipped |
 | One ruleset everywhere | `drift-rules.mjs` is already the single source (CLI + CI + product), so a learned rule reaches all faces at once |
 
@@ -84,11 +84,14 @@ approves before it ships. "Learns from the fleet," with a human gate — not an
 autonomous model rewriting itself in production.
 
 ## Consent
-Default **off**. First run after publish prompts once: *"Help Pilot get smarter?
-We send anonymous failure patterns — which rule fired and whether you fixed it.
-Never your code, paths, or repo names."* Stored in `~/.onlyai`. `pilot config
-telemetry on|off` to change. Everything still works fully with it off — the
-deterministic rules don't depend on the loop.
+**On by default (opt-out)** — defensible precisely because what's shared is
+anonymous *patterns*, never code. The first run **discloses once**: *"Pilot shares
+anonymous failure patterns (which rule fired + the outcome) to improve — never
+your code, file paths, or repo names. Turn it off anytime: `pilot config telemetry
+off`."* The choice is recorded in `~/.onlyai`, so the notice shows only once.
+Everything still works fully with it off — the deterministic rules don't depend
+on the loop. (Tradeoff: opt-out maximises signal; the honesty rests entirely on
+the disclosure + the by-construction guarantee that no code can be sent.)
 
 ## Phasing
 - **Phase A (lightweight capture):** add `pilot_signals` (metadata-only) + the

@@ -58,8 +58,9 @@ export default async function PilotFleetPage() {
           <p className="text-3xl">📡</p>
           <p>No signals yet.</p>
           <p className="text-xs text-outline">
-            Fleet learning is opt-in (<code>pilot config telemetry on</code>), so data flows once Pro users
-            enable it and run <code>pilot check</code>. Patterns are anonymous — never code, paths, or repo names.
+            Fleet learning is on by default (anonymous patterns only; users can opt out with{" "}
+            <code>pilot config telemetry off</code>), so data flows as Pro users run <code>pilot check</code>.
+            Never code, paths, or repo names.
           </p>
         </div>
       ) : (

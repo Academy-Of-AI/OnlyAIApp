@@ -10,7 +10,9 @@
  *   pilot config telemetry on|off        opt in/out of anonymous fleet learning
  *   pilot help
  *
- * Config: ~/.onlyai/pilot.json  ({ token, api, telemetry }). Telemetry default OFF.
+ * Config: ~/.onlyai/pilot.json  ({ token, api, telemetry }). Telemetry default ON
+ * (opt-out) — anonymous patterns only, disclosed on first run; `pilot config
+ * telemetry off` to disable.
  * Zero runtime dependencies (Node 18+). The rule engine is bundled as engine.mjs.
  */
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync } from "node:fs";
@@ -137,7 +139,16 @@ async function check() {
   const sigPath = join(REPOS_DIR, `${id}.json`);
   const prev = new Set((readJSON(sigPath)?.sigs) || []);
   const sigOf = (f) => `${f.ruleId}:${f.file}`;
-  const telemetryOn = cfg.telemetry === "on";
+
+  // Fleet learning is opt-OUT (default ON) — anonymous patterns only, never code.
+  // Disclose ONCE on first run, then record the choice so it doesn't repeat.
+  let telemetry = cfg.telemetry;
+  if (telemetry === undefined) {
+    telemetry = "on";
+    saveConfig({ ...cfg, telemetry });
+    console.log(col("dim", "ℹ Pilot shares anonymous failure patterns (which rule fired + the outcome) to improve — never your code, file paths, or repo names. Turn it off anytime: pilot config telemetry off"));
+  }
+  const telemetryOn = telemetry !== "off";
 
   // Enum-only report. Per-finding detail is included ONLY with consent; without
   // it we still call the API (entitlement/billing) but send no signal.
@@ -168,9 +179,6 @@ async function check() {
   }
   if (!findings.length) console.log(col("green", "Clean — no known drift classes found.\n"));
   if (data.usage) console.log(col("dim", `${data.usage.remaining} of ${data.usage.limit} Pilot runs left this month`));
-  if (cfg.telemetry === undefined) {
-    console.log(col("dim", "\nFleet learning is OFF. Help Pilot improve by sharing anonymous patterns (which rule fired + outcome — never your code): pilot config telemetry on"));
-  }
 }
 
 function config() {
@@ -181,7 +189,7 @@ function config() {
     return;
   }
   console.log("Usage: pilot config telemetry on|off");
-  console.log(`Currently: telemetry ${loadConfig().telemetry ?? "off (unset)"}`);
+  console.log(`Currently: telemetry ${loadConfig().telemetry ?? "on (default)"}`);
 }
 
 function help() {
